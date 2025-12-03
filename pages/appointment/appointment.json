@@ -1,0 +1,7 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "预约",
+  "usingComponents": {
+    "tab-bar": "../../components/TabBar"
+  }
+}
