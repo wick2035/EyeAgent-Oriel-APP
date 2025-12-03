@@ -1,0 +1,10 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "AI问诊",
+  "usingComponents": {
+    "tab-bar": "../../components/TabBar",
+    "chat-input": "../../components/ChatInput",
+    "quick-prompt": "../../components/QuickPrompt",
+    "message-bubble": "../../components/MessageBubble"
+  }
+}
