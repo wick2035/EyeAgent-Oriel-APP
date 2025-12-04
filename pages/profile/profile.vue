@@ -1,0 +1,571 @@
+<template>
+	<view class="page" :class="{ 'page--dark': isDark }">
+		<!-- 顶部背景 -->
+		<view class="page__bg"></view>
+
+		<!-- 状态栏占位 -->
+		<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+
+		<!-- 用户卡片 -->
+		<view class="user-card">
+			<view class="user-card__avatar">
+				<image v-if="userInfo.avatar" class="user-card__avatar-img" :src="userInfo.avatar" mode="aspectFill" />
+				<text v-else class="user-card__avatar-text">{{ avatarText }}</text>
+			</view>
+			<view class="user-card__info">
+				<text class="user-card__name">{{ userName }}</text>
+				<view class="user-card__badge">
+					<text class="user-card__badge-text">普通会员</text>
+				</view>
+			</view>
+			<view class="user-card__action" @click="goToSettings">
+				<view class="settings-icon"></view>
+			</view>
+		</view>
+
+		<!-- 健康档案入口 -->
+		<view class="health-entry" @click="goToHealthRecord">
+			<view class="health-entry__icon">
+				<view class="health-icon"></view>
+			</view>
+			<view class="health-entry__content">
+				<text class="health-entry__title">我的健康档案</text>
+				<text class="health-entry__desc">记录您的健康数据，AI更懂您</text>
+			</view>
+			<view class="health-entry__arrow"></view>
+		</view>
+
+		<!-- 功能列表 -->
+		<view class="menu-section">
+			<view class="menu-section__title">服务</view>
+			<view class="menu-list">
+				<view
+					v-for="(item, index) in serviceMenus"
+					:key="index"
+					class="menu-item"
+					@click="handleMenu(item)"
+				>
+					<view class="menu-item__icon" :style="{ background: item.bgColor }">
+						<view class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
+					</view>
+					<text class="menu-item__text">{{ item.title }}</text>
+					<view class="menu-item__arrow"></view>
+				</view>
+			</view>
+		</view>
+
+		<view class="menu-section">
+			<view class="menu-section__title">设置</view>
+			<view class="menu-list">
+				<view
+					v-for="(item, index) in settingMenus"
+					:key="index"
+					class="menu-item"
+					@click="handleMenu(item)"
+				>
+					<view class="menu-item__icon" :style="{ background: item.bgColor }">
+						<view class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
+					</view>
+					<text class="menu-item__text">{{ item.title }}</text>
+					<view v-if="item.type === 'switch'" class="menu-item__switch">
+						<switch :checked="isDark" @change="toggleTheme" color="#1E3A5F" />
+					</view>
+					<view v-else class="menu-item__arrow"></view>
+				</view>
+			</view>
+		</view>
+
+		<!-- 版本信息 -->
+		<view class="version">
+			<text class="version__text">AI医问通 v1.0.0</text>
+		</view>
+
+		<!-- 底部占位 -->
+		<view class="tabbar-placeholder"></view>
+
+		<!-- 底部导航 -->
+		<TabBar :current="4" />
+	</view>
+</template>
+
+<script>
+import TabBar from '@/components/TabBar.vue'
+import { isDarkMode, setTheme, THEME_LIGHT, THEME_DARK } from '@/store/theme.js'
+import { getUserInfo, isLoggedIn } from '@/store/user.js'
+
+export default {
+	components: {
+		TabBar
+	},
+	data() {
+		return {
+			statusBarHeight: 44,
+			serviceMenus: [
+				{ title: '就诊记录', icon: 'record', bgColor: 'rgba(30, 58, 95, 0.1)' },
+				{ title: '我的收藏', icon: 'star', bgColor: 'rgba(245, 158, 11, 0.1)' },
+				{ title: '用药提醒', icon: 'medicine', bgColor: 'rgba(16, 185, 129, 0.1)' }
+			],
+			settingMenus: [
+				{ title: '深色模式', icon: 'theme', bgColor: 'rgba(102, 126, 234, 0.1)', type: 'switch' },
+				{ title: '帮助中心', icon: 'help', bgColor: 'rgba(59, 130, 246, 0.1)' },
+				{ title: '关于我们', icon: 'about', bgColor: 'rgba(139, 148, 158, 0.1)' }
+			]
+		}
+	},
+	computed: {
+		isDark() {
+			return isDarkMode()
+		},
+		userInfo() {
+			return getUserInfo()
+		},
+		userName() {
+			return this.userInfo.name || '未设置昵称'
+		},
+		avatarText() {
+			const name = this.userInfo.name || '用'
+			return name.charAt(0).toUpperCase()
+		}
+	},
+	onLoad() {
+		this.getStatusBarHeight()
+	},
+	onShow() {
+		// 页面显示时触发重新渲染
+	},
+	methods: {
+		getStatusBarHeight() {
+			const sysInfo = uni.getSystemInfoSync()
+			this.statusBarHeight = sysInfo.statusBarHeight || 44
+		},
+		goToSettings() {
+			uni.navigateTo({
+				url: '/pages/settings/settings'
+			})
+		},
+		goToHealthRecord() {
+			uni.showToast({ title: '健康档案开发中', icon: 'none' })
+		},
+		handleMenu(item) {
+			if (item.type === 'switch') return
+			uni.showToast({ title: `${item.title}开发中`, icon: 'none' })
+		},
+		toggleTheme(e) {
+			const isDarkMode = e.detail.value
+			setTheme(isDarkMode ? THEME_DARK : THEME_LIGHT)
+		}
+	}
+}
+</script>
+
+<style lang="scss" scoped>
+.page {
+	min-height: 100vh;
+	background: $bg-base;
+	position: relative;
+
+	&__bg {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 400rpx;
+		background: linear-gradient(180deg, #E8F4FD 0%, $bg-base 100%);
+	}
+
+	&--dark {
+		background: $dark-bg-base;
+
+		.page__bg {
+			background: linear-gradient(180deg, rgba(74, 144, 217, 0.1) 0%, $dark-bg-base 100%);
+		}
+	}
+}
+
+.status-bar {
+	position: relative;
+	z-index: 1;
+}
+
+.user-card {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	margin: $spacing-lg;
+	padding: $spacing-lg;
+	background: $bg-card;
+	border-radius: $radius-xl;
+	box-shadow: $shadow-md;
+
+	&__avatar {
+		width: 120rpx;
+		height: 120rpx;
+		background: linear-gradient(135deg, $color-primary-light 0%, $color-primary 100%);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-right: $spacing-lg;
+	}
+
+	&__avatar-text {
+		font-size: $font-size-2xl;
+		color: #fff;
+		font-weight: $font-weight-bold;
+	}
+
+	&__avatar-img {
+		width: 100%;
+		height: 100%;
+		border-radius: 50%;
+	}
+
+	&__info {
+		flex: 1;
+	}
+
+	&__name {
+		font-size: $font-size-xl;
+		font-weight: $font-weight-semibold;
+		color: $text-primary;
+		display: block;
+		margin-bottom: $spacing-xs;
+	}
+
+	&__badge {
+		display: inline-block;
+		padding: 4rpx 16rpx;
+		background: rgba(245, 158, 11, 0.1);
+		border-radius: $radius-sm;
+	}
+
+	&__badge-text {
+		font-size: $font-size-xs;
+		color: $color-warning;
+	}
+
+	&__action {
+		width: 72rpx;
+		height: 72rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+}
+
+.settings-icon {
+	width: 40rpx;
+	height: 40rpx;
+	border: 3rpx solid $text-secondary;
+	border-radius: 50%;
+	position: relative;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 16rpx;
+		height: 16rpx;
+		border: 3rpx solid $text-secondary;
+		border-radius: 50%;
+	}
+}
+
+.health-entry {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	margin: 0 $spacing-lg $spacing-lg;
+	padding: $spacing-lg;
+	background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+	border-radius: $radius-xl;
+	box-shadow: $shadow-md;
+
+	&__icon {
+		width: 88rpx;
+		height: 88rpx;
+		background: rgba(255, 255, 255, 0.2);
+		border-radius: $radius-md;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-right: $spacing-md;
+	}
+
+	&__content {
+		flex: 1;
+	}
+
+	&__title {
+		font-size: $font-size-lg;
+		font-weight: $font-weight-semibold;
+		color: #fff;
+		display: block;
+		margin-bottom: 4rpx;
+	}
+
+	&__desc {
+		font-size: $font-size-sm;
+		color: rgba(255, 255, 255, 0.8);
+	}
+
+	&__arrow {
+		width: 16rpx;
+		height: 16rpx;
+		border-top: 3rpx solid rgba(255, 255, 255, 0.8);
+		border-right: 3rpx solid rgba(255, 255, 255, 0.8);
+		transform: rotate(45deg);
+	}
+}
+
+.health-icon {
+	width: 40rpx;
+	height: 40rpx;
+	position: relative;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 0;
+		transform: translateY(-50%);
+		width: 40rpx;
+		height: 12rpx;
+		background: #fff;
+		border-radius: 6rpx;
+	}
+
+	&::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 12rpx;
+		height: 40rpx;
+		background: #fff;
+		border-radius: 6rpx;
+	}
+}
+
+.menu-section {
+	position: relative;
+	z-index: 1;
+	margin: 0 $spacing-lg $spacing-lg;
+
+	&__title {
+		font-size: $font-size-sm;
+		color: $text-muted;
+		margin-bottom: $spacing-sm;
+		padding-left: $spacing-sm;
+	}
+}
+
+.menu-list {
+	background: $bg-card;
+	border-radius: $radius-xl;
+	box-shadow: $shadow-sm;
+	overflow: hidden;
+}
+
+.menu-item {
+	display: flex;
+	align-items: center;
+	padding: $spacing-md $spacing-lg;
+	border-bottom: 1rpx solid $border-color-light;
+
+	&:last-child {
+		border-bottom: none;
+	}
+
+	&__icon {
+		width: 72rpx;
+		height: 72rpx;
+		border-radius: $radius-md;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-right: $spacing-md;
+	}
+
+	&__text {
+		flex: 1;
+		font-size: $font-size-base;
+		color: $text-primary;
+	}
+
+	&__arrow {
+		width: 16rpx;
+		height: 16rpx;
+		border-top: 3rpx solid $text-muted;
+		border-right: 3rpx solid $text-muted;
+		transform: rotate(45deg);
+	}
+
+	&__switch {
+		transform: scale(0.8);
+	}
+}
+
+.menu-icon {
+	width: 36rpx;
+	height: 36rpx;
+	position: relative;
+
+	&--record {
+		border: 3rpx solid $color-primary;
+		border-radius: 6rpx;
+		&::before {
+			content: '';
+			position: absolute;
+			top: 8rpx;
+			left: 6rpx;
+			right: 6rpx;
+			height: 3rpx;
+			background: $color-primary;
+		}
+		&::after {
+			content: '';
+			position: absolute;
+			top: 16rpx;
+			left: 6rpx;
+			width: 50%;
+			height: 3rpx;
+			background: $color-primary;
+		}
+	}
+
+	&--star {
+		&::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 0;
+			height: 0;
+			border-left: 18rpx solid transparent;
+			border-right: 18rpx solid transparent;
+			border-bottom: 12rpx solid $color-warning;
+		}
+		&::after {
+			content: '';
+			position: absolute;
+			bottom: 0;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 0;
+			height: 0;
+			border-left: 18rpx solid transparent;
+			border-right: 18rpx solid transparent;
+			border-top: 24rpx solid $color-warning;
+		}
+	}
+
+	&--medicine {
+		width: 16rpx;
+		border: 3rpx solid $color-success;
+		border-radius: 8rpx;
+		height: 32rpx;
+		&::before {
+			content: '';
+			position: absolute;
+			top: 50%;
+			left: -2rpx;
+			right: -2rpx;
+			height: 3rpx;
+			background: $color-success;
+		}
+	}
+
+	&--theme {
+		border: 3rpx solid #667EEA;
+		border-radius: 50%;
+		&::before {
+			content: '';
+			position: absolute;
+			top: 4rpx;
+			right: 4rpx;
+			width: 14rpx;
+			height: 14rpx;
+			background: #667EEA;
+			border-radius: 50%;
+		}
+	}
+
+	&--help {
+		border: 3rpx solid $color-info;
+		border-radius: 50%;
+		&::before {
+			content: '?';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 24rpx;
+			color: $color-info;
+			font-weight: bold;
+		}
+	}
+
+	&--about {
+		border: 3rpx solid #8B949E;
+		border-radius: 50%;
+		&::before {
+			content: 'i';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 24rpx;
+			color: #8B949E;
+			font-weight: bold;
+			font-style: italic;
+		}
+	}
+}
+
+.version {
+	position: relative;
+	z-index: 1;
+	text-align: center;
+	padding: $spacing-xl 0;
+
+	&__text {
+		font-size: $font-size-xs;
+		color: $text-muted;
+	}
+}
+
+.tabbar-placeholder {
+	height: calc(140rpx + env(safe-area-inset-bottom));
+}
+
+// 深色模式
+.page--dark {
+	.user-card {
+		background: $dark-bg-card;
+		&__name { color: $dark-text-primary; }
+	}
+	.settings-icon { border-color: $dark-text-secondary; }
+	.settings-icon::before { border-color: $dark-text-secondary; }
+
+	.health-entry {
+		background: linear-gradient(135deg, $dark-color-primary 0%, rgba(74, 144, 217, 0.8) 100%);
+	}
+
+	.menu-section__title { color: $dark-text-muted; }
+	.menu-list { background: $dark-bg-card; }
+	.menu-item {
+		border-bottom-color: $dark-border-color;
+		&__text { color: $dark-text-primary; }
+		&__arrow { border-color: $dark-text-muted; }
+	}
+
+	.version__text { color: $dark-text-muted; }
+}
+</style>

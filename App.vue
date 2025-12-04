@@ -1,0 +1,188 @@
+<script>
+	import { initTheme } from '@/store/theme.js'
+	import { initUserState, isLoggedIn } from '@/store/user.js'
+
+	export default {
+		onLaunch: function() {
+			console.log('AI医问通 启动')
+			// 初始化主题
+			initTheme()
+			// 初始化用户状态
+			initUserState()
+
+			// 检查登录状态，已登录则跳转首页
+			if (isLoggedIn()) {
+				uni.switchTab({
+					url: '/pages/index/index'
+				})
+			}
+		},
+		onShow: function() {
+			console.log('App Show')
+		},
+		onHide: function() {
+			console.log('App Hide')
+		}
+	}
+</script>
+
+<style lang="scss">
+	/* AI医问通 - 全局公共样式 */
+
+	/* 重置默认样式 */
+	page {
+		background-color: $bg-base;
+		font-family: $font-family-body;
+		font-size: $font-size-base;
+		color: $text-primary;
+		line-height: $line-height-normal;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	view, text {
+		box-sizing: border-box;
+	}
+
+	/* 隐藏滚动条 */
+	::-webkit-scrollbar {
+		display: none;
+		width: 0;
+		height: 0;
+		background: transparent;
+	}
+
+	/* 输入框placeholder样式 */
+	.uni-input-placeholder,
+	.uni-textarea-placeholder {
+		color: $text-muted;
+	}
+
+	/* 安全区域 */
+	.safe-area-bottom {
+		padding-bottom: constant(safe-area-inset-bottom);
+		padding-bottom: env(safe-area-inset-bottom);
+	}
+
+	/* 文字省略 */
+	.text-ellipsis {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.text-ellipsis-2 {
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	/* Flex布局工具类 */
+	.flex {
+		display: flex;
+	}
+
+	.flex-center {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.flex-between {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.flex-col {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.flex-1 {
+		flex: 1;
+	}
+
+	/* 间距工具类 */
+	.mt-sm { margin-top: $spacing-sm; }
+	.mt-md { margin-top: $spacing-md; }
+	.mt-lg { margin-top: $spacing-lg; }
+	.mb-sm { margin-bottom: $spacing-sm; }
+	.mb-md { margin-bottom: $spacing-md; }
+	.mb-lg { margin-bottom: $spacing-lg; }
+	.ml-sm { margin-left: $spacing-sm; }
+	.ml-md { margin-left: $spacing-md; }
+	.mr-sm { margin-right: $spacing-sm; }
+	.mr-md { margin-right: $spacing-md; }
+
+	.pt-sm { padding-top: $spacing-sm; }
+	.pt-md { padding-top: $spacing-md; }
+	.pb-sm { padding-bottom: $spacing-sm; }
+	.pb-md { padding-bottom: $spacing-md; }
+	.px-md { padding-left: $spacing-md; padding-right: $spacing-md; }
+	.py-md { padding-top: $spacing-md; padding-bottom: $spacing-md; }
+
+	/* 文字颜色 */
+	.text-primary { color: $text-primary; }
+	.text-secondary { color: $text-secondary; }
+	.text-muted { color: $text-muted; }
+	.text-accent { color: $color-accent; }
+
+	/* 背景颜色 */
+	.bg-base { background-color: $bg-base; }
+	.bg-card { background-color: $bg-card; }
+	.bg-primary { background-color: $color-primary; }
+
+	/* 圆角 */
+	.rounded-sm { border-radius: $radius-sm; }
+	.rounded-md { border-radius: $radius-md; }
+	.rounded-lg { border-radius: $radius-lg; }
+	.rounded-full { border-radius: $radius-full; }
+
+	/* 阴影 */
+	.shadow-sm { box-shadow: $shadow-sm; }
+	.shadow-md { box-shadow: $shadow-md; }
+	.shadow-lg { box-shadow: $shadow-lg; }
+
+	/* 动画类 */
+	.fade-in {
+		animation: fadeIn 0.3s ease;
+	}
+
+	.slide-up {
+		animation: slideUp 0.3s ease;
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(20rpx);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* 点击反馈 */
+	.clickable {
+		transition: opacity 0.15s ease, transform 0.15s ease;
+
+		&:active {
+			opacity: 0.7;
+			transform: scale(0.98);
+		}
+	}
+
+	/* 禁用状态 */
+	.disabled {
+		opacity: $uni-opacity-disabled;
+		pointer-events: none;
+	}
+</style>
