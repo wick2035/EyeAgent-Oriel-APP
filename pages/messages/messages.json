@@ -1,7 +1,0 @@
-{
-  "navigationStyle": "custom",
-  "navigationBarTitleText": "消息",
-  "usingComponents": {
-    "tab-bar": "../../components/TabBar"
-  }
-}
