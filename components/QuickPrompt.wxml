@@ -1,1 +1,0 @@
-<view class="{{['prompt-card', 'data-v-1fafe24b', b && 'prompt-card--dark']}}" bindtap="{{c}}"><view class="prompt-card__tag data-v-1fafe24b">#</view><text class="prompt-card__text data-v-1fafe24b">{{a}}</text><view class="prompt-card__arrow data-v-1fafe24b"></view></view>
