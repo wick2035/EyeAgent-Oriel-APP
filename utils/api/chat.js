@@ -2,7 +2,7 @@
  * 聊天对话API接口
  * 对接AI问诊功能
  */
-import { post, get, del, getSessionId } from './request.js'
+import { post, get, getSessionId } from './request.js'
 
 /**
  * 发送消息 - 与Agent进行对话交互
@@ -44,36 +44,80 @@ export async function sendMessage(data) {
 
 /**
  * 获取历史会话列表
+ * @returns {Promise<Array>} 会话列表
+ *
+ * 响应结构:
+ * [{
+ *   id: "会话ID",
+ *   hostId: "用户ID",
+ *   userType: "patient",
+ *   title: "会话标题",
+ *   summary: "会话摘要",
+ *   totalMessages: 6,
+ *   createTime: "2025-12-03 10:30:00",
+ *   updateTime: "2025-12-03 11:15:00"
+ * }]
+ */
+export async function getConversations() {
+	const response = await get('/api/app/agent/get-conversation')
+	if (response.code === 200) {
+		return response.data || []
+	}
+	throw new Error(response.msg || '获取会话列表失败')
+}
+
+/**
+ * 分页查询会话列表
  * @param {Object} params 查询参数
- * @param {number} [params.page] - 页码
- * @param {number} [params.pageSize] - 每页数量
- * @returns {Promise<Object>}
+ * @param {string} [params.searchKey] - 搜索关键词
+ * @param {number} [params.pageNum] - 页码，从1开始
+ * @param {number} [params.pageSize] - 每页数量，默认10
+ * @returns {Promise<Object>} { list, pageNum, total, pages }
  */
-export function getConversations(params = {}) {
-	const patientId = getPatientId()
-	return get('/api/conversations', {
-		patient_id: patientId,
-		page: params.page || 1,
-		page_size: params.pageSize || 20
+export async function pageConversations(params = {}) {
+	const response = await get('/api/app/agent/page-conversation', {
+		searchKey: params.searchKey || '',
+		pageNum: params.pageNum || 1,
+		pageSize: params.pageSize || 10
 	})
+	if (response.code === 200) {
+		return {
+			list: response.data || [],
+			pageNum: response.pageNum,
+			total: response.total,
+			pages: response.pages
+		}
+	}
+	throw new Error(response.msg || '查询会话失败')
 }
 
 /**
- * 获取单个会话详情（包含历史消息）
+ * 获取会话消息列表
  * @param {string} conversationId 会话ID
- * @returns {Promise<Object>}
+ * @returns {Promise<Object>} { messages, conversation }
+ *
+ * messages 结构:
+ * [{
+ *   id: "消息ID",
+ *   chatId: "会话ID",
+ *   messageOrder: 1,
+ *   messageContent: "消息内容",
+ *   messageType: "user" | "assistant",
+ *   senderId: "发送者ID",
+ *   createTime: "2025-12-03 10:30:00"
+ * }]
  */
-export function getConversationDetail(conversationId) {
-	return get(`/api/conversations/${conversationId}`)
-}
-
-/**
- * 删除会话
- * @param {string} conversationId 会话ID
- * @returns {Promise<Object>}
- */
-export function deleteConversation(conversationId) {
-	return del(`/api/conversations/${conversationId}`)
+export async function getMessages(conversationId) {
+	const response = await get('/api/app/agent/get-messages', {
+		chatConversationId: conversationId
+	})
+	if (response.code === 200) {
+		return {
+			messages: response.data || [],
+			conversation: response.conversation
+		}
+	}
+	throw new Error(response.msg || '获取消息失败')
 }
 
 /**
@@ -119,8 +163,8 @@ export function refreshQuickPrompts() {
 export default {
 	sendMessage,
 	getConversations,
-	getConversationDetail,
-	deleteConversation,
+	pageConversations,
+	getMessages,
 	getQuickPrompts,
 	refreshQuickPrompts
 }
