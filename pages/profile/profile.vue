@@ -84,7 +84,7 @@
 		<view class="tabbar-placeholder"></view>
 
 		<!-- 底部导航 -->
-		<TabBar :current="4" />
+		<TabBar />
 	</view>
 </template>
 
@@ -131,7 +131,9 @@ export default {
 		this.getStatusBarHeight()
 	},
 	onShow() {
-		// 页面显示时触发重新渲染
+		// #ifdef APP-PLUS
+		uni.hideTabBar({ animation: false })
+		// #endif
 	},
 	methods: {
 		getStatusBarHeight() {

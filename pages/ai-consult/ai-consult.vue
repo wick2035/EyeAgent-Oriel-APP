@@ -107,7 +107,7 @@
 		/>
 
 		<!-- 底部导航 -->
-		<TabBar :current="2" />
+		<TabBar />
 
 		<!-- 退出确认弹窗 -->
 		<ConfirmDialog
@@ -174,6 +174,9 @@ export default {
 		}
 	},
 	onShow() {
+		// #ifdef APP-PLUS
+		uni.hideTabBar({ animation: false })
+		// #endif
 		// 检查是否有从历史记录页面传来的会话ID（tabBar 页面通过存储传参）
 		const pendingId = uni.getStorageSync('pendingConversationId')
 		if (pendingId) {

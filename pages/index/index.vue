@@ -106,7 +106,7 @@
 		<view class="tabbar-placeholder"></view>
 
 		<!-- 底部导航 -->
-		<TabBar :current="0" />
+		<TabBar />
 	</view>
 </template>
 
@@ -170,6 +170,11 @@ export default {
 	},
 	onLoad() {
 		this.getStatusBarHeight()
+	},
+	onShow() {
+		// #ifdef APP-PLUS
+		uni.hideTabBar({ animation: false })
+		// #endif
 	},
 	methods: {
 		getStatusBarHeight() {

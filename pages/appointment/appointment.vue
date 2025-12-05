@@ -114,7 +114,7 @@
 		</scroll-view>
 
 		<!-- 底部导航 -->
-		<TabBar :current="1" />
+		<TabBar />
 	</view>
 </template>
 
@@ -147,6 +147,11 @@ export default {
 	onLoad() {
 		this.getStatusBarHeight()
 		this.loadHospitals()
+	},
+	onShow() {
+		// #ifdef APP-PLUS
+		uni.hideTabBar({ animation: false })
+		// #endif
 	},
 	methods: {
 		getStatusBarHeight() {
