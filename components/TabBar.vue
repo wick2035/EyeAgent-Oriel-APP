@@ -25,6 +25,10 @@
 				<!-- 普通图标 -->
 				<view v-else class="tabbar__icon">
 					<view class="icon" :class="[`icon--${item.icon}`, { 'icon--active': currentIndex === index }]"></view>
+					<!-- 消息未读角标 -->
+					<view v-if="index === 3 && messageUnreadText" class="tabbar__badge">
+						{{ messageUnreadText }}
+					</view>
 				</view>
 				<text class="tabbar__label" :class="{ 'tabbar__label--active': currentIndex === index }">
 					{{ item.text }}
@@ -40,6 +44,7 @@
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
+import { getUnreadCount } from '@/store/notification.js'
 
 export default {
 	name: 'TabBar',
@@ -64,6 +69,17 @@ export default {
 	computed: {
 		isDark() {
 			return isDarkMode()
+		},
+		// 消息未读数量
+		messageUnreadCount() {
+			return getUnreadCount()
+		},
+		// 格式化未读数量显示
+		messageUnreadText() {
+			const count = this.messageUnreadCount
+			if (count <= 0) return ''
+			if (count > 99) return '99+'
+			return String(count)
 		}
 	},
 	watch: {
@@ -144,6 +160,23 @@ export default {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		position: relative;
+	}
+
+	&__badge {
+		position: absolute;
+		top: -8rpx;
+		right: -16rpx;
+		min-width: 32rpx;
+		height: 32rpx;
+		line-height: 32rpx;
+		padding: 0 8rpx;
+		background: #FF4D4F;
+		border-radius: 16rpx;
+		font-size: 20rpx;
+		color: #fff;
+		text-align: center;
+		font-weight: 500;
 	}
 
 	&__ai-wrapper {

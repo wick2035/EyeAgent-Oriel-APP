@@ -61,7 +61,7 @@
 						<view class="doctor-card__header">
 							<text class="doctor-card__name">{{ doctor.name }}</text>
 							<view class="doctor-card__title-tag">{{ doctor.title }}</view>
-							<view class="doctor-card__level-tag" :class="'doctor-card__level-tag--' + doctor.level">
+							<view class="doctor-card__level-tag" :class="doctor.level === '专家' ? 'doctor-card__level-tag--expert' : 'doctor-card__level-tag--normal'">
 								{{ doctor.level === '专家' ? '专家' : '普通' }}
 							</view>
 						</view>
@@ -415,12 +415,12 @@ export default {
 		padding: 4rpx 12rpx;
 		border-radius: $radius-xs;
 
-		&--专家 {
+		&--expert {
 			background: rgba(245, 158, 11, 0.1);
 			color: $color-warning;
 		}
 
-		&--普通 {
+		&--normal {
 			background: rgba(16, 185, 129, 0.1);
 			color: $color-success;
 		}
@@ -684,8 +684,8 @@ export default {
 		}
 
 		&__level-tag {
-			&--专家 { background: rgba(245, 158, 11, 0.15); }
-			&--普通 { background: rgba(16, 185, 129, 0.15); }
+			&--expert { background: rgba(245, 158, 11, 0.15); }
+			&--normal { background: rgba(16, 185, 129, 0.15); }
 		}
 
 		&__consult { color: $dark-text-muted; }

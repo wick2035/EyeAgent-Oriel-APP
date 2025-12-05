@@ -6,6 +6,9 @@
 		<!-- 顶部导航栏 -->
 		<view class="navbar">
 			<text class="navbar__title">消息</text>
+			<view v-if="hasUnread" class="navbar__action" @click="handleMarkAllRead">
+				<text class="navbar__action-text">全部已读</text>
+			</view>
 		</view>
 
 		<!-- 标签切换 -->
@@ -17,38 +20,59 @@
 				:class="{ 'tab-item--active': currentTab === index }"
 				@click="switchTab(index)"
 			>
-				<text class="tab-item__text">{{ tab }}</text>
+				<text class="tab-item__text">{{ tab.name }}</text>
+				<view v-if="tab.count > 0" class="tab-item__badge">{{ tab.count > 99 ? '99+' : tab.count }}</view>
 				<view v-if="currentTab === index" class="tab-item__indicator"></view>
 			</view>
 		</view>
 
 		<!-- 消息列表 -->
-		<scroll-view class="content" scroll-y>
-			<view v-if="filteredMessages.length === 0" class="empty">
+		<scroll-view
+			class="content"
+			scroll-y
+			:refresher-enabled="true"
+			:refresher-triggered="isRefreshing"
+			@refresherrefresh="onRefresh"
+			@scrolltolower="onLoadMore"
+		>
+			<view v-if="loading && messages.length === 0" class="loading">
+				<view class="loading__spinner"></view>
+				<text class="loading__text">加载中...</text>
+			</view>
+
+			<view v-else-if="messages.length === 0" class="empty">
 				<view class="empty__icon"></view>
 				<text class="empty__text">暂无消息</text>
 			</view>
 
 			<view v-else class="messages">
 				<view
-					v-for="(msg, index) in filteredMessages"
-					:key="index"
+					v-for="(msg, index) in messages"
+					:key="msg.id"
 					class="message-item"
 					@click="openMessage(msg)"
 				>
-					<view class="message-item__avatar" :class="[`message-item__avatar--${msg.type}`]">
-						<view v-if="msg.type === 'system'" class="avatar-icon avatar-icon--system"></view>
-						<view v-else-if="msg.type === 'consult'" class="avatar-icon avatar-icon--consult"></view>
-						<view v-else class="avatar-icon avatar-icon--notify"></view>
+					<view class="message-item__avatar" :class="[`message-item__avatar--${getTypeClass(msg.reminderType)}`]">
+						<view v-if="msg.reminderType === 'SYSTEM'" class="avatar-icon avatar-icon--system"></view>
+						<view v-else-if="msg.reminderType === 'RESERVE'" class="avatar-icon avatar-icon--reserve"></view>
+						<view v-else class="avatar-icon avatar-icon--medication"></view>
 					</view>
 					<view class="message-item__content">
 						<view class="message-item__header">
-							<text class="message-item__title">{{ msg.title }}</text>
-							<text class="message-item__time">{{ msg.time }}</text>
+							<text class="message-item__title">{{ msg.reminderTitle }}</text>
+							<text class="message-item__time">{{ formatTime(msg.sentTime) }}</text>
 						</view>
-						<text class="message-item__desc">{{ msg.desc }}</text>
+						<text class="message-item__desc">{{ msg.reminderContent }}</text>
 					</view>
-					<view v-if="msg.unread" class="message-item__badge"></view>
+					<view v-if="msg.status === 'UNREAD'" class="message-item__badge"></view>
+				</view>
+
+				<!-- 加载更多 -->
+				<view v-if="hasMore" class="load-more">
+					<text class="load-more__text">{{ loadingMore ? '加载中...' : '上拉加载更多' }}</text>
+				</view>
+				<view v-else-if="messages.length > 0" class="load-more">
+					<text class="load-more__text">没有更多了</text>
 				</view>
 			</view>
 
@@ -64,6 +88,17 @@
 <script>
 import TabBar from '@/components/TabBar.vue'
 import { isDarkMode } from '@/store/theme.js'
+import {
+	notificationState,
+	fetchUnreadNotifications,
+	markAsRead,
+	markAllAsRead,
+	getAllUnreadNotifications,
+	getUnreadByType,
+	getUnreadCount,
+	getUnreadCountByType
+} from '@/store/notification.js'
+import { getReadNotifications } from '@/utils/api/notification.js'
 
 export default {
 	components: {
@@ -73,76 +108,220 @@ export default {
 		return {
 			statusBarHeight: 44,
 			currentTab: 0,
-			tabs: ['全部', '系统通知', '问诊回复'],
-			messages: [
-				{
-					id: 1,
-					type: 'system',
-					title: '系统通知',
-					desc: '您的账号已完成实名认证，可以享受更多服务',
-					time: '今天 14:30',
-					unread: true
-				},
-				{
-					id: 2,
-					type: 'consult',
-					title: '问诊回复',
-					desc: '小Eye回复了您的问诊：根据您描述的症状，建议您...',
-					time: '今天 10:15',
-					unread: true
-				},
-				{
-					id: 3,
-					type: 'system',
-					title: '预约提醒',
-					desc: '您预约的张明华医生明天上午9:00有诊，请准时就诊',
-					time: '昨天 18:00',
-					unread: false
-				},
-				{
-					id: 4,
-					type: 'notify',
-					title: '健康提示',
-					desc: '根据您的健康数据分析，建议您增加每日饮水量',
-					time: '昨天 09:30',
-					unread: false
-				},
-				{
-					id: 5,
-					type: 'consult',
-					title: '问诊回复',
-					desc: '感谢您的咨询，您的问题已解答完毕，祝您身体健康',
-					time: '3天前',
-					unread: false
-				}
-			]
+			loading: false,
+			isRefreshing: false,
+			loadingMore: false,
+			// 已读消息分页
+			readMessages: [],
+			pageNum: 1,
+			pageSize: 10,
+			hasMore: true,
+			total: 0
 		}
 	},
 	computed: {
 		isDark() {
 			return isDarkMode()
 		},
-		filteredMessages() {
-			if (this.currentTab === 0) return this.messages
-			if (this.currentTab === 1) return this.messages.filter(m => m.type === 'system' || m.type === 'notify')
-			if (this.currentTab === 2) return this.messages.filter(m => m.type === 'consult')
-			return this.messages
+		tabs() {
+			return [
+				{ name: '全部', type: null, count: getUnreadCount() },
+				{ name: '系统通知', type: 'SYSTEM', count: getUnreadCountByType('SYSTEM') },
+				{ name: '预约提醒', type: 'RESERVE', count: getUnreadCountByType('RESERVE') },
+				{ name: '用药提醒', type: 'MEDICATION', count: getUnreadCountByType('MEDICATION') }
+			]
+		},
+		hasUnread() {
+			return getUnreadCount() > 0
+		},
+		// 根据当前标签获取消息列表
+		messages() {
+			const tab = this.tabs[this.currentTab]
+			let unreadList = []
+
+			if (tab.type === null) {
+				// 全部
+				unreadList = getAllUnreadNotifications()
+			} else {
+				unreadList = getUnreadByType(tab.type)
+			}
+
+			// 合并已读消息
+			const filteredRead = tab.type === null
+				? this.readMessages
+				: this.readMessages.filter(m => m.reminderType === tab.type)
+
+			return [...unreadList, ...filteredRead]
 		}
 	},
 	onLoad() {
 		this.getStatusBarHeight()
+		this.loadData()
+	},
+	onShow() {
+		// 页面显示时刷新数据
+		this.refreshUnread()
 	},
 	methods: {
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
 		},
-		switchTab(index) {
-			this.currentTab = index
+
+		// 加载数据
+		async loadData() {
+			this.loading = true
+			try {
+				await this.refreshUnread()
+			} finally {
+				this.loading = false
+			}
 		},
-		openMessage(msg) {
-			msg.unread = false
-			uni.showToast({ title: '消息详情开发中', icon: 'none' })
+
+		// 刷新未读通知
+		async refreshUnread() {
+			await fetchUnreadNotifications()
+		},
+
+		// 下拉刷新
+		async onRefresh() {
+			this.isRefreshing = true
+			try {
+				await this.refreshUnread()
+				// 重置已读分页
+				this.pageNum = 1
+				this.readMessages = []
+				this.hasMore = true
+			} finally {
+				this.isRefreshing = false
+			}
+		},
+
+		// 加载更多已读消息
+		async onLoadMore() {
+			if (this.loadingMore || !this.hasMore) return
+
+			const tab = this.tabs[this.currentTab]
+			// 只有选择了具体类型时才加载已读消息
+			if (tab.type === null) {
+				this.hasMore = false
+				return
+			}
+
+			this.loadingMore = true
+			try {
+				const res = await getReadNotifications(tab.type, this.pageNum, this.pageSize)
+				if (res.code === 200) {
+					const list = res.data || []
+					this.readMessages = [...this.readMessages, ...list]
+					this.total = res.total || 0
+					this.hasMore = this.readMessages.length < this.total
+					if (list.length > 0) {
+						this.pageNum++
+					}
+				}
+			} catch (err) {
+				console.error('加载已读消息失败:', err)
+			} finally {
+				this.loadingMore = false
+			}
+		},
+
+		switchTab(index) {
+			if (this.currentTab === index) return
+			this.currentTab = index
+			// 切换标签时重置已读分页
+			this.pageNum = 1
+			this.readMessages = []
+			this.hasMore = true
+		},
+
+		// 点击消息
+		async openMessage(msg) {
+			// 如果是未读，标记为已读
+			if (msg.status === 'UNREAD') {
+				const success = await markAsRead(msg.id)
+				if (success) {
+					msg.status = 'READ'
+				}
+			}
+
+			// 根据消息类型跳转
+			if (msg.reminderType === 'RESERVE' && msg.appointmentId) {
+				// 跳转到预约详情
+				uni.navigateTo({
+					url: `/pages/profile/medical-records?appointmentId=${msg.appointmentId}`
+				})
+			} else if (msg.reminderType === 'MEDICATION' && msg.prescriptionId) {
+				// 跳转到处方详情
+				uni.navigateTo({
+					url: `/pages/profile/medical-records?prescriptionId=${msg.prescriptionId}`
+				})
+			} else {
+				// 显示消息详情弹窗
+				uni.showModal({
+					title: msg.reminderTitle,
+					content: msg.reminderContent,
+					showCancel: false,
+					confirmText: '知道了'
+				})
+			}
+		},
+
+		// 全部标记已读
+		async handleMarkAllRead() {
+			uni.showLoading({ title: '处理中...' })
+			try {
+				const success = await markAllAsRead()
+				if (success) {
+					uni.showToast({ title: '已全部标记为已读', icon: 'success' })
+				}
+			} finally {
+				uni.hideLoading()
+			}
+		},
+
+		// 获取类型对应的CSS类
+		getTypeClass(type) {
+			const map = {
+				'SYSTEM': 'system',
+				'RESERVE': 'reserve',
+				'MEDICATION': 'medication'
+			}
+			return map[type] || 'system'
+		},
+
+		// 格式化时间
+		formatTime(timeStr) {
+			if (!timeStr) return ''
+
+			const date = new Date(timeStr)
+			const now = new Date()
+			const diff = now - date
+
+			// 今天
+			if (date.toDateString() === now.toDateString()) {
+				return `今天 ${this.padZero(date.getHours())}:${this.padZero(date.getMinutes())}`
+			}
+
+			// 昨天
+			const yesterday = new Date(now)
+			yesterday.setDate(yesterday.getDate() - 1)
+			if (date.toDateString() === yesterday.toDateString()) {
+				return `昨天 ${this.padZero(date.getHours())}:${this.padZero(date.getMinutes())}`
+			}
+
+			// 7天内
+			if (diff < 7 * 24 * 60 * 60 * 1000) {
+				return `${Math.floor(diff / (24 * 60 * 60 * 1000))}天前`
+			}
+
+			// 更早
+			return `${date.getMonth() + 1}/${date.getDate()}`
+		},
+
+		padZero(num) {
+			return num < 10 ? '0' + num : num
 		}
 	}
 }
@@ -171,11 +350,23 @@ export default {
 	height: 88rpx;
 	padding: 0 $spacing-lg;
 	flex-shrink: 0;
+	position: relative;
 
 	&__title {
 		font-size: $font-size-lg;
 		font-weight: $font-weight-semibold;
 		color: $text-primary;
+	}
+
+	&__action {
+		position: absolute;
+		right: $spacing-lg;
+		padding: $spacing-xs $spacing-md;
+	}
+
+	&__action-text {
+		font-size: $font-size-sm;
+		color: $color-primary;
 	}
 }
 
@@ -188,13 +379,28 @@ export default {
 
 .tab-item {
 	position: relative;
-	padding: $spacing-sm $spacing-lg;
-	margin-right: $spacing-lg;
+	padding: $spacing-sm $spacing-md;
+	margin-right: $spacing-md;
+	display: flex;
+	align-items: center;
 
 	&__text {
 		font-size: $font-size-base;
 		color: $text-secondary;
 		transition: color 0.25s ease;
+	}
+
+	&__badge {
+		min-width: 32rpx;
+		height: 32rpx;
+		line-height: 32rpx;
+		padding: 0 8rpx;
+		margin-left: 8rpx;
+		background: $color-accent;
+		border-radius: 16rpx;
+		font-size: 20rpx;
+		color: #fff;
+		text-align: center;
 	}
 
 	&--active .tab-item__text {
@@ -217,6 +423,33 @@ export default {
 .content {
 	flex: 1;
 	overflow: hidden;
+}
+
+.loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: $spacing-2xl;
+
+	&__spinner {
+		width: 60rpx;
+		height: 60rpx;
+		border: 4rpx solid $border-color-light;
+		border-top-color: $color-primary;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		margin-bottom: $spacing-md;
+	}
+
+	&__text {
+		font-size: $font-size-sm;
+		color: $text-muted;
+	}
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
 }
 
 .empty {
@@ -280,10 +513,10 @@ export default {
 		&--system {
 			background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.2) 100%);
 		}
-		&--consult {
-			background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(240, 147, 251, 0.1) 100%);
+		&--reserve {
+			background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.2) 100%);
 		}
-		&--notify {
+		&--medication {
 			background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.2) 100%);
 		}
 	}
@@ -365,47 +598,73 @@ export default {
 		}
 	}
 
-	&--consult {
+	&--reserve {
+		width: 44rpx;
+		height: 44rpx;
+		border: 3rpx solid $color-success;
+		border-radius: 6rpx;
+
 		&::before {
 			content: '';
 			position: absolute;
-			top: 0;
-			left: 50%;
-			transform: translateX(-50%);
-			width: 8rpx;
-			height: 40rpx;
-			background: linear-gradient(180deg, #667EEA 0%, #F093FB 100%);
-			border-radius: 4rpx;
+			top: 12rpx;
+			left: 0;
+			right: 0;
+			height: 2rpx;
+			background: $color-success;
 		}
+
 		&::after {
 			content: '';
 			position: absolute;
-			top: 50%;
-			left: 0;
-			transform: translateY(-50%);
-			width: 40rpx;
+			top: 20rpx;
+			left: 8rpx;
+			width: 8rpx;
 			height: 8rpx;
-			background: linear-gradient(90deg, #667EEA 0%, #F093FB 100%);
-			border-radius: 4rpx;
+			background: $color-success;
+			border-radius: 2rpx;
 		}
 	}
 
-	&--notify {
+	&--medication {
+		width: 36rpx;
+		height: 44rpx;
 		border: 3rpx solid $color-warning;
-		border-radius: 20rpx 20rpx 6rpx 6rpx;
-		height: 36rpx;
+		border-radius: 8rpx 8rpx 4rpx 4rpx;
+		position: relative;
 
-		&::after {
+		&::before {
 			content: '';
 			position: absolute;
-			bottom: -8rpx;
+			top: -6rpx;
 			left: 50%;
 			transform: translateX(-50%);
-			width: 12rpx;
+			width: 16rpx;
 			height: 6rpx;
 			background: $color-warning;
-			border-radius: 0 0 6rpx 6rpx;
+			border-radius: 3rpx 3rpx 0 0;
 		}
+
+		&::after {
+			content: '+';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 24rpx;
+			color: $color-warning;
+			font-weight: bold;
+		}
+	}
+}
+
+.load-more {
+	padding: $spacing-lg;
+	text-align: center;
+
+	&__text {
+		font-size: $font-size-sm;
+		color: $text-muted;
 	}
 }
 
@@ -416,11 +675,15 @@ export default {
 // 深色模式
 .page--dark {
 	.navbar__title { color: $dark-text-primary; }
+	.navbar__action-text { color: $dark-color-primary; }
 
 	.tabs { border-bottom-color: $dark-border-color; }
 	.tab-item__text { color: $dark-text-secondary; }
 	.tab-item--active .tab-item__text { color: $dark-color-primary; }
 	.tab-item__indicator { background: $dark-color-primary; }
+
+	.loading__spinner { border-color: $dark-border-color; border-top-color: $dark-color-primary; }
+	.loading__text { color: $dark-text-muted; }
 
 	.empty__icon { background: $dark-bg-elevated; }
 	.empty__icon::before { border-color: $dark-text-muted; }
@@ -432,5 +695,7 @@ export default {
 		&__time { color: $dark-text-muted; }
 		&__desc { color: $dark-text-secondary; }
 	}
+
+	.load-more__text { color: $dark-text-muted; }
 }
 </style>
