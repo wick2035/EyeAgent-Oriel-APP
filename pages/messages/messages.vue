@@ -81,7 +81,7 @@
 		</scroll-view>
 
 		<!-- 底部导航 -->
-		<TabBar :current="3" />
+		<TabBar />
 	</view>
 </template>
 
@@ -159,6 +159,9 @@ export default {
 		this.loadData()
 	},
 	onShow() {
+		// #ifdef APP-PLUS
+		uni.hideTabBar({ animation: false })
+		// #endif
 		// 页面显示时刷新数据
 		this.refreshUnread()
 	},

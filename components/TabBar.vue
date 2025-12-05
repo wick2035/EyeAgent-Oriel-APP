@@ -48,15 +48,9 @@ import { getUnreadCount } from '@/store/notification.js'
 
 export default {
 	name: 'TabBar',
-	props: {
-		current: {
-			type: Number,
-			default: 0
-		}
-	},
 	data() {
 		return {
-			currentIndex: this.current,
+			currentIndex: 0,
 			tabs: [
 				{ icon: 'home', text: '首页', path: '/pages/index/index' },
 				{ icon: 'calendar', text: '预约', path: '/pages/appointment/appointment' },
@@ -82,15 +76,26 @@ export default {
 			return String(count)
 		}
 	},
-	watch: {
-		current(val) {
-			this.currentIndex = val
-		}
+	mounted() {
+		// 根据当前页面路由自动计算索引
+		this.updateCurrentIndex()
 	},
 	methods: {
+		// 根据当前路由更新索引
+		updateCurrentIndex() {
+			const pages = getCurrentPages()
+			if (pages.length > 0) {
+				const currentPage = pages[pages.length - 1]
+				const route = '/' + currentPage.route
+				const index = this.tabs.findIndex(tab => tab.path === route)
+				if (index !== -1) {
+					this.currentIndex = index
+				}
+			}
+		},
 		switchTab(index) {
 			if (this.currentIndex === index) return
-			this.currentIndex = index
+			// 不预先更新 currentIndex，完全依赖新页面 mounted 时的路由推导
 			uni.switchTab({
 				url: this.tabs[index].path
 			})
