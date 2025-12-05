@@ -5,6 +5,8 @@
 
 import { reactive } from 'vue'
 import config from '@/utils/config.js'
+import { disconnect as disconnectWebSocket } from '@/utils/websocket.js'
+import { clearNotificationState } from '@/store/notification.js'
 
 // 用户状态
 const userState = reactive({
@@ -68,6 +70,12 @@ export function setLoginState(token, userInfo) {
  * 清除登录状态（登出）
  */
 export function clearLoginState() {
+	// 断开WebSocket连接
+	disconnectWebSocket()
+
+	// 清除通知状态
+	clearNotificationState()
+
 	userState.token = ''
 	userState.isLoggedIn = false
 	userState.userInfo = {

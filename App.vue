@@ -1,17 +1,26 @@
 <script>
 	import { initTheme } from '@/store/theme.js'
 	import { initUserState, isLoggedIn } from '@/store/user.js'
+	import { connect as connectWebSocket, disconnect as disconnectWebSocket } from '@/utils/websocket.js'
+	import { fetchUnreadNotifications } from '@/store/notification.js'
 
 	export default {
 		onLaunch: function() {
 			console.log('AI医问通 启动')
+			// #ifdef APP-PLUS
+			// 隐藏原生 tabBar（仅 App 端需要）
+			uni.hideTabBar()
+			// #endif
 			// 初始化主题
 			initTheme()
 			// 初始化用户状态
 			initUserState()
 
-			// 检查登录状态，已登录则跳转首页
+			// 检查登录状态
 			if (isLoggedIn()) {
+				// 已登录，初始化通知服务
+				this.initNotificationService()
+
 				uni.switchTab({
 					url: '/pages/index/index'
 				})
@@ -19,9 +28,26 @@
 		},
 		onShow: function() {
 			console.log('App Show')
+			// App恢复前台时，检查登录状态并重连WebSocket
+			if (isLoggedIn()) {
+				connectWebSocket()
+				// 刷新未读通知
+				fetchUnreadNotifications()
+			}
 		},
 		onHide: function() {
 			console.log('App Hide')
+			// App进入后台时，断开WebSocket连接
+			disconnectWebSocket()
+		},
+		methods: {
+			// 初始化通知服务
+			initNotificationService() {
+				// 建立WebSocket连接
+				connectWebSocket()
+				// 获取未读通知
+				fetchUnreadNotifications()
+			}
 		}
 	}
 </script>
