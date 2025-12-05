@@ -452,6 +452,15 @@ export function destroy() {
 	}
 }
 
+/**
+ * 测试通知功能（供调试使用）
+ * 模拟收到一条通知，验证弹窗和音效是否正常
+ */
+export function handleTestNotification(notification) {
+	console.log('=== 测试通知触发 ===')
+	handleNotification(notification)
+}
+
 export default {
 	connect,
 	disconnect,
@@ -462,5 +471,6 @@ export default {
 	getMuted,
 	destroy,
 	setNotificationBarReady,
+	handleTestNotification,
 	WS_STATUS
 }
