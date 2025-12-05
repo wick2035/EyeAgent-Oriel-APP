@@ -50,6 +50,13 @@
 			}
 		},
 		{
+			"path": "pages/chat-history/chat-history",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "历史记录"
+			}
+		},
+		{
 			"path": "pages/messages/messages",
 			"style": {
 				"navigationStyle": "custom",

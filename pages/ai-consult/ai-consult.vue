@@ -75,14 +75,21 @@
 
 			<!-- 对话消息列表 -->
 			<view v-else class="messages">
-				<MessageBubble
-					v-for="(msg, index) in messages"
-					:key="index"
-					:type="msg.type"
-					:content="msg.content"
-					:time="msg.time"
-					:loading="msg.loading"
-				/>
+				<template v-for="(msg, index) in messages" :key="index">
+					<!-- 年份分隔符 -->
+					<view v-if="showYearDivider(index)" class="year-divider">
+						<view class="year-divider__line"></view>
+						<text class="year-divider__text">{{ getMessageYear(index) }}年</text>
+						<view class="year-divider__line"></view>
+					</view>
+					<!-- 消息气泡 -->
+					<MessageBubble
+						:type="msg.type"
+						:content="msg.content"
+						:time="msg.time"
+						:loading="msg.loading"
+					/>
+				</template>
 			</view>
 
 			<!-- 底部占位 -->
@@ -101,6 +108,17 @@
 
 		<!-- 底部导航 -->
 		<TabBar :current="2" />
+
+		<!-- 退出确认弹窗 -->
+		<ConfirmDialog
+			ref="exitDialog"
+			title="结束当前对话？"
+			content="对话内容将被清空"
+			confirmText="结束"
+			cancelText="取消"
+			icon="warning"
+			@confirm="handleExitConfirm"
+		/>
 	</view>
 </template>
 
@@ -109,15 +127,17 @@ import TabBar from '@/components/TabBar.vue'
 import ChatInput from '@/components/ChatInput.vue'
 import QuickPrompt from '@/components/QuickPrompt.vue'
 import MessageBubble from '@/components/MessageBubble.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { isDarkMode } from '@/store/theme.js'
-import { sendMessage, getQuickPrompts, refreshQuickPrompts } from '@/utils/api/chat.js'
+import { sendMessage, getQuickPrompts, refreshQuickPrompts, getMessages } from '@/utils/api/chat.js'
 
 export default {
 	components: {
 		TabBar,
 		ChatInput,
 		QuickPrompt,
-		MessageBubble
+		MessageBubble,
+		ConfirmDialog
 	},
 	data() {
 		return {
@@ -144,9 +164,22 @@ export default {
 			return this.messages.length > 0
 		}
 	},
-	onLoad() {
+	onLoad(options) {
 		this.getStatusBarHeight()
 		this.loadPrompts()
+
+		// 如果带有conversationId参数，加载历史消息（续聊）
+		if (options && options.conversationId) {
+			this.loadHistoryMessages(options.conversationId)
+		}
+	},
+	onShow() {
+		// 检查是否有从历史记录页面传来的会话ID（tabBar 页面通过存储传参）
+		const pendingId = uni.getStorageSync('pendingConversationId')
+		if (pendingId) {
+			uni.removeStorageSync('pendingConversationId')
+			this.loadHistoryMessages(pendingId)
+		}
 	},
 	methods: {
 		getStatusBarHeight() {
@@ -155,21 +188,9 @@ export default {
 		},
 
 		goBack() {
-			// 如果有对话消息，返回AI默认对话页面（清空消息）
 			if (this.hasMessages) {
-				uni.showModal({
-					title: '提示',
-					content: '确定要结束当前对话吗？',
-					confirmText: '确定',
-					cancelText: '取消',
-					success: (res) => {
-						if (res.confirm) {
-							this.messages = []
-							this.conversationId = null
-							this.scrollTop = 0
-						}
-					}
-				})
+				// 显示自定义确认弹窗
+				this.$refs.exitDialog.show()
 			} else {
 				// 没有对话消息，返回首页
 				uni.switchTab({
@@ -178,8 +199,46 @@ export default {
 			}
 		},
 
+		handleExitConfirm() {
+			// 清空对话
+			this.messages = []
+			this.conversationId = null
+			this.scrollTop = 0
+		},
+
 		showHistory() {
-			uni.showToast({ title: '历史记录开发中', icon: 'none' })
+			uni.navigateTo({
+				url: '/pages/chat-history/chat-history'
+			})
+		},
+
+		async loadHistoryMessages(conversationId) {
+			try {
+				uni.showLoading({ title: '加载中...' })
+				const { messages, conversation } = await getMessages(conversationId)
+
+				// 保存会话ID
+				this.conversationId = conversationId
+
+				// 转换消息格式并加载到界面
+				this.messages = messages.map(msg => ({
+					type: msg.messageType === 'user' ? 'user' : 'ai',
+					content: msg.messageContent,
+					time: this.extractTime(msg.createTime),
+					createTime: msg.createTime,  // 保存原始时间用于年份分隔符
+					loading: false
+				}))
+
+				// 滚动到底部
+				this.$nextTick(() => {
+					this.scrollToBottom()
+				})
+			} catch (e) {
+				console.error('加载历史消息失败:', e)
+				uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+			} finally {
+				uni.hideLoading()
+			}
 		},
 
 		async loadPrompts() {
@@ -217,11 +276,15 @@ export default {
 		async handleSend(message) {
 			if (!message || this.isSending) return
 
+			const now = new Date()
+			const createTime = this.formatDateTime(now)
+
 			// 添加用户消息
 			this.messages.push({
 				type: 'user',
 				content: message,
-				time: this.formatTime(new Date())
+				time: this.formatTime(now),
+				createTime: createTime
 			})
 
 			// 滚动到底部
@@ -246,10 +309,12 @@ export default {
 
 				// 更新AI消息
 				const lastIndex = this.messages.length - 1
+				const aiNow = new Date()
 				this.messages[lastIndex] = {
 					type: 'ai',
 					content: response.response,
-					time: this.formatTime(new Date()),
+					time: this.formatTime(aiNow),
+					createTime: this.formatDateTime(aiNow),
 					loading: false
 				}
 
@@ -260,10 +325,12 @@ export default {
 			} catch (error) {
 				// 显示错误消息
 				const lastIndex = this.messages.length - 1
+				const errNow = new Date()
 				this.messages[lastIndex] = {
 					type: 'ai',
 					content: '抱歉，网络出现问题，请稍后再试。',
-					time: this.formatTime(new Date()),
+					time: this.formatTime(errNow),
+					createTime: this.formatDateTime(errNow),
 					loading: false
 				}
 			} finally {
@@ -297,12 +364,74 @@ export default {
 			return `${hours}:${minutes}`
 		},
 
+		// 生成标准时间字符串 "YYYY-MM-DD HH:mm:ss"
+		formatDateTime(date) {
+			const year = date.getFullYear()
+			const month = (date.getMonth() + 1).toString().padStart(2, '0')
+			const day = date.getDate().toString().padStart(2, '0')
+			const hours = date.getHours().toString().padStart(2, '0')
+			const minutes = date.getMinutes().toString().padStart(2, '0')
+			const seconds = date.getSeconds().toString().padStart(2, '0')
+			return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+		},
+
+		extractTime(timeStr) {
+			if (!timeStr) return ''
+
+			// 解析日期
+			const date = new Date(timeStr.replace(/-/g, '/'))
+			const now = new Date()
+
+			// 提取时间部分
+			const time = timeStr.substring(11, 16) || ''
+
+			// 检查 Date 是否有效
+			if (isNaN(date.getTime())) {
+				return time
+			}
+
+			// 今天：只显示时间
+			if (date.toDateString() === now.toDateString()) {
+				return time
+			}
+
+			// 非今天：显示 "M月D日 HH:mm"
+			const month = date.getMonth() + 1
+			const day = date.getDate()
+			return `${month}月${day}日 ${time}`
+		},
+
 		scrollToBottom() {
 			this.scrollTop = this.scrollTop === 99999 ? 100000 : 99999
 		},
 
 		onScrollToLower() {
 			// 可以在这里加载更多历史消息
+		},
+
+		// 判断是否需要显示年份分隔符
+		showYearDivider(index) {
+			const msg = this.messages[index]
+			if (!msg.createTime) return false
+
+			const msgYear = this.getMessageYear(index)
+			const currentYear = new Date().getFullYear()
+
+			if (index === 0) {
+				// 第一条消息：如果不是今年，显示年份
+				return msgYear !== currentYear
+			}
+
+			// 当前消息和上一条消息年份不同时显示
+			const prevYear = this.getMessageYear(index - 1)
+			return msgYear !== prevYear
+		},
+
+		// 获取消息的年份
+		getMessageYear(index) {
+			const msg = this.messages[index]
+			if (!msg.createTime) return new Date().getFullYear()
+			return parseInt(msg.createTime.substring(0, 4))
 		}
 	}
 }
@@ -549,6 +678,27 @@ export default {
 	padding: $spacing-md 0;
 }
 
+// 年份分隔符
+.year-divider {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: $spacing-lg $spacing-xl;
+
+	&__line {
+		flex: 1;
+		height: 1rpx;
+		background: $border-color-light;
+		max-width: 120rpx;
+	}
+
+	&__text {
+		padding: 0 $spacing-md;
+		font-size: $font-size-xs;
+		color: $text-muted;
+	}
+}
+
 // 深色模式
 .page--dark {
 	.navbar__title { color: $dark-text-primary; }
@@ -571,6 +721,9 @@ export default {
 	.prompts__title { color: $dark-text-secondary; }
 	.prompts__refresh-text { color: $dark-color-primary; }
 	.refresh-icon { border-color: $dark-color-primary; border-right-color: transparent; }
+
+	.year-divider__line { background: $dark-border-color; }
+	.year-divider__text { color: $dark-text-muted; }
 }
 
 @keyframes ai-rotate {
