@@ -148,6 +148,15 @@ export default {
 		},
 		handleMenu(item) {
 			if (item.type === 'switch') return
+
+			// 就诊记录跳转
+			if (item.icon === 'record') {
+				uni.navigateTo({
+					url: '/pages/profile/medical-records'
+				})
+				return
+			}
+
 			uni.showToast({ title: `${item.title}开发中`, icon: 'none' })
 		},
 		toggleTheme(e) {
