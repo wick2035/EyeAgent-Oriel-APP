@@ -18,7 +18,28 @@
 			"path": "pages/appointment/appointment",
 			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText": "预约"
+				"navigationBarTitleText": "预约挂号"
+			}
+		},
+		{
+			"path": "pages/appointment/departments",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "选择科室"
+			}
+		},
+		{
+			"path": "pages/appointment/doctors",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "选择医生"
+			}
+		},
+		{
+			"path": "pages/appointment/doctor-detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "预约挂号"
 			}
 		},
 		{
@@ -40,6 +61,20 @@
 			"style": {
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "我的"
+			}
+		},
+		{
+			"path": "pages/profile/medical-records",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "就诊记录"
+			}
+		},
+		{
+			"path": "pages/profile/pdf-viewer",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "查看文档"
 			}
 		},
 		{

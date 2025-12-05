@@ -4,11 +4,15 @@
 import request from './request.js'
 import chat from './chat.js'
 import * as user from './user.js'
+import * as appointment from './appointment.js'
+import * as medical from './medical.js'
 
-export { request, chat, user }
+export { request, chat, user, appointment, medical }
 
 export default {
 	request,
 	chat,
-	user
+	user,
+	appointment,
+	medical
 }

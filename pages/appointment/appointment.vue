@@ -1,5 +1,8 @@
 <template>
 	<view class="page" :class="{ 'page--dark': isDark }">
+		<!-- 顶部渐变背景 -->
+		<view class="page-bg"></view>
+
 		<!-- 状态栏占位 -->
 		<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
 
@@ -8,51 +11,100 @@
 			<text class="navbar__title">预约挂号</text>
 		</view>
 
-		<!-- 科室分类 -->
-		<scroll-view class="departments" scroll-x show-scrollbar="false">
-			<view
-				v-for="(dept, index) in departments"
-				:key="index"
-				class="department-tag"
-				:class="{ 'department-tag--active': currentDept === index }"
-				@click="selectDept(index)"
-			>
-				{{ dept }}
+		<!-- 搜索栏 -->
+		<view class="search-section">
+			<view class="search-bar">
+				<view class="search-bar__icon"></view>
+				<input
+					class="search-bar__input"
+					placeholder="搜索医院、科室、医生"
+					placeholder-class="search-bar__placeholder"
+					v-model="searchKeyword"
+					@confirm="handleSearch"
+				/>
+				<view v-if="searchKeyword" class="search-bar__clear" @click="clearSearch"></view>
 			</view>
-		</scroll-view>
+		</view>
+
+		<!-- 城市定位 -->
+		<view class="location-bar">
+			<view class="location-bar__left">
+				<view class="location-bar__icon"></view>
+				<text class="location-bar__city">{{ currentCity }}</text>
+			</view>
+			<view class="location-bar__action" @click="switchCity">
+				<text>切换</text>
+				<view class="location-bar__arrow"></view>
+			</view>
+		</view>
 
 		<!-- 内容区域 -->
-		<scroll-view class="content" scroll-y>
-			<!-- 医生列表 -->
-			<view class="doctors">
-				<view
-					v-for="(doctor, index) in doctors"
-					:key="index"
-					class="doctor-card"
-					@click="selectDoctor(doctor)"
-				>
-					<view class="doctor-card__avatar">
-						<text class="doctor-card__avatar-text">{{ doctor.name.charAt(0) }}</text>
-					</view>
-					<view class="doctor-card__info">
-						<view class="doctor-card__header">
-							<text class="doctor-card__name">{{ doctor.name }}</text>
-							<text class="doctor-card__title">{{ doctor.title }}</text>
+		<scroll-view class="content" scroll-y @scrolltolower="loadMore">
+			<!-- 医院列表 -->
+			<view class="hospital-section">
+				<text class="section-title">附近医院</text>
+
+				<!-- 骨架屏 -->
+				<view v-if="loading" class="skeleton-list">
+					<view v-for="i in 3" :key="i" class="skeleton-card">
+						<view class="skeleton-avatar"></view>
+						<view class="skeleton-content">
+							<view class="skeleton-line skeleton-line--title"></view>
+							<view class="skeleton-line skeleton-line--short"></view>
+							<view class="skeleton-line skeleton-line--medium"></view>
 						</view>
-						<text class="doctor-card__dept">{{ doctor.department }}</text>
-						<text class="doctor-card__intro">{{ doctor.intro }}</text>
-						<view class="doctor-card__footer">
-							<view class="doctor-card__rating">
-								<view class="star-icon"></view>
-								<text class="doctor-card__rating-value">{{ doctor.rating }}</text>
+					</view>
+				</view>
+
+				<!-- 医院卡片列表 -->
+				<view v-else class="hospital-list">
+					<view
+						v-for="hospital in hospitals"
+						:key="hospital.id"
+						class="hospital-card"
+						@click="goToDepartments(hospital)"
+					>
+						<!-- 医院Logo -->
+						<view class="hospital-card__logo">
+							<text class="hospital-card__logo-text">{{ hospital.name.charAt(0) }}</text>
+						</view>
+
+						<!-- 医院信息 -->
+						<view class="hospital-card__info">
+							<view class="hospital-card__header">
+								<text class="hospital-card__name">{{ hospital.name }}</text>
+								<view class="hospital-card__rating">
+									<view class="star-icon"></view>
+									<text class="hospital-card__rating-value">{{ hospital.rating }}</text>
+								</view>
 							</view>
-							<text class="doctor-card__count">{{ doctor.consultCount }}人已咨询</text>
+
+							<view class="hospital-card__meta">
+								<view class="hospital-card__tag hospital-card__tag--level">{{ hospital.level }}</view>
+								<view class="hospital-card__tag hospital-card__tag--type">{{ hospital.type }}</view>
+								<text class="hospital-card__distance">{{ formatDistance(hospital.distance) }}</text>
+							</view>
+
+							<view class="hospital-card__tags">
+								<text v-for="(tag, idx) in hospital.tags.slice(0, 3)" :key="idx" class="hospital-card__label">{{ tag }}</text>
+							</view>
+
+							<text class="hospital-card__address">{{ hospital.address }}</text>
+						</view>
+
+						<!-- 预约按钮 -->
+						<view class="hospital-card__action">
+							<view class="hospital-card__btn" :class="{ 'hospital-card__btn--disabled': !hospital.isOpen }">
+								{{ hospital.isOpen ? '预约' : '暂停' }}
+							</view>
+							<text class="hospital-card__time">{{ hospital.openTime }}</text>
 						</view>
 					</view>
-					<view class="doctor-card__action">
-						<view class="doctor-card__btn" :class="{ 'doctor-card__btn--disabled': !doctor.available }">
-							{{ doctor.available ? '预约' : '约满' }}
-						</view>
+
+					<!-- 空状态 -->
+					<view v-if="hospitals.length === 0 && !loading" class="empty-state">
+						<view class="empty-state__icon"></view>
+						<text class="empty-state__text">暂无医院数据</text>
 					</view>
 				</view>
 			</view>
@@ -69,6 +121,7 @@
 <script>
 import TabBar from '@/components/TabBar.vue'
 import { isDarkMode } from '@/store/theme.js'
+import { getHospitalList } from '@/utils/api/appointment.js'
 
 export default {
 	components: {
@@ -77,60 +130,13 @@ export default {
 	data() {
 		return {
 			statusBarHeight: 44,
-			currentDept: 0,
-			departments: ['全部', '眼科', '内科', '外科', '皮肤科', '儿科', '妇科', '骨科', '神经科'],
-			doctors: [
-				{
-					id: 1,
-					name: '张明华',
-					title: '主任医师',
-					department: '眼科',
-					intro: '擅长白内障、青光眼、眼底病变等眼部疾病的诊断与治疗，从医30年经验丰富。',
-					rating: 4.9,
-					consultCount: 2847,
-					available: true
-				},
-				{
-					id: 2,
-					name: '李婷婷',
-					title: '副主任医师',
-					department: '眼科',
-					intro: '专注于近视防控、角膜塑形镜验配及干眼症治疗。',
-					rating: 4.8,
-					consultCount: 1562,
-					available: true
-				},
-				{
-					id: 3,
-					name: '王建国',
-					title: '主任医师',
-					department: '内科',
-					intro: '心血管内科专家，擅长高血压、冠心病、心律失常等疾病诊治。',
-					rating: 4.9,
-					consultCount: 3421,
-					available: false
-				},
-				{
-					id: 4,
-					name: '陈晓燕',
-					title: '副主任医师',
-					department: '皮肤科',
-					intro: '皮肤美容、过敏性皮肤病、痤疮等常见皮肤问题诊疗专家。',
-					rating: 4.7,
-					consultCount: 1893,
-					available: true
-				},
-				{
-					id: 5,
-					name: '刘伟强',
-					title: '主治医师',
-					department: '骨科',
-					intro: '运动损伤、关节疾病、脊柱退行性病变的微创治疗。',
-					rating: 4.6,
-					consultCount: 982,
-					available: true
-				}
-			]
+			searchKeyword: '',
+			currentCity: '深圳市',
+			loading: true,
+			hospitals: [],
+			page: 1,
+			pageSize: 10,
+			hasMore: true
 		}
 	},
 	computed: {
@@ -140,22 +146,69 @@ export default {
 	},
 	onLoad() {
 		this.getStatusBarHeight()
+		this.loadHospitals()
 	},
 	methods: {
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
 		},
-		selectDept(index) {
-			this.currentDept = index
-			// TODO: 根据科室筛选医生
+
+		async loadHospitals() {
+			this.loading = true
+			try {
+				const res = await getHospitalList({
+					keyword: this.searchKeyword,
+					city: this.currentCity,
+					page: this.page,
+					pageSize: this.pageSize
+				})
+				if (res.code === 200) {
+					this.hospitals = res.data.list || []
+				}
+			} catch (e) {
+				console.error('加载医院列表失败:', e)
+			} finally {
+				this.loading = false
+			}
 		},
-		selectDoctor(doctor) {
-			if (!doctor.available) {
-				uni.showToast({ title: '该医生暂无可预约时段', icon: 'none' })
+
+		handleSearch() {
+			this.page = 1
+			this.loadHospitals()
+		},
+
+		clearSearch() {
+			this.searchKeyword = ''
+			this.handleSearch()
+		},
+
+		switchCity() {
+			uni.showToast({ title: '城市选择开发中', icon: 'none' })
+		},
+
+		loadMore() {
+			if (this.hasMore && !this.loading) {
+				this.page++
+				this.loadHospitals()
+			}
+		},
+
+		formatDistance(meters) {
+			if (meters < 1000) {
+				return meters + 'm'
+			}
+			return (meters / 1000).toFixed(1) + 'km'
+		},
+
+		goToDepartments(hospital) {
+			if (!hospital.isOpen) {
+				uni.showToast({ title: '该医院暂停预约', icon: 'none' })
 				return
 			}
-			uni.showToast({ title: '预约详情页开发中', icon: 'none' })
+			uni.navigateTo({
+				url: `/pages/appointment/departments?hospitalId=${hospital.id}&hospitalName=${encodeURIComponent(hospital.name)}`
+			})
 		}
 	}
 }
@@ -167,14 +220,23 @@ export default {
 	background: $bg-base;
 	display: flex;
 	flex-direction: column;
+	position: relative;
+}
 
-	&--dark {
-		background: $dark-bg-base;
-	}
+.page-bg {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 400rpx;
+	background: linear-gradient(180deg, #E8F4FD 0%, $bg-base 100%);
+	pointer-events: none;
 }
 
 .status-bar {
 	flex-shrink: 0;
+	position: relative;
+	z-index: 1;
 }
 
 .navbar {
@@ -184,85 +246,271 @@ export default {
 	height: 88rpx;
 	padding: 0 $spacing-lg;
 	flex-shrink: 0;
+	position: relative;
+	z-index: 1;
 
 	&__title {
-		font-size: $font-size-lg;
-		font-weight: $font-weight-semibold;
+		font-size: $font-size-xl;
+		font-weight: $font-weight-bold;
+		color: $text-primary;
+		letter-spacing: 2rpx;
+	}
+}
+
+// 搜索栏
+.search-section {
+	padding: $spacing-md $spacing-lg;
+	position: relative;
+	z-index: 1;
+}
+
+.search-bar {
+	display: flex;
+	align-items: center;
+	height: 80rpx;
+	background: rgba(255, 255, 255, 0.9);
+	backdrop-filter: blur(10px);
+	border-radius: $radius-xl;
+	padding: 0 $spacing-lg;
+	box-shadow: $shadow-sm;
+
+	&__icon {
+		width: 36rpx;
+		height: 36rpx;
+		border: 4rpx solid $text-muted;
+		border-radius: 50%;
+		position: relative;
+		margin-right: $spacing-md;
+
+		&::after {
+			content: '';
+			position: absolute;
+			width: 12rpx;
+			height: 4rpx;
+			background: $text-muted;
+			border-radius: 2rpx;
+			bottom: -6rpx;
+			right: -6rpx;
+			transform: rotate(45deg);
+		}
+	}
+
+	&__input {
+		flex: 1;
+		font-size: $font-size-base;
 		color: $text-primary;
 	}
+
+	&__placeholder {
+		color: $text-muted;
+	}
+
+	&__clear {
+		width: 36rpx;
+		height: 36rpx;
+		background: $bg-elevated;
+		border-radius: 50%;
+		position: relative;
+
+		&::before, &::after {
+			content: '';
+			position: absolute;
+			width: 16rpx;
+			height: 3rpx;
+			background: $text-muted;
+			top: 50%;
+			left: 50%;
+			border-radius: 2rpx;
+		}
+		&::before { transform: translate(-50%, -50%) rotate(45deg); }
+		&::after { transform: translate(-50%, -50%) rotate(-45deg); }
+	}
 }
 
-.departments {
-	white-space: nowrap;
-	padding: $spacing-md $spacing-lg;
-	flex-shrink: 0;
-}
-
-.department-tag {
-	display: inline-block;
+// 定位栏
+.location-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 	padding: $spacing-sm $spacing-lg;
-	background: $bg-card;
-	border: 2rpx solid $border-color;
-	border-radius: $radius-full;
-	margin-right: $spacing-md;
-	font-size: $font-size-sm;
-	color: $text-secondary;
-	transition: all 0.25s ease;
+	position: relative;
+	z-index: 1;
 
-	&--active {
-		background: $color-primary;
-		border-color: $color-primary;
-		color: #fff;
+	&__left {
+		display: flex;
+		align-items: center;
 	}
 
-	&:active {
-		transform: scale(0.95);
+	&__icon {
+		width: 28rpx;
+		height: 36rpx;
+		position: relative;
+		margin-right: $spacing-sm;
+
+		&::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 24rpx;
+			height: 24rpx;
+			border: 4rpx solid $color-accent;
+			border-radius: 50% 50% 50% 0;
+			transform: translateX(-50%) rotate(-45deg);
+		}
+
+		&::after {
+			content: '';
+			position: absolute;
+			top: 6rpx;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 8rpx;
+			height: 8rpx;
+			background: $color-accent;
+			border-radius: 50%;
+		}
+	}
+
+	&__city {
+		font-size: $font-size-base;
+		font-weight: $font-weight-medium;
+		color: $text-primary;
+	}
+
+	&__action {
+		display: flex;
+		align-items: center;
+		color: $color-primary;
+		font-size: $font-size-sm;
+	}
+
+	&__arrow {
+		width: 16rpx;
+		height: 16rpx;
+		border-right: 3rpx solid $color-primary;
+		border-bottom: 3rpx solid $color-primary;
+		transform: rotate(-45deg);
+		margin-left: 8rpx;
 	}
 }
 
+// 内容区
 .content {
 	flex: 1;
 	overflow: hidden;
+	position: relative;
+	z-index: 1;
 }
 
-.doctors {
+.hospital-section {
 	padding: $spacing-md $spacing-lg;
 }
 
-.doctor-card {
+.section-title {
+	font-size: $font-size-lg;
+	font-weight: $font-weight-semibold;
+	color: $text-primary;
+	margin-bottom: $spacing-md;
+	display: block;
+}
+
+// 骨架屏
+.skeleton-list {
 	display: flex;
-	align-items: flex-start;
+	flex-direction: column;
+	gap: $spacing-md;
+}
+
+.skeleton-card {
+	display: flex;
+	padding: $spacing-lg;
+	background: $bg-card;
+	border-radius: $radius-lg;
+}
+
+.skeleton-avatar {
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: $radius-md;
+	background: linear-gradient(90deg, $bg-elevated 25%, $bg-card 50%, $bg-elevated 75%);
+	background-size: 200% 100%;
+	animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-content {
+	flex: 1;
+	margin-left: $spacing-md;
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-sm;
+}
+
+.skeleton-line {
+	height: 28rpx;
+	border-radius: $radius-xs;
+	background: linear-gradient(90deg, $bg-elevated 25%, $bg-card 50%, $bg-elevated 75%);
+	background-size: 200% 100%;
+	animation: skeleton-loading 1.5s infinite;
+
+	&--title { width: 60%; }
+	&--short { width: 40%; }
+	&--medium { width: 80%; }
+}
+
+@keyframes skeleton-loading {
+	0% { background-position: 200% 0; }
+	100% { background-position: -200% 0; }
+}
+
+// 医院卡片
+.hospital-list {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-md;
+}
+
+.hospital-card {
+	display: flex;
 	padding: $spacing-lg;
 	background: $bg-card;
 	border-radius: $radius-lg;
 	box-shadow: $shadow-sm;
-	margin-bottom: $spacing-md;
+	transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
 
-	&__avatar {
-		width: 100rpx;
-		height: 100rpx;
-		background: linear-gradient(135deg, $color-primary-light 0%, $color-primary 100%);
+	&:active {
+		transform: scale(0.98);
+	}
+
+	&__logo {
+		width: 120rpx;
+		height: 120rpx;
+		background: linear-gradient(135deg, #E8F4FD 0%, #D0E8F9 100%);
 		border-radius: $radius-md;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
+		border: 2rpx solid rgba(30, 58, 95, 0.08);
 	}
 
-	&__avatar-text {
-		font-size: $font-size-2xl;
-		color: #fff;
+	&__logo-text {
+		font-size: $font-size-3xl;
 		font-weight: $font-weight-bold;
+		color: $color-primary;
 	}
 
 	&__info {
 		flex: 1;
 		margin: 0 $spacing-md;
+		min-width: 0;
 	}
 
 	&__header {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		margin-bottom: $spacing-xs;
 	}
 
@@ -270,44 +518,16 @@ export default {
 		font-size: $font-size-lg;
 		font-weight: $font-weight-semibold;
 		color: $text-primary;
-		margin-right: $spacing-sm;
-	}
-
-	&__title {
-		font-size: $font-size-xs;
-		color: $color-primary;
-		background: rgba(30, 58, 95, 0.08);
-		padding: 4rpx 12rpx;
-		border-radius: $radius-xs;
-	}
-
-	&__dept {
-		font-size: $font-size-sm;
-		color: $text-secondary;
-		margin-bottom: $spacing-xs;
-		display: block;
-	}
-
-	&__intro {
-		font-size: $font-size-sm;
-		color: $text-muted;
-		line-height: $line-height-normal;
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
+		flex: 1;
 		overflow: hidden;
-		margin-bottom: $spacing-sm;
-	}
-
-	&__footer {
-		display: flex;
-		align-items: center;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	&__rating {
 		display: flex;
 		align-items: center;
-		margin-right: $spacing-md;
+		margin-left: $spacing-sm;
 	}
 
 	&__rating-value {
@@ -316,33 +536,90 @@ export default {
 		font-weight: $font-weight-semibold;
 	}
 
-	&__count {
+	&__meta {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: $spacing-xs;
+		margin-bottom: $spacing-xs;
+	}
+
+	&__tag {
 		font-size: $font-size-xs;
+		padding: 4rpx 12rpx;
+		border-radius: $radius-xs;
+
+		&--level {
+			background: rgba(16, 185, 129, 0.1);
+			color: $color-success;
+		}
+
+		&--type {
+			background: rgba(59, 130, 246, 0.1);
+			color: $color-info;
+		}
+	}
+
+	&__distance {
+		font-size: $font-size-sm;
+		color: $color-accent;
+		font-weight: $font-weight-medium;
+		margin-left: $spacing-xs;
+	}
+
+	&__tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: $spacing-xs;
+		margin-bottom: $spacing-xs;
+	}
+
+	&__label {
+		font-size: $font-size-xs;
+		color: $text-secondary;
+		background: $bg-elevated;
+		padding: 4rpx 12rpx;
+		border-radius: $radius-xs;
+	}
+
+	&__address {
+		font-size: $font-size-sm;
 		color: $text-muted;
+		display: block;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	&__action {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
 		flex-shrink: 0;
 	}
 
 	&__btn {
 		padding: $spacing-sm $spacing-lg;
-		background: $color-primary;
+		background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
 		color: #fff;
 		font-size: $font-size-sm;
-		border-radius: $radius-md;
 		font-weight: $font-weight-medium;
+		border-radius: $radius-md;
+		margin-bottom: $spacing-xs;
 
 		&--disabled {
 			background: $text-muted;
 		}
+	}
 
-		&:active {
-			opacity: 0.8;
-		}
+	&__time {
+		font-size: $font-size-xs;
+		color: $text-muted;
 	}
 }
 
+// 星星图标
 .star-icon {
 	width: 24rpx;
 	height: 24rpx;
@@ -376,41 +653,114 @@ export default {
 	}
 }
 
+// 空状态
+.empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: $spacing-2xl 0;
+
+	&__icon {
+		width: 120rpx;
+		height: 120rpx;
+		background: $bg-elevated;
+		border-radius: 50%;
+		margin-bottom: $spacing-md;
+	}
+
+	&__text {
+		font-size: $font-size-base;
+		color: $text-muted;
+	}
+}
+
 .tabbar-placeholder {
 	height: calc(140rpx + env(safe-area-inset-bottom));
 }
 
-// 深色模式
+// ========== 深色模式 ==========
 .page--dark {
+	background: $dark-bg-base;
+
+	.page-bg {
+		background: linear-gradient(180deg, rgba(74, 144, 217, 0.1) 0%, $dark-bg-base 100%);
+	}
+
 	.navbar__title { color: $dark-text-primary; }
 
-	.department-tag {
-		background: $dark-bg-card;
-		border-color: $dark-border-color;
-		color: $dark-text-secondary;
+	.search-bar {
+		background: rgba(22, 27, 34, 0.9);
 
-		&--active {
-			background: $dark-color-primary;
-			border-color: $dark-color-primary;
-			color: #fff;
+		&__icon {
+			border-color: $dark-text-muted;
+			&::after { background: $dark-text-muted; }
+		}
+
+		&__input { color: $dark-text-primary; }
+		&__placeholder { color: $dark-text-muted; }
+
+		&__clear {
+			background: $dark-bg-elevated;
+			&::before, &::after { background: $dark-text-muted; }
 		}
 	}
 
-	.doctor-card {
+	.location-bar {
+		&__icon {
+			&::before { border-color: $dark-color-accent; }
+			&::after { background: $dark-color-accent; }
+		}
+		&__city { color: $dark-text-primary; }
+		&__action { color: $dark-color-primary; }
+		&__arrow { border-color: $dark-color-primary; }
+	}
+
+	.section-title { color: $dark-text-primary; }
+
+	.skeleton-card { background: $dark-bg-card; }
+	.skeleton-avatar,
+	.skeleton-line {
+		background: linear-gradient(90deg, $dark-bg-elevated 25%, $dark-bg-card 50%, $dark-bg-elevated 75%);
+		background-size: 200% 100%;
+	}
+
+	.hospital-card {
 		background: $dark-bg-card;
 
-		&__name { color: $dark-text-primary; }
-		&__title {
-			color: $dark-color-primary;
-			background: rgba(74, 144, 217, 0.15);
+		&__logo {
+			background: linear-gradient(135deg, rgba(74, 144, 217, 0.15) 0%, rgba(74, 144, 217, 0.1) 100%);
+			border-color: rgba(74, 144, 217, 0.2);
 		}
-		&__dept { color: $dark-text-secondary; }
-		&__intro { color: $dark-text-muted; }
-		&__count { color: $dark-text-muted; }
+		&__logo-text { color: $dark-color-primary; }
+		&__name { color: $dark-text-primary; }
+
+		&__tag {
+			&--level {
+				background: rgba(16, 185, 129, 0.15);
+			}
+			&--type {
+				background: rgba(59, 130, 246, 0.15);
+			}
+		}
+
+		&__distance { color: $dark-color-accent; }
+		&__label {
+			background: $dark-bg-elevated;
+			color: $dark-text-secondary;
+		}
+		&__address { color: $dark-text-muted; }
+
 		&__btn {
-			background: $dark-color-primary;
+			background: linear-gradient(135deg, $dark-color-primary 0%, lighten($dark-color-primary, 10%) 100%);
 			&--disabled { background: $dark-text-muted; }
 		}
+		&__time { color: $dark-text-muted; }
+	}
+
+	.empty-state {
+		&__icon { background: $dark-bg-elevated; }
+		&__text { color: $dark-text-muted; }
 	}
 }
 </style>
