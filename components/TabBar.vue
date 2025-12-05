@@ -1,7 +1,12 @@
 <template>
-	<view class="tabbar" :class="{ 'tabbar--dark': isDark }">
-		<view class="tabbar__bg"></view>
-		<view class="tabbar__content">
+	<view class="tabbar-wrapper">
+		<!-- 顶部通知栏 -->
+		<TopNotificationBar />
+
+		<!-- 底部导航 -->
+		<view class="tabbar" :class="{ 'tabbar--dark': isDark }">
+			<view class="tabbar__bg"></view>
+			<view class="tabbar__content">
 			<view
 				v-for="(item, index) in tabs"
 				:key="index"
@@ -33,21 +38,26 @@
 				<text class="tabbar__label" :class="{ 'tabbar__label--active': currentIndex === index }">
 					{{ item.text }}
 				</text>
-				<!-- 选中指示器 -->
+					<!-- 选中指示器 -->
 				<view v-if="currentIndex === index && index !== 2" class="tabbar__indicator"></view>
 			</view>
 		</view>
 		<!-- 安全区域填充 -->
 		<view class="tabbar__safe-area"></view>
 	</view>
+</view>
 </template>
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
 import { getUnreadCount } from '@/store/notification.js'
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 export default {
 	name: 'TabBar',
+	components: {
+		TopNotificationBar
+	},
 	data() {
 		return {
 			currentIndex: 0,

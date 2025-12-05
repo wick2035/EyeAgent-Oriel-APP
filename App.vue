@@ -18,8 +18,10 @@
 
 			// 检查登录状态
 			if (isLoggedIn()) {
-				// 已登录，初始化通知服务
-				this.initNotificationService()
+				// 延迟初始化通知服务，确保页面组件已加载
+				setTimeout(() => {
+					this.initNotificationService()
+				}, 1500)
 
 				uni.switchTab({
 					url: '/pages/index/index'
@@ -30,9 +32,12 @@
 			console.log('App Show')
 			// App恢复前台时，检查登录状态并重连WebSocket
 			if (isLoggedIn()) {
-				connectWebSocket()
-				// 刷新未读通知
-				fetchUnreadNotifications()
+				// 延迟连接，确保组件已挂载
+				setTimeout(() => {
+					connectWebSocket()
+					// 刷新未读通知
+					fetchUnreadNotifications()
+				}, 500)
 			}
 		},
 		onHide: function() {

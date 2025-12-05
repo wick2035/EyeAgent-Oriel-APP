@@ -36,6 +36,12 @@ let isManualDisconnect = false
 let audioContext = null
 // 是否静音
 let isMuted = false
+// 音频是否已初始化
+let audioInitialized = false
+// 待处理的通知队列（用于组件未就绪时缓存）
+let pendingNotifications = []
+// 通知栏是否就绪
+let notificationBarReady = false
 
 /**
  * 获取WebSocket连接地址
@@ -51,25 +57,51 @@ function getWebSocketUrl() {
  * 初始化提示音
  */
 function initAudio() {
-	if (audioContext) return
+	if (audioContext || audioInitialized) return
 
-	audioContext = uni.createInnerAudioContext()
-	audioContext.src = '/static/audio/notification.mp3'
-	audioContext.volume = 1
+	try {
+		console.log('初始化音频上下文...')
+		audioContext = uni.createInnerAudioContext()
+		audioContext.src = '/static/audio/notification.mp3'
+		audioContext.volume = 1
+
+		// 监听错误
+		audioContext.onError((err) => {
+			console.error('音频错误:', err)
+		})
+
+		// 监听播放结束
+		audioContext.onEnded(() => {
+			console.log('音频播放完成')
+		})
+
+		audioInitialized = true
+		console.log('音频上下文初始化成功')
+	} catch (err) {
+		console.error('初始化音频失败:', err)
+	}
 }
 
 /**
  * 播放提示音
  */
 function playNotificationSound() {
+	console.log('尝试播放提示音, 静音状态:', isMuted)
 	if (isMuted) return
 
 	try {
 		if (!audioContext) {
 			initAudio()
 		}
-		audioContext.stop()
-		audioContext.play()
+
+		if (audioContext) {
+			audioContext.stop()
+			audioContext.seek(0)
+			audioContext.play()
+			console.log('提示音播放指令已发送')
+		} else {
+			console.log('音频上下文不可用')
+		}
 	} catch (err) {
 		console.error('播放提示音失败:', err)
 	}
@@ -244,23 +276,65 @@ function handleNotification(notification) {
  * 显示系统级通知
  */
 function showSystemNotification(notification) {
-	// #ifdef APP-PLUS
-	// App端可以使用本地推送
-	uni.createPushMessage({
-		title: notification.reminderTitle,
-		content: notification.reminderContent,
-		payload: JSON.stringify(notification)
-	})
-	// #endif
+	// 通知类型映射
+	const typeMap = {
+		'SYSTEM': 'system',
+		'RESERVE': 'reserve',
+		'MEDICATION': 'medication'
+	}
 
-	// #ifndef APP-PLUS
-	// 其他端显示Toast提示
-	uni.showToast({
-		title: notification.reminderTitle,
-		icon: 'none',
-		duration: 2000
-	})
+	const eventData = {
+		type: typeMap[notification.reminderType] || 'system',
+		title: notification.reminderTitle || '新消息',
+		content: notification.reminderContent || '',
+		duration: 5000,
+		data: notification
+	}
+
+	console.log('发送通知事件, 通知栏就绪状态:', notificationBarReady)
+
+	// 如果通知栏已就绪，直接发送事件
+	if (notificationBarReady) {
+		uni.$emit('show-notification', eventData)
+	} else {
+		// 否则缓存通知，等待通知栏就绪后显示
+		pendingNotifications.push(eventData)
+		console.log('通知已缓存，等待通知栏就绪')
+	}
+
+	// 同时发送通知到达事件，供消息页面监听刷新列表
+	uni.$emit('notification-received', notification)
+	console.log('已发送notification-received事件')
+
+	// #ifdef APP-PLUS
+	// App端同时使用本地推送（用于后台通知）
+	try {
+		uni.createPushMessage({
+			title: notification.reminderTitle,
+			content: notification.reminderContent,
+			payload: JSON.stringify(notification)
+		})
+	} catch (e) {
+		console.log('创建推送消息失败:', e)
+	}
 	// #endif
+}
+
+/**
+ * 标记通知栏已就绪
+ */
+export function setNotificationBarReady() {
+	console.log('通知栏已就绪')
+	notificationBarReady = true
+
+	// 处理缓存的通知
+	if (pendingNotifications.length > 0) {
+		console.log('处理缓存的通知，数量:', pendingNotifications.length)
+		pendingNotifications.forEach(eventData => {
+			uni.$emit('show-notification', eventData)
+		})
+		pendingNotifications = []
+	}
 }
 
 /**
@@ -387,5 +461,6 @@ export default {
 	setMuted,
 	getMuted,
 	destroy,
+	setNotificationBarReady,
 	WS_STATUS
 }

@@ -157,6 +157,12 @@ export default {
 	onLoad() {
 		this.getStatusBarHeight()
 		this.loadData()
+		// 监听新通知到达事件
+		uni.$on('notification-received', this.onNotificationReceived)
+	},
+	onUnload() {
+		// 移除事件监听
+		uni.$off('notification-received', this.onNotificationReceived)
 	},
 	onShow() {
 		// #ifdef APP-PLUS
@@ -166,6 +172,13 @@ export default {
 		this.refreshUnread()
 	},
 	methods: {
+		// 收到新通知时的处理
+		onNotificationReceived(notification) {
+			console.log('消息页面收到新通知事件:', notification)
+			// 自动刷新列表
+			this.refreshUnread()
+		},
+
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
