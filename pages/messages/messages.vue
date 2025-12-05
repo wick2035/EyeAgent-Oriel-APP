@@ -5,11 +5,6 @@
 
 		<!-- 顶部导航栏 -->
 		<view class="navbar">
-			<view class="navbar__left">
-				<view class="navbar__test" @click="testNotification">
-					<text class="navbar__test-text">测试</text>
-				</view>
-			</view>
 			<text class="navbar__title">消息</text>
 			<view v-if="hasUnread" class="navbar__action" @click="handleMarkAllRead">
 				<text class="navbar__action-text">全部已读</text>
@@ -93,7 +88,6 @@
 <script>
 import TabBar from '@/components/TabBar.vue'
 import { isDarkMode } from '@/store/theme.js'
-import { handleTestNotification } from '@/utils/websocket.js'
 import {
 	notificationState,
 	fetchUnreadNotifications,
@@ -178,17 +172,6 @@ export default {
 		this.refreshUnread()
 	},
 	methods: {
-		// 测试通知功能
-		testNotification() {
-			console.log('点击测试通知按钮')
-			const testData = {
-				reminderType: 'MEDICATION',
-				reminderTitle: '用药提醒',
-				reminderContent: '该服用降压药了，请按时服药。'
-			}
-			handleTestNotification(testData)
-		},
-
 		// 收到新通知时的处理
 		onNotificationReceived(notification) {
 			console.log('消息页面收到新通知事件:', notification)
@@ -385,23 +368,6 @@ export default {
 	flex-shrink: 0;
 	position: relative;
 
-	&__left {
-		position: absolute;
-		left: $spacing-lg;
-	}
-
-	&__test {
-		padding: $spacing-xs $spacing-md;
-		background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-		border-radius: $radius-sm;
-	}
-
-	&__test-text {
-		font-size: $font-size-xs;
-		color: #fff;
-		font-weight: $font-weight-medium;
-	}
-
 	&__title {
 		font-size: $font-size-lg;
 		font-weight: $font-weight-semibold;
@@ -433,6 +399,7 @@ export default {
 	margin-right: $spacing-md;
 	display: flex;
 	align-items: center;
+	flex-shrink: 0;
 
 	&__text {
 		font-size: $font-size-base;
