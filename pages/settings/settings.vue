@@ -118,6 +118,7 @@
 import { getUserInfo, clearLoginState } from '@/store/user.js'
 import { isDarkMode } from '@/store/theme.js'
 import { logout } from '@/utils/api/user.js'
+import { setMuted, getMuted } from '@/utils/websocket.js'
 
 export default {
 	data() {
@@ -143,6 +144,7 @@ export default {
 	onLoad() {
 		this.getStatusBarHeight()
 		this.calculateCacheSize()
+		this.loadNotifySetting()
 		setTimeout(() => {
 			this.pageReady = true
 		}, 100)
@@ -173,8 +175,15 @@ export default {
 			uni.showToast({ title: messages[type], icon: 'none' })
 		},
 
+		loadNotifySetting() {
+			// getMuted=true 表示静音，notifyEnabled=true 表示开启，逻辑相反
+			this.notifyEnabled = !getMuted()
+		},
+
 		toggleNotify() {
 			this.notifyEnabled = !this.notifyEnabled
+			// 同步到 WebSocket 模块并持久化
+			setMuted(!this.notifyEnabled)
 			uni.showToast({
 				title: this.notifyEnabled ? '已开启通知' : '已关闭通知',
 				icon: 'none'
@@ -209,6 +218,7 @@ export default {
 							const token = uni.getStorageSync('auth_token')
 							const userInfo = uni.getStorageSync('user_info')
 							const theme = uni.getStorageSync('app_theme')
+							const notificationMuted = uni.getStorageSync('notification_muted')
 
 							uni.clearStorageSync()
 
@@ -216,6 +226,9 @@ export default {
 							if (token) uni.setStorageSync('auth_token', token)
 							if (userInfo) uni.setStorageSync('user_info', userInfo)
 							if (theme) uni.setStorageSync('app_theme', theme)
+							if (notificationMuted !== undefined && notificationMuted !== '') {
+								uni.setStorageSync('notification_muted', notificationMuted)
+							}
 
 							this.cacheSize = '0 KB'
 							uni.hideLoading()

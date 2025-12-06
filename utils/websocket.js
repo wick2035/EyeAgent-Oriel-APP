@@ -262,14 +262,17 @@ function handleMessage(data) {
 function handleNotification(notification) {
 	console.log('收到新通知:', notification)
 
-	// 添加到store
+	// 添加到store（始终执行，保证消息接收）
 	addNotification(notification)
 
-	// 播放提示音
-	playNotificationSound()
+	// 如果未静音，才播放提示音和显示弹窗
+	if (!isMuted) {
+		// 播放提示音
+		playNotificationSound()
 
-	// 显示系统通知（可选）
-	showSystemNotification(notification)
+		// 显示系统通知
+		showSystemNotification(notification)
+	}
 }
 
 /**
