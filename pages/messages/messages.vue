@@ -373,7 +373,8 @@ export default {
 
 <style lang="scss" scoped>
 .page {
-	min-height: 100vh;
+	height: 100vh;
+	overflow: hidden;
 	background: $bg-base;
 	display: flex;
 	flex-direction: column;

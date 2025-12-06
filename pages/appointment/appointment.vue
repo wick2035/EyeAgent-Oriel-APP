@@ -169,7 +169,16 @@ export default {
 					pageSize: this.pageSize
 				})
 				if (res.code === 200) {
-					this.hospitals = res.data.list || []
+					const list = res.data.list || []
+					if (this.page === 1) {
+						// 第一页：替换列表
+						this.hospitals = list
+					} else {
+						// 加载更多：追加到列表
+						this.hospitals = [...this.hospitals, ...list]
+					}
+					// 判断是否还有更多数据
+					this.hasMore = list.length >= this.pageSize
 				}
 			} catch (e) {
 				console.error('加载医院列表失败:', e)
@@ -221,7 +230,8 @@ export default {
 
 <style lang="scss" scoped>
 .page {
-	min-height: 100vh;
+	height: 100vh;
+	overflow: hidden;
 	background: $bg-base;
 	display: flex;
 	flex-direction: column;
