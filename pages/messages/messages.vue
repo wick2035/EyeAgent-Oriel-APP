@@ -11,6 +11,20 @@
 			</view>
 		</view>
 
+		<!-- 消息详情弹窗 -->
+		<MessageModal
+			ref="messageModal"
+			:type="modalType"
+			:title="modalTitle"
+			:content="modalContent"
+			:time="modalTime"
+			primaryText="知道了"
+			@confirm="onModalConfirm"
+		/>
+
+		<!-- 自定义 Toast -->
+		<CustomToast ref="customToast" />
+
 		<!-- 标签切换 -->
 		<view class="tabs">
 			<view
@@ -87,6 +101,8 @@
 
 <script>
 import TabBar from '@/components/TabBar.vue'
+import MessageModal from '@/components/MessageModal.vue'
+import CustomToast from '@/components/CustomToast.vue'
 import { isDarkMode } from '@/store/theme.js'
 import {
 	notificationState,
@@ -102,7 +118,9 @@ import { getReadNotifications } from '@/utils/api/notification.js'
 
 export default {
 	components: {
-		TabBar
+		TabBar,
+		MessageModal,
+		CustomToast
 	},
 	data() {
 		return {
@@ -116,7 +134,12 @@ export default {
 			pageNum: 1,
 			pageSize: 10,
 			hasMore: true,
-			total: 0
+			total: 0,
+			// 弹窗数据
+			modalType: 'system',
+			modalTitle: '',
+			modalContent: '',
+			modalTime: ''
 		}
 	},
 	computed: {
@@ -274,14 +297,18 @@ export default {
 					url: `/pages/profile/medical-records?prescriptionId=${msg.prescriptionId}`
 				})
 			} else {
-				// 显示消息详情弹窗
-				uni.showModal({
-					title: msg.reminderTitle,
-					content: msg.reminderContent,
-					showCancel: false,
-					confirmText: '知道了'
-				})
+				// 显示消息详情弹窗（使用精美的自定义弹窗）
+				this.modalType = this.getTypeClass(msg.reminderType)
+				this.modalTitle = msg.reminderTitle
+				this.modalContent = msg.reminderContent
+				this.modalTime = this.formatTime(msg.sentTime)
+				this.$refs.messageModal.show()
 			}
+		},
+
+		// 弹窗确认回调
+		onModalConfirm() {
+			// 可以在这里添加额外逻辑
 		},
 
 		// 全部标记已读
@@ -290,7 +317,8 @@ export default {
 			try {
 				const success = await markAllAsRead()
 				if (success) {
-					uni.showToast({ title: '已全部标记为已读', icon: 'success' })
+					// 使用自定义 Toast
+					this.$refs.customToast.success('已全部标记为已读')
 				}
 			} finally {
 				uni.hideLoading()

@@ -129,13 +129,21 @@
 				</text>
 			</view>
 		</view>
+
+		<!-- 自定义 Toast -->
+		<CustomToast ref="customToast" />
 	</view>
 </template>
 
 <script>
 import { login, wxLogin, getWxLoginCode } from '@/utils/api/user.js'
+import CustomToast from '@/components/CustomToast.vue'
+import { setToastInstance } from '@/utils/toast.js'
 
 export default {
+	components: {
+		CustomToast
+	},
 	data() {
 		return {
 			statusBarHeight: 44,
@@ -162,6 +170,10 @@ export default {
 			this.pageReady = true
 		}, 100)
 	},
+	onReady() {
+		// 注册全局 Toast 实例
+		setToastInstance(this.$refs.customToast)
+	},
 	methods: {
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
@@ -172,7 +184,7 @@ export default {
 			if (!this.canLogin || this.isLoading) return
 
 			if (!this.agreedTerms) {
-				uni.showToast({ title: '请先同意用户协议', icon: 'none' })
+				this.$refs.customToast.warning('请先同意用户协议')
 				return
 			}
 
@@ -188,15 +200,15 @@ export default {
 				const result = await login(this.username, this.password)
 
 				if (result.success) {
-					uni.showToast({ title: '登录成功', icon: 'success' })
+					this.$refs.customToast.success('登录成功')
 					setTimeout(() => {
 						uni.switchTab({ url: '/pages/index/index' })
-					}, 1000)
+					}, 1500)
 				} else {
-					uni.showToast({ title: result.message || '登录失败', icon: 'none' })
+					this.$refs.customToast.error(result.message || '登录失败')
 				}
 			} catch (error) {
-				uni.showToast({ title: '网络异常，请稍后重试', icon: 'none' })
+				this.$refs.customToast.error('网络异常，请稍后重试')
 			} finally {
 				this.isLoading = false
 			}
@@ -204,7 +216,7 @@ export default {
 
 		async handleWxLogin() {
 			if (!this.agreedTerms) {
-				uni.showToast({ title: '请先同意用户协议', icon: 'none' })
+				this.$refs.customToast.warning('请先同意用户协议')
 				return
 			}
 
@@ -217,25 +229,25 @@ export default {
 				uni.hideLoading()
 
 				if (result.success) {
-					uni.showToast({ title: '登录成功', icon: 'success' })
+					this.$refs.customToast.success('登录成功')
 					setTimeout(() => {
 						uni.switchTab({ url: '/pages/index/index' })
-					}, 1000)
+					}, 1500)
 				} else {
-					uni.showToast({ title: result.message || '微信登录失败', icon: 'none' })
+					this.$refs.customToast.error(result.message || '微信登录失败')
 				}
 			} catch (error) {
 				uni.hideLoading()
-				uni.showToast({ title: error.message || '微信登录失败', icon: 'none' })
+				this.$refs.customToast.error(error.message || '微信登录失败')
 			}
 		},
 
 		openUserAgreement() {
-			uni.showToast({ title: '用户协议页面开发中', icon: 'none' })
+			this.$refs.customToast.info('用户协议页面开发中')
 		},
 
 		openPrivacyPolicy() {
-			uni.showToast({ title: '隐私政策页面开发中', icon: 'none' })
+			this.$refs.customToast.info('隐私政策页面开发中')
 		}
 	}
 }
