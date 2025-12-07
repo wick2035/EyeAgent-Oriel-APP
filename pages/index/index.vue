@@ -107,16 +107,21 @@
 
 		<!-- 底部导航 -->
 		<TabBar />
+
+		<!-- 顶部通知栏 -->
+		<TopNotificationBar />
 	</view>
 </template>
 
 <script>
 import TabBar from '@/components/TabBar.vue'
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import { isDarkMode } from '@/store/theme.js'
 
 export default {
 	components: {
-		TabBar
+		TabBar,
+		TopNotificationBar
 	},
 	data() {
 		return {

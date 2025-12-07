@@ -109,6 +109,9 @@
 		<!-- 底部导航 -->
 		<TabBar />
 
+		<!-- 顶部通知栏 -->
+		<TopNotificationBar />
+
 		<!-- 退出确认弹窗 -->
 		<ConfirmDialog
 			ref="exitDialog"
@@ -124,6 +127,7 @@
 
 <script>
 import TabBar from '@/components/TabBar.vue'
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import ChatInput from '@/components/ChatInput.vue'
 import QuickPrompt from '@/components/QuickPrompt.vue'
 import MessageBubble from '@/components/MessageBubble.vue'
@@ -134,6 +138,7 @@ import { sendMessage, getQuickPrompts, refreshQuickPrompts, getMessages } from '
 export default {
 	components: {
 		TabBar,
+		TopNotificationBar,
 		ChatInput,
 		QuickPrompt,
 		MessageBubble,

@@ -96,11 +96,15 @@
 
 		<!-- 底部导航 -->
 		<TabBar />
+
+		<!-- 顶部通知栏 -->
+		<TopNotificationBar />
 	</view>
 </template>
 
 <script>
 import TabBar from '@/components/TabBar.vue'
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import MessageModal from '@/components/MessageModal.vue'
 import CustomToast from '@/components/CustomToast.vue'
 import { isDarkMode } from '@/store/theme.js'
@@ -119,6 +123,7 @@ import { getReadNotifications } from '@/utils/api/notification.js'
 export default {
 	components: {
 		TabBar,
+		TopNotificationBar,
 		MessageModal,
 		CustomToast
 	},
