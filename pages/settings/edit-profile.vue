@@ -129,14 +129,21 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- 顶部通知栏 -->
+		<TopNotificationBar />
 	</view>
 </template>
 
 <script>
 import { getUserInfo, updateUserInfo } from '@/store/user.js'
 import { isDarkMode } from '@/store/theme.js'
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 export default {
+	components: {
+		TopNotificationBar
+	},
 	data() {
 		return {
 			statusBarHeight: 44,

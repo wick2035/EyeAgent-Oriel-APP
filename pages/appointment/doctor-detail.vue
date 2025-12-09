@@ -188,14 +188,21 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- 顶部通知栏 -->
+		<TopNotificationBar />
 	</view>
 </template>
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
 import { getDoctorDetail, getDoctorSchedule, createAppointment } from '@/utils/api/appointment.js'
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 export default {
+	components: {
+		TopNotificationBar
+	},
 	data() {
 		return {
 			statusBarHeight: 44,

@@ -116,14 +116,21 @@
 			<!-- 底部安全区 -->
 			<view class="safe-area"></view>
 		</scroll-view>
+
+		<!-- 顶部通知栏 -->
+		<TopNotificationBar />
 	</view>
 </template>
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
 import { getDoctorList } from '@/utils/api/appointment.js'
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 export default {
+	components: {
+		TopNotificationBar
+	},
 	data() {
 		return {
 			statusBarHeight: 44,

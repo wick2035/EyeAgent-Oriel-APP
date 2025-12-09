@@ -60,13 +60,20 @@
 				<text class="bottom-bar__text">分享</text>
 			</view>
 		</view>
+
+		<!-- 顶部通知栏 -->
+		<TopNotificationBar />
 	</view>
 </template>
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 export default {
+	components: {
+		TopNotificationBar
+	},
 	data() {
 		return {
 			statusBarHeight: 44,

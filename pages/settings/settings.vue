@@ -111,6 +111,9 @@
 				<view class="bottom-space"></view>
 			</scroll-view>
 		</view>
+
+		<!-- 顶部通知栏 -->
+		<TopNotificationBar />
 	</view>
 </template>
 
@@ -119,8 +122,12 @@ import { getUserInfo, clearLoginState } from '@/store/user.js'
 import { isDarkMode } from '@/store/theme.js'
 import { logout } from '@/utils/api/user.js'
 import { setMuted, getMuted } from '@/utils/websocket.js'
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 export default {
+	components: {
+		TopNotificationBar
+	},
 	data() {
 		return {
 			statusBarHeight: 44,
