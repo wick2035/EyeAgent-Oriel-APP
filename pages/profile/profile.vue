@@ -164,6 +164,14 @@ export default {
 				return
 			}
 
+			// 用药提醒跳转
+			if (item.icon === 'medicine') {
+				uni.navigateTo({
+					url: '/pages/medication/medication-reminder'
+				})
+				return
+			}
+
 			uni.showToast({ title: `${item.title}开发中`, icon: 'none' })
 		},
 		toggleTheme(e) {

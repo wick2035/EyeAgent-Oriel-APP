@@ -97,6 +97,13 @@
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "编辑资料"
 			}
+		},
+		{
+			"path": "pages/medication/medication-reminder",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "用药提醒"
+			}
 		}
 	],
 	"globalStyle": {
