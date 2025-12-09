@@ -117,6 +117,7 @@
 import TabBar from '@/components/TabBar.vue'
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import { isDarkMode } from '@/store/theme.js'
+import { getUnreadCount } from '@/store/notification.js'
 
 export default {
 	components: {
@@ -126,7 +127,6 @@ export default {
 	data() {
 		return {
 			statusBarHeight: 44,
-			unreadCount: 3,
 			services: [
 				{ name: '在线问诊', icon: 'consult', type: 'primary', path: '/pages/ai-consult/ai-consult' },
 				{ name: '预约挂号', icon: 'appointment', type: 'success', path: '/pages/appointment/appointment' },
@@ -161,6 +161,9 @@ export default {
 	computed: {
 		isDark() {
 			return isDarkMode()
+		},
+		unreadCount() {
+			return getUnreadCount()
 		},
 		greeting() {
 			const hour = new Date().getHours()
