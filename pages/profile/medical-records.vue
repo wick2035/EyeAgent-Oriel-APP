@@ -1,20 +1,18 @@
 <template>
 	<view class="page" :class="{ 'page--dark': isDark }">
-		<!-- 状态栏占位 -->
-		<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-
-		<!-- 导航栏 -->
-		<view class="navbar">
-			<view class="navbar__back" @click="goBack">
-				<view class="navbar__back-icon"></view>
+		<!-- 固定头部 -->
+		<view class="fixed-header" :style="{ paddingTop: statusBarHeight + 'px' }">
+			<!-- 导航栏 -->
+			<view class="navbar">
+				<view class="navbar__back" @click="goBack">
+					<view class="navbar__back-icon"></view>
+				</view>
+				<text class="navbar__title">就诊记录</text>
+				<view class="navbar__placeholder"></view>
 			</view>
-			<text class="navbar__title">就诊记录</text>
-			<view class="navbar__placeholder"></view>
-		</view>
 
-		<!-- Tab切换 -->
-		<view class="tabs-wrapper">
-			<scroll-view class="tabs" scroll-x show-scrollbar="false">
+			<!-- Tab切换 -->
+			<view class="tabs-wrapper">
 				<view class="tabs__track">
 					<view
 						v-for="(tab, index) in tabs"
@@ -27,8 +25,11 @@
 						<view v-if="currentTab === index" class="tabs__indicator"></view>
 					</view>
 				</view>
-			</scroll-view>
+			</view>
 		</view>
+
+		<!-- 头部占位 -->
+		<view class="header-placeholder" :style="{ height: (statusBarHeight + 88) + 'px' }"></view>
 
 		<!-- 内容区域 -->
 		<scroll-view class="content" scroll-y @scrolltolower="loadMore">
@@ -300,11 +301,20 @@ export default {
 .page {
 	min-height: 100vh;
 	background: $bg-base;
-	display: flex;
-	flex-direction: column;
 }
 
-.status-bar {
+// 固定头部
+.fixed-header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 100;
+	background: $bg-base;
+}
+
+// 头部占位
+.header-placeholder {
 	flex-shrink: 0;
 }
 
@@ -352,37 +362,35 @@ export default {
 	border-bottom: 2rpx solid $border-color-light;
 }
 
-.tabs {
-	white-space: nowrap;
+.tabs__track {
+	display: flex;
+	width: 100%;
+}
 
-	&__track {
-		display: inline-flex;
-		padding: 0 $spacing-md;
+.tabs__item {
+	flex: 1;
+	position: relative;
+	padding: $spacing-md 0;
+	font-size: $font-size-base;
+	color: $text-secondary;
+	text-align: center;
+	transition: color 0.3s ease;
+
+	&--active {
+		color: $color-primary;
+		font-weight: $font-weight-semibold;
 	}
+}
 
-	&__item {
-		position: relative;
-		padding: $spacing-md $spacing-lg;
-		font-size: $font-size-base;
-		color: $text-secondary;
-		transition: color 0.3s ease;
-
-		&--active {
-			color: $color-primary;
-			font-weight: $font-weight-semibold;
-		}
-	}
-
-	&__indicator {
-		position: absolute;
-		bottom: 0;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 48rpx;
-		height: 6rpx;
-		background: linear-gradient(90deg, $color-primary, $color-primary-light);
-		border-radius: 3rpx;
-	}
+.tabs__indicator {
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 48rpx;
+	height: 6rpx;
+	background: linear-gradient(90deg, $color-primary, $color-primary-light);
+	border-radius: 3rpx;
 }
 
 // 内容区
@@ -936,6 +944,10 @@ export default {
 // ========== 深色模式 ==========
 .page--dark {
 	background: $dark-bg-base;
+
+	.fixed-header {
+		background: $dark-bg-base;
+	}
 
 	.navbar {
 		&__back-icon { border-color: $dark-text-primary; }
