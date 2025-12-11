@@ -38,7 +38,11 @@
 					@click="handleService(service)"
 				>
 					<view class="service-item__icon" :class="[`service-item__icon--${service.type}`]">
-						<view class="service-icon" :class="[`service-icon--${service.icon}`]"></view>
+						<image v-if="service.icon === 'consult'" class="service-icon service-icon--consult" src="@/static/chat-online.svg" mode="aspectFit" />
+						<image v-else-if="service.icon === 'appointment'" class="service-icon service-icon--appointment" src="@/static/book.svg" mode="aspectFit" />
+						<image v-else-if="service.icon === 'record'" class="service-icon service-icon--record" src="@/static/Heath-file.svg" mode="aspectFit" />
+						<image v-else-if="service.icon === 'medicine'" class="service-icon service-icon--medicine" src="@/static/medicine.svg" mode="aspectFit" />
+						<view v-else class="service-icon" :class="[`service-icon--${service.icon}`]"></view>
 					</view>
 					<text class="service-item__text">{{ service.name }}</text>
 				</view>
@@ -410,78 +414,23 @@ export default {
 	position: relative;
 
 	&--consult {
-		border: 3rpx solid $color-primary;
-		border-radius: 8rpx;
-		position: relative;
-
-		&::before {
-			content: '';
-			position: absolute;
-			top: 10rpx;
-			left: 8rpx;
-			right: 8rpx;
-			height: 3rpx;
-			background: $color-primary;
-		}
-		&::after {
-			content: '';
-			position: absolute;
-			top: 20rpx;
-			left: 8rpx;
-			width: 60%;
-			height: 3rpx;
-			background: $color-primary;
-		}
+		// 调整为更深的蓝色，与背景协调
+		filter: invert(20%) sepia(50%) saturate(2000%) hue-rotate(200deg) brightness(90%) contrast(95%);
 	}
 
 	&--appointment {
-		border: 3rpx solid $color-success;
-		border-radius: 6rpx;
-
-		&::before {
-			content: '';
-			position: absolute;
-			top: 12rpx;
-			left: 0;
-			right: 0;
-			height: 3rpx;
-			background: $color-success;
-		}
+		// 使用 filter 将黑色 SVG 转为 $color-success 绿色
+		filter: invert(56%) sepia(52%) saturate(563%) hue-rotate(109deg) brightness(95%) contrast(92%);
 	}
 
 	&--record {
-		border: 3rpx solid $color-info;
-		border-radius: 6rpx;
-
-		&::before {
-			content: '';
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			width: 20rpx;
-			height: 20rpx;
-			border: 3rpx solid $color-info;
-			border-radius: 50%;
-		}
+		// 使用 filter 将黑色 SVG 转为 $color-info 蓝色
+		filter: invert(44%) sepia(98%) saturate(1561%) hue-rotate(196deg) brightness(101%) contrast(96%);
 	}
 
 	&--medicine {
-		width: 20rpx;
-		height: 40rpx;
-		border: 3rpx solid $color-warning;
-		border-radius: 10rpx;
-		position: relative;
-
-		&::before {
-			content: '';
-			position: absolute;
-			top: 50%;
-			left: -2rpx;
-			right: -2rpx;
-			height: 3rpx;
-			background: $color-warning;
-		}
+		// 使用 filter 将黑色 SVG 转为 $color-warning 橙色
+		filter: invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg) brightness(101%) contrast(96%);
 	}
 }
 
