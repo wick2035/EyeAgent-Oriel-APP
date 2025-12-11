@@ -570,8 +570,8 @@ $wx-green: #07c160;
 
 // 微信 SVG 图标 - 白色
 .wx-icon-img {
-  width: 48rpx;
-  height: 38rpx;
+  width: 56rpx;
+  height: 44rpx;
   filter: brightness(0) invert(1);
 }
 
