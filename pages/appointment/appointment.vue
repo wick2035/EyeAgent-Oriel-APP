@@ -82,7 +82,7 @@
 							<view class="hospital-card__meta">
 								<view class="hospital-card__tag hospital-card__tag--level">{{ hospital.level }}</view>
 								<view class="hospital-card__tag hospital-card__tag--type">{{ hospital.type }}</view>
-								<text class="hospital-card__distance">{{ formatDistance(hospital.distance) }}</text>
+								<text v-if="hospital.distance > 0" class="hospital-card__distance">{{ formatDistance(hospital.distance) }}</text>
 							</view>
 
 							<view class="hospital-card__tags">
@@ -118,6 +118,70 @@
 
 		<!-- 顶部通知栏 -->
 		<TopNotificationBar />
+
+		<!-- 城市选择弹窗 -->
+		<view v-if="showCityPicker" class="city-picker" :class="{ 'city-picker--dark': isDark }">
+			<view
+				class="city-picker__overlay"
+				:class="{ 'city-picker__overlay--show': showCityContent }"
+				@click="closeCityPicker"
+			></view>
+			<view
+				class="city-picker__container"
+				:class="{ 'city-picker__container--show': showCityContent }"
+			>
+				<!-- 拖动条 -->
+				<view class="city-picker__handle"></view>
+				<!-- 标题栏 -->
+				<view class="city-picker__header">
+					<text class="city-picker__title">选择城市</text>
+					<view class="city-picker__close" @click="closeCityPicker">
+						<view class="close-icon"></view>
+					</view>
+				</view>
+				<!-- 内容 -->
+				<scroll-view class="city-picker__content" scroll-y>
+					<!-- 当前定位 -->
+					<view class="city-picker__section">
+						<text class="city-picker__section-title">当前定位</text>
+						<view class="city-picker__current" @click="selectCity(locatedCity)">
+							<view class="city-picker__location-icon"></view>
+							<text>{{ locatedCity }}</text>
+						</view>
+					</view>
+					<!-- 热门城市 -->
+					<view class="city-picker__section">
+						<text class="city-picker__section-title">热门城市</text>
+						<view class="city-picker__grid">
+							<view
+								v-for="city in hotCities"
+								:key="city"
+								class="city-picker__item"
+								:class="{ 'city-picker__item--active': currentCity === city }"
+								@click="selectCity(city)"
+							>
+								<text>{{ city }}</text>
+							</view>
+						</view>
+					</view>
+					<!-- 按省份分组的城市列表 -->
+					<view v-for="province in provinceList" :key="province.name" class="city-picker__section">
+						<text class="city-picker__section-title">{{ province.name }}</text>
+						<view class="city-picker__grid">
+							<view
+								v-for="city in province.cities"
+								:key="city"
+								class="city-picker__item"
+								:class="{ 'city-picker__item--active': currentCity === city }"
+								@click="selectCity(city)"
+							>
+								<text>{{ city }}</text>
+							</view>
+						</view>
+					</view>
+				</scroll-view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -139,9 +203,49 @@ export default {
 			currentCity: '深圳市',
 			loading: true,
 			hospitals: [],
+			allHospitals: [], // 存储全部医院数据用于筛选
 			page: 1,
 			pageSize: 10,
-			hasMore: true
+			hasMore: true,
+			// 城市选择器
+			showCityPicker: false,
+			showCityContent: false,
+			locatedCity: '深圳市',
+			hotCities: ['全国', '深圳市', '广州市', '北京市', '上海市', '杭州市', '成都市', '武汉市', '南京市', '西安市', '重庆市', '天津市', '苏州市', '东莞市', '佛山市', '长沙市'],
+			// 完整省市数据
+			provinceList: [
+				{ name: '广东省', cities: ['广州市', '深圳市', '东莞市', '佛山市', '珠海市', '惠州市', '中山市', '江门市', '湛江市', '汕头市'] },
+				{ name: '北京市', cities: ['北京市'] },
+				{ name: '上海市', cities: ['上海市'] },
+				{ name: '浙江省', cities: ['杭州市', '宁波市', '温州市', '嘉兴市', '绍兴市', '金华市', '台州市'] },
+				{ name: '江苏省', cities: ['南京市', '苏州市', '无锡市', '常州市', '南通市', '扬州市', '镇江市', '徐州市'] },
+				{ name: '四川省', cities: ['成都市', '绵阳市', '德阳市', '宜宾市', '泸州市', '南充市'] },
+				{ name: '湖北省', cities: ['武汉市', '宜昌市', '襄阳市', '荆州市', '黄冈市'] },
+				{ name: '湖南省', cities: ['长沙市', '株洲市', '湘潭市', '衡阳市', '岳阳市'] },
+				{ name: '陕西省', cities: ['西安市', '咸阳市', '宝鸡市', '渭南市', '榆林市'] },
+				{ name: '重庆市', cities: ['重庆市'] },
+				{ name: '天津市', cities: ['天津市'] },
+				{ name: '福建省', cities: ['福州市', '厦门市', '泉州市', '漳州市', '莆田市'] },
+				{ name: '山东省', cities: ['济南市', '青岛市', '烟台市', '潍坊市', '淄博市', '威海市'] },
+				{ name: '河南省', cities: ['郑州市', '洛阳市', '开封市', '南阳市', '新乡市'] },
+				{ name: '河北省', cities: ['石家庄市', '唐山市', '保定市', '廊坊市', '邯郸市'] },
+				{ name: '安徽省', cities: ['合肥市', '芜湖市', '蚌埠市', '马鞍山市', '安庆市'] },
+				{ name: '辽宁省', cities: ['沈阳市', '大连市', '鞍山市', '抚顺市', '锦州市'] },
+				{ name: '吉林省', cities: ['长春市', '吉林市', '四平市', '通化市'] },
+				{ name: '黑龙江省', cities: ['哈尔滨市', '齐齐哈尔市', '大庆市', '牡丹江市'] },
+				{ name: '江西省', cities: ['南昌市', '九江市', '赣州市', '景德镇市', '新余市'] },
+				{ name: '山西省', cities: ['太原市', '大同市', '临汾市', '长治市', '运城市'] },
+				{ name: '云南省', cities: ['昆明市', '大理市', '丽江市', '曲靖市', '玉溪市'] },
+				{ name: '贵州省', cities: ['贵阳市', '遵义市', '六盘水市', '安顺市'] },
+				{ name: '广西', cities: ['南宁市', '桂林市', '柳州市', '北海市', '玉林市'] },
+				{ name: '海南省', cities: ['海口市', '三亚市', '儋州市'] },
+				{ name: '甘肃省', cities: ['兰州市', '天水市', '白银市', '酒泉市'] },
+				{ name: '内蒙古', cities: ['呼和浩特市', '包头市', '鄂尔多斯市', '赤峰市'] },
+				{ name: '新疆', cities: ['乌鲁木齐市', '克拉玛依市', '吐鲁番市', '哈密市'] },
+				{ name: '宁夏', cities: ['银川市', '石嘴山市', '吴忠市'] },
+				{ name: '青海省', cities: ['西宁市', '海东市'] },
+				{ name: '西藏', cities: ['拉萨市', '日喀则市', '昌都市'] }
+			]
 		}
 	},
 	computed: {
@@ -151,6 +255,11 @@ export default {
 	},
 	onLoad() {
 		this.getStatusBarHeight()
+		// 读取保存的城市
+		const savedCity = uni.getStorageSync('selectedCity')
+		if (savedCity) {
+			this.currentCity = savedCity
+		}
 		this.loadHospitals()
 	},
 	onShow() {
@@ -169,21 +278,15 @@ export default {
 			try {
 				const res = await getHospitalList({
 					keyword: this.searchKeyword,
-					city: this.currentCity,
-					page: this.page,
-					pageSize: this.pageSize
+					page: 1,
+					pageSize: 100 // 获取足够多的数据进行前端城市筛选
 				})
 				if (res.code === 200) {
-					const list = res.data.list || []
-					if (this.page === 1) {
-						// 第一页：替换列表
-						this.hospitals = list
-					} else {
-						// 加载更多：追加到列表
-						this.hospitals = [...this.hospitals, ...list]
-					}
-					// 判断是否还有更多数据
-					this.hasMore = list.length >= this.pageSize
+					this.allHospitals = res.data.list || []
+					// 根据城市筛选
+					this.filterHospitalsByCity()
+					// 已加载全部数据，禁用加载更多
+					this.hasMore = false
 				}
 			} catch (e) {
 				console.error('加载医院列表失败:', e)
@@ -203,7 +306,38 @@ export default {
 		},
 
 		switchCity() {
-			uni.showToast({ title: '城市选择开发中', icon: 'none' })
+			this.showCityPicker = true
+			setTimeout(() => {
+				this.showCityContent = true
+			}, 50)
+		},
+
+		closeCityPicker() {
+			this.showCityContent = false
+			setTimeout(() => {
+				this.showCityPicker = false
+			}, 300)
+		},
+
+		selectCity(city) {
+			this.currentCity = city
+			uni.setStorageSync('selectedCity', city)
+			this.closeCityPicker()
+			this.page = 1
+			this.filterHospitalsByCity()
+		},
+
+		filterHospitalsByCity() {
+			let filtered = this.allHospitals
+			if (this.currentCity && this.currentCity !== '全国') {
+				// 匹配城市名（兼容 "深圳市" 和 "深圳"）
+				const cityName = this.currentCity.replace(/市$/, '')
+				filtered = this.allHospitals.filter(h => {
+					const hCity = (h.address || '').replace(/市$/, '')
+					return hCity.includes(cityName) || h.address?.includes(this.currentCity)
+				})
+			}
+			this.hospitals = filtered
 		},
 
 		loadMore() {
@@ -781,6 +915,208 @@ export default {
 	.empty-state {
 		&__icon { background: $dark-bg-elevated; }
 		&__text { color: $dark-text-muted; }
+	}
+
+	.city-picker {
+		&__overlay { background: rgba(0, 0, 0, 0.6); }
+		&__container { background: $dark-bg-card; }
+		&__handle { background: $dark-text-muted; }
+		&__title { color: $dark-text-primary; }
+		&__close .close-icon {
+			&::before, &::after { background: $dark-text-muted; }
+		}
+		&__section-title { color: $dark-text-secondary; }
+		&__current {
+			background: $dark-bg-elevated;
+			color: $dark-text-primary;
+		}
+		&__location-icon {
+			&::before { border-color: $dark-color-accent; }
+			&::after { background: $dark-color-accent; }
+		}
+		&__item {
+			background: $dark-bg-elevated;
+			color: $dark-text-primary;
+			&--active {
+				background: rgba(74, 144, 217, 0.2);
+				color: $dark-color-primary;
+				border-color: $dark-color-primary;
+			}
+		}
+	}
+}
+
+// ========== 城市选择器样式 ==========
+.city-picker {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 10000;
+
+	&__overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.4);
+		opacity: 0;
+		transition: opacity 0.3s ease;
+
+		&--show { opacity: 1; }
+	}
+
+	&__container {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: $bg-card;
+		border-radius: $radius-xl $radius-xl 0 0;
+		transform: translateY(100%);
+		transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+		max-height: 70vh;
+		display: flex;
+		flex-direction: column;
+
+		&--show { transform: translateY(0); }
+	}
+
+	&__handle {
+		width: 60rpx;
+		height: 8rpx;
+		background: $text-muted;
+		border-radius: 4rpx;
+		margin: $spacing-md auto;
+		opacity: 0.3;
+	}
+
+	&__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0 $spacing-lg $spacing-md;
+		border-bottom: 1rpx solid $border-color;
+	}
+
+	&__title {
+		font-size: $font-size-lg;
+		font-weight: $font-weight-semibold;
+		color: $text-primary;
+	}
+
+	&__close {
+		width: 60rpx;
+		height: 60rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		.close-icon {
+			width: 32rpx;
+			height: 32rpx;
+			position: relative;
+
+			&::before, &::after {
+				content: '';
+				position: absolute;
+				width: 100%;
+				height: 4rpx;
+				background: $text-muted;
+				top: 50%;
+				left: 0;
+				border-radius: 2rpx;
+			}
+			&::before { transform: translateY(-50%) rotate(45deg); }
+			&::after { transform: translateY(-50%) rotate(-45deg); }
+		}
+	}
+
+	&__content {
+		flex: 1;
+		padding: $spacing-lg;
+		overflow: hidden;
+	}
+
+	&__section {
+		margin-bottom: $spacing-lg;
+	}
+
+	&__section-title {
+		font-size: $font-size-sm;
+		color: $text-secondary;
+		margin-bottom: $spacing-md;
+		display: block;
+	}
+
+	&__current {
+		display: inline-flex;
+		align-items: center;
+		padding: $spacing-sm $spacing-lg;
+		background: $bg-elevated;
+		border-radius: $radius-md;
+		font-size: $font-size-base;
+		color: $text-primary;
+	}
+
+	&__location-icon {
+		width: 28rpx;
+		height: 36rpx;
+		position: relative;
+		margin-right: $spacing-sm;
+
+		&::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 50%;
+			width: 24rpx;
+			height: 24rpx;
+			border: 4rpx solid $color-accent;
+			border-radius: 50% 50% 50% 0;
+			transform: translateX(-50%) rotate(-45deg);
+		}
+
+		&::after {
+			content: '';
+			position: absolute;
+			top: 6rpx;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 8rpx;
+			height: 8rpx;
+			background: $color-accent;
+			border-radius: 50%;
+		}
+	}
+
+	&__grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: $spacing-sm;
+	}
+
+	&__item {
+		padding: $spacing-sm 0;
+		background: $bg-elevated;
+		border-radius: $radius-md;
+		text-align: center;
+		font-size: $font-size-sm;
+		color: $text-primary;
+		border: 2rpx solid transparent;
+		transition: all 0.2s ease;
+
+		&--active {
+			background: rgba(74, 144, 217, 0.1);
+			color: $color-primary;
+			border-color: $color-primary;
+		}
+
+		&:active {
+			transform: scale(0.95);
+		}
 	}
 }
 </style>

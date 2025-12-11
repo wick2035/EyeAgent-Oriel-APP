@@ -122,7 +122,8 @@
 						:class="{
 							'timeslot-card--selected': selectedPeriod === period.id,
 							'timeslot-card--disabled': period.status === 'full',
-							'timeslot-card--warning': period.status === 'few'
+							'timeslot-card--warning': period.status === 'few',
+							'timeslot-card--booked': isSlotBooked(selectedDate, period.startTime)
 						}"
 						@click="selectPeriod(period)"
 					>
@@ -139,7 +140,15 @@
 							<text class="timeslot-card__slots" :class="getSlotClass(period)">
 								{{ getSlotText(period) }}
 							</text>
-							<text class="timeslot-card__price">¥{{ (period.price / 100).toFixed(0) }}</text>
+							<text v-if="period.price > 0" class="timeslot-card__price">¥{{ (period.price / 100).toFixed(0) }}</text>
+						</view>
+						<!-- 已预约标记 - 点击可取消 -->
+						<view
+							class="timeslot-card__booked-tag"
+							v-if="isSlotBooked(selectedDate, period.startTime)"
+							@click.stop="cancelBooking(selectedDate, period.startTime)"
+						>
+							<text>取消预约</text>
 						</view>
 						<view class="timeslot-card__check" v-if="selectedPeriod === period.id">
 							<view class="check-icon"></view>
@@ -162,7 +171,7 @@
 		<view class="bottom-bar">
 			<view class="bottom-bar__info">
 				<text class="bottom-bar__label">挂号费</text>
-				<text class="bottom-bar__price">¥{{ selectedPriceText }}</text>
+				<text class="bottom-bar__price">{{ selectedPriceText === '免费' ? '免费' : '¥' + selectedPriceText }}</text>
 			</view>
 			<view
 				class="bottom-bar__btn"
@@ -196,7 +205,7 @@
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
-import { getDoctorDetail, getDoctorSchedule, createAppointment } from '@/utils/api/appointment.js'
+import { getDoctorDetail, getDoctorSchedule, createAppointment, getMyAppointments, cancelAppointment } from '@/utils/api/appointment.js'
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 export default {
@@ -207,6 +216,7 @@ export default {
 		return {
 			statusBarHeight: 44,
 			doctorId: '',
+			hospitalId: '',
 			hospitalName: '',
 			departmentName: '',
 			doctor: null,
@@ -218,7 +228,8 @@ export default {
 			selectedPeriod: '',
 			showSuccessModal: false,
 			appointmentResult: null,
-			submitting: false
+			submitting: false,
+			userAppointments: [] // 用户已预约的记录
 		}
 	},
 	computed: {
@@ -226,19 +237,61 @@ export default {
 			return isDarkMode()
 		},
 		currentPeriods() {
-			if (!this.selectedDate || !this.scheduleData[this.selectedDate]) {
+			if (!this.selectedDate) {
 				return []
 			}
-			return this.scheduleData[this.selectedDate]
+
+			// 获取API返回的排班数据
+			const apiPeriods = this.scheduleData[this.selectedDate] || []
+
+			// 查找用户在该日期该医生的预约
+			const userBookedSlots = this.userAppointments.filter(apt => {
+				const aptDate = apt.startTime?.split('T')[0]
+				return aptDate === this.selectedDate && String(apt.doctorId) === String(this.doctorId)
+			})
+
+			// 如果没有用户预约，直接返回API数据
+			if (userBookedSlots.length === 0) {
+				return apiPeriods
+			}
+
+			// 合并：将用户预约的时段添加到排班中（如果不存在）
+			const result = [...apiPeriods]
+
+			userBookedSlots.forEach(apt => {
+				const aptHour = apt.startTime?.split('T')[1]?.substring(0, 5)
+				// 检查该时段是否已在排班数据中
+				const existsInApi = result.some(p => p.startTime === aptHour)
+
+				if (!existsInApi) {
+					// 创建一个"已预约"的虚拟时段
+					result.push({
+						id: `booked-${apt.reserveId || apt.id}`,
+						startTime: aptHour,
+						endTime: apt.endTime?.split('T')[1]?.substring(0, 5) || this.getEndTime(aptHour),
+						label: this.getTimeLabel(aptHour),
+						type: this.getTimeType(aptHour),
+						remainingSlots: 0,
+						status: 'booked',
+						price: 0
+					})
+				}
+			})
+
+			// 按开始时间排序
+			return result.sort((a, b) => a.startTime.localeCompare(b.startTime))
 		},
 		selectedPeriodData() {
 			return this.currentPeriods.find(p => p.id === this.selectedPeriod)
 		},
 		selectedPriceText() {
-			if (this.selectedPeriodData) {
+			if (this.selectedPeriodData && this.selectedPeriodData.price > 0) {
 				return (this.selectedPeriodData.price / 100).toFixed(0)
 			}
-			return this.doctor?.registrationFee ? (this.doctor.registrationFee / 100).toFixed(0) : '-'
+			if (this.doctor?.registrationFee > 0) {
+				return (this.doctor.registrationFee / 100).toFixed(0)
+			}
+			return '免费'
 		},
 		canSubmit() {
 			return this.selectedDate && this.selectedPeriod && this.selectedPeriodData?.status !== 'full' && !this.submitting
@@ -246,16 +299,33 @@ export default {
 	},
 	onLoad(options) {
 		this.doctorId = options.doctorId || ''
+		this.hospitalId = options.hospitalId || ''
 		this.hospitalName = decodeURIComponent(options.hospitalName || '')
 		this.departmentName = decodeURIComponent(options.departmentName || '')
 		this.getStatusBarHeight()
 		this.initDateList()
 		this.loadData()
 	},
+	onShow() {
+		// 每次页面显示时刷新用户预约状态
+		this.refreshUserAppointments()
+	},
 	methods: {
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
+		},
+
+		// 仅刷新用户预约列表（用于onShow）
+		async refreshUserAppointments() {
+			try {
+				const appointRes = await getMyAppointments()
+				if (appointRes.code === 200) {
+					this.userAppointments = appointRes.data.list || []
+				}
+			} catch (e) {
+				console.error('刷新预约状态失败:', e)
+			}
 		},
 
 		initDateList() {
@@ -289,13 +359,19 @@ export default {
 
 		async loadData() {
 			try {
-				// 加载医生详情
-				const res = await getDoctorDetail(this.doctorId)
+				// 获取用户已有预约
+				const appointRes = await getMyAppointments()
+				if (appointRes.code === 200) {
+					this.userAppointments = appointRes.data.list || []
+				}
+
+				// 加载医生详情（传递hospitalId以便获取完整信息）
+				const res = await getDoctorDetail(this.doctorId, this.hospitalId)
 				if (res.code === 200 && res.data) {
 					this.doctor = res.data
 
 					// 根据医生可约日期更新日期列表
-					if (this.doctor.availableDates) {
+					if (this.doctor.availableDates && this.doctor.availableDates.length > 0) {
 						this.dateList = this.dateList.map(d => ({
 							...d,
 							available: this.doctor.availableDates.includes(d.value)
@@ -306,10 +382,14 @@ export default {
 						if (firstAvailable) {
 							this.selectDate(firstAvailable)
 						}
+					} else {
+						// 如果没有排班数据，显示提示
+						uni.showToast({ title: '暂无排班信息', icon: 'none' })
 					}
 				}
 			} catch (e) {
 				console.error('加载医生详情失败:', e)
+				uni.showToast({ title: '加载失败，请重试', icon: 'none' })
 			}
 		},
 
@@ -362,18 +442,95 @@ export default {
 				uni.showToast({ title: '该时段已约满', icon: 'none' })
 				return
 			}
+			// 阻止选择已预约的时段（防止重复预约）
+			if (this.isSlotBooked(this.selectedDate, period.startTime)) {
+				return
+			}
 			this.selectedPeriod = period.id
 		},
 
 		getSlotClass(period) {
-			if (period.status === 'full') return 'timeslot-card__slots--full'
+			if (period.status === 'full' || period.status === 'booked') return 'timeslot-card__slots--full'
 			if (period.status === 'few') return 'timeslot-card__slots--few'
 			return 'timeslot-card__slots--available'
 		},
 
 		getSlotText(period) {
-			if (period.status === 'full') return '已约满'
+			if (period.status === 'full' || period.status === 'booked') return '已约满'
 			return `剩余 ${period.remainingSlots} 号`
+		},
+
+		// 根据开始时间获取结束时间（默认+1小时）
+		getEndTime(startTime) {
+			const [hours, minutes] = startTime.split(':')
+			const endHour = (parseInt(hours) + 1).toString().padStart(2, '0')
+			return `${endHour}:${minutes}`
+		},
+
+		// 根据时间获取时段标签
+		getTimeLabel(time) {
+			const hour = parseInt(time.split(':')[0])
+			if (hour < 12) return '上午'
+			if (hour < 18) return '下午'
+			return '晚上'
+		},
+
+		// 根据时间获取时段类型
+		getTimeType(time) {
+			const hour = parseInt(time.split(':')[0])
+			if (hour < 12) return 'morning'
+			if (hour < 18) return 'afternoon'
+			return 'night'
+		},
+
+		// 检查时段是否已被当前用户预约（该医生该日期该时间）
+		isSlotBooked(date, startTime) {
+			return this.userAppointments.some(apt => {
+				const aptDate = apt.startTime?.split('T')[0]
+				const aptHour = apt.startTime?.split('T')[1]?.substring(0, 5)
+				// 使用 String() 统一类型，避免 number vs string 比较问题
+				return aptDate === date && aptHour === startTime && String(apt.doctorId) === String(this.doctorId)
+			})
+		},
+
+		// 获取当前时段的预约记录（用于取消预约）
+		getBookedAppointment(date, startTime) {
+			return this.userAppointments.find(apt => {
+				const aptDate = apt.startTime?.split('T')[0]
+				const aptHour = apt.startTime?.split('T')[1]?.substring(0, 5)
+				return aptDate === date && aptHour === startTime && String(apt.doctorId) === String(this.doctorId)
+			})
+		},
+
+		// 取消预约
+		async cancelBooking(date, startTime) {
+			const appointment = this.getBookedAppointment(date, startTime)
+			if (!appointment) {
+				uni.showToast({ title: '未找到预约记录', icon: 'none' })
+				return
+			}
+
+			uni.showModal({
+				title: '确认取消',
+				content: '确定要取消此预约吗？',
+				success: async (res) => {
+					if (res.confirm) {
+						try {
+							const result = await cancelAppointment(appointment.reserveId || appointment.id)
+							if (result.code === 200) {
+								uni.showToast({ title: '取消成功', icon: 'success' })
+								// 刷新预约列表
+								await this.refreshUserAppointments()
+							} else {
+								uni.showToast({ title: result.msg || '取消失败', icon: 'none' })
+							}
+						} catch (e) {
+							console.error('取消预约失败:', e)
+							uni.showToast({ title: '取消失败', icon: 'none' })
+						}
+					}
+				}
+			})
 		},
 
 		async submitAppointment() {
@@ -381,15 +538,25 @@ export default {
 
 			this.submitting = true
 			try {
+				// 组装ISO 8601格式的预约时间
+				// selectedDate: "2025-12-11"
+				// selectedPeriodData.startTime: "09:00"
+				const startTime = this.selectedPeriodData?.startTime || '09:00'
+				const appointmentTime = `${this.selectedDate}T${startTime}:00`
+
 				const res = await createAppointment({
 					doctorId: this.doctorId,
 					date: this.selectedDate,
-					periodId: this.selectedPeriod
+					startTime: startTime,
+					time: appointmentTime
 				})
 
 				if (res.code === 200) {
 					this.appointmentResult = res.data
 					this.showSuccessModal = true
+					// 刷新用户预约列表，使"取消预约"标签显示
+					await this.refreshUserAppointments()
+					// 缓存删除移至 closeSuccessModal，避免弹窗时时段消失
 				} else {
 					uni.showToast({ title: res.msg || '预约失败', icon: 'none' })
 				}
@@ -877,6 +1044,44 @@ export default {
 		align-items: center;
 		justify-content: center;
 	}
+
+	&--booked {
+		background: $bg-elevated;
+		pointer-events: none;  // 禁止整个卡片点击
+
+		.timeslot-card__icon,
+		.timeslot-card__content,
+		.timeslot-card__status {
+			opacity: 0.6;
+		}
+
+		.timeslot-card__label,
+		.timeslot-card__time {
+			color: $text-muted;
+		}
+	}
+
+	&__booked-tag {
+		position: absolute;
+		top: 0;
+		right: 0;
+		background: $color-accent;
+		color: #fff;
+		font-size: $font-size-xs;
+		padding: 6rpx 16rpx;
+		border-radius: 0 $radius-lg 0 $radius-md;
+		transition: background 0.2s ease;
+		pointer-events: auto;  // 重新启用按钮点击
+		z-index: 10;  // 确保在顶层
+
+		&:active {
+			background: darken($color-accent, 10%);
+		}
+	}
+}
+
+.timeslot-card {
+	position: relative;
 }
 
 @keyframes pulse-warning {
@@ -1207,11 +1412,33 @@ export default {
 			background: rgba(74, 144, 217, 0.08);
 		}
 
+		&--booked {
+			background: $dark-bg-elevated;
+			pointer-events: none;
+
+			.timeslot-card__icon,
+			.timeslot-card__content,
+			.timeslot-card__status {
+				opacity: 0.6;
+			}
+
+			.timeslot-card__label,
+			.timeslot-card__time {
+				color: $dark-text-muted;
+			}
+		}
+
+		&__booked-tag {
+			pointer-events: auto;
+			z-index: 10;
+		}
+
 		&__icon { background: $dark-bg-elevated; }
 		&__label { color: $dark-text-primary; }
 		&__time { color: $dark-text-secondary; }
 		&__price { color: $dark-text-muted; }
 		&__check { background: $dark-color-primary; }
+		&__booked-tag { background: $dark-color-accent; }
 	}
 
 	.timeslot-skeleton__item {

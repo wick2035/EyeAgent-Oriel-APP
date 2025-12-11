@@ -231,10 +231,31 @@ export default {
 		this.getStatusBarHeight()
 		this.loadData()
 	},
+	onShow() {
+		// 每次进入页面时强制刷新预约记录
+		if (this.currentTab === 0) {
+			this.forceRefreshAppointments()
+		}
+	},
 	methods: {
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
+		},
+
+		// 强制刷新预约记录（用于onShow）
+		async forceRefreshAppointments() {
+			this.loading = true
+			try {
+				const res = await getAppointmentList()
+				if (res.code === 200) {
+					this.appointments = res.data.list || []
+				}
+			} catch (e) {
+				console.error('加载预约记录失败:', e)
+			} finally {
+				this.loading = false
+			}
 		},
 
 		async loadData() {
@@ -242,10 +263,9 @@ export default {
 			try {
 				switch (this.currentTab) {
 					case 0:
-						if (this.appointments.length === 0) {
-							const res = await getAppointmentList()
-							if (res.code === 200) this.appointments = res.data.list || []
-						}
+						// 移除缓存检查，每次都加载
+						const res = await getAppointmentList()
+						if (res.code === 200) this.appointments = res.data.list || []
 						break
 					case 1:
 						if (this.records.length === 0) {

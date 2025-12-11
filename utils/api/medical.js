@@ -2,6 +2,7 @@
  * 就诊记录相关API
  */
 import { get } from './request.js'
+import { getMyAppointments } from './appointment.js'
 
 // ========== Mock数据（API对接前使用） ==========
 
@@ -209,22 +210,59 @@ const USE_MOCK = true
 
 // ========== 预约记录 ==========
 
+// 辅助函数：根据时间获取时段标签
+function getPeriodLabel(time) {
+	if (!time) return '上午'
+	const hour = parseInt(time.split('T')[1]?.split(':')[0] || '9')
+	if (hour < 12) return '上午'
+	if (hour < 18) return '下午'
+	return '晚上'
+}
+
+// 辅助函数：格式化时间范围
+function formatTimeRange(start, end) {
+	const s = start?.split('T')[1]?.substring(0, 5) || '09:00'
+	const e = end?.split('T')[1]?.substring(0, 5) || '10:00'
+	return `${s}-${e}`
+}
+
 /**
  * 获取预约记录列表
  * @param {Object} params - { status, page, pageSize }
  */
 export async function getAppointmentList(params = {}) {
-	if (USE_MOCK) {
-		await new Promise(resolve => setTimeout(resolve, 300))
-		let list = [...MOCK_APPOINTMENTS]
+	// 调用真实API
+	const res = await getMyAppointments(params)
+
+	if (res.code === 200) {
+		// 适配数据格式
+		let list = (res.data.list || []).map(item => ({
+			id: item.reserveId,
+			status: item.status?.toLowerCase() || 'pending',
+			hospitalName: item.hospitalName || '未知医院',
+			departmentName: item.department || '未知科室',
+			doctorName: item.doctorName || '未知医生',
+			doctorTitle: item.doctorTitle || '医师',
+			appointmentDate: item.startTime?.split('T')[0] || '',
+			periodLabel: getPeriodLabel(item.startTime),
+			timeRange: formatTimeRange(item.startTime, item.endTime),
+			queueNumber: 1,
+			registrationFee: 0,
+			createTime: item.startTime
+		}))
+
+		// 按状态筛选（如果有）
 		if (params.status) {
 			list = list.filter(a => a.status === params.status)
 		}
+
 		// 按时间倒序
-		list.sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
+		list.sort((a, b) => new Date(b.createTime || 0) - new Date(a.createTime || 0))
+
 		return { code: 200, msg: 'ok', data: { list, total: list.length } }
 	}
-	return get('/api/medical/appointments', params)
+
+	return res
 }
 
 // ========== 病历报告 ==========

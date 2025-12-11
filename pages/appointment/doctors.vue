@@ -78,17 +78,20 @@
 
 						<!-- 可约日期 -->
 						<view class="doctor-card__dates">
-							<text class="doctor-card__dates-label">近7天可约：</text>
+							<text class="doctor-card__dates-label">近期可约：</text>
 							<view class="doctor-card__date-tags">
-								<view
-									v-for="(date, idx) in getAvailableDays(doctor.availableDates).slice(0, 4)"
-									:key="idx"
-									class="doctor-card__date-tag"
-									:class="{ 'doctor-card__date-tag--today': date.isToday }"
-								>
-									{{ date.label }}
-								</view>
-								<text v-if="doctor.availableDates.length > 4" class="doctor-card__date-more">+{{ doctor.availableDates.length - 4 }}</text>
+								<template v-if="doctor.availableDates && doctor.availableDates.length > 0">
+									<view
+										v-for="(date, idx) in getAvailableDays(doctor.availableDates).slice(0, 4)"
+										:key="idx"
+										class="doctor-card__date-tag"
+										:class="{ 'doctor-card__date-tag--today': date.isToday }"
+									>
+										{{ date.label }}
+									</view>
+									<text v-if="doctor.availableDates.length > 4" class="doctor-card__date-more">+{{ doctor.availableDates.length - 4 }}</text>
+								</template>
+								<text v-else class="doctor-card__date-more">点击查看排班</text>
 							</view>
 						</view>
 
@@ -235,7 +238,7 @@ export default {
 
 		goToAppointment(doctor) {
 			uni.navigateTo({
-				url: `/pages/appointment/doctor-detail?doctorId=${doctor.id}&hospitalName=${encodeURIComponent(this.hospitalName)}&departmentName=${encodeURIComponent(this.departmentName)}`
+				url: `/pages/appointment/doctor-detail?doctorId=${doctor.id}&hospitalId=${this.hospitalId}&hospitalName=${encodeURIComponent(this.hospitalName)}&departmentName=${encodeURIComponent(this.departmentName)}`
 			})
 		},
 

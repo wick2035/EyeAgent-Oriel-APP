@@ -128,7 +128,7 @@
 									今日可约 {{ dept.todayAvailable }}
 								</text>
 							</view>
-							<view class="dept-card__diseases">
+							<view v-if="dept.diseases && dept.diseases.length > 0" class="dept-card__diseases">
 								<text v-for="(disease, idx) in dept.diseases.slice(0, 3)" :key="idx" class="dept-card__disease">{{ disease }}</text>
 							</view>
 						</view>
