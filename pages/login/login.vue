@@ -19,7 +19,10 @@
       <!-- 品牌区域 -->
       <view class="brand" :class="{ 'brand--visible': pageReady }">
         <text class="brand__title">AI医问通</text>
-        <text class="brand__subtitle">您的专属智能健康管家</text>
+        <text class="brand__subtitle"
+          >{{ displaySubtitle
+          }}<text v-if="isTyping" class="typing-cursor">|</text></text
+        >
       </view>
 
       <!-- 登录卡片 -->
@@ -165,6 +168,11 @@ export default {
       agreedTerms: false,
       isLoading: false,
       rippleActive: false,
+      // 打字效果相关
+      fullSubtitle: "您的专属智能健康管家！",
+      displaySubtitle: "",
+      isTyping: false,
+      typingTimer: null,
     };
   },
   computed: {
@@ -177,7 +185,17 @@ export default {
     // 延迟显示动画
     setTimeout(() => {
       this.pageReady = true;
+      // 品牌区域显示后开始打字效果
+      setTimeout(() => {
+        this.startTyping();
+      }, 400);
     }, 100);
+  },
+  onUnload() {
+    // 清理定时器
+    if (this.typingTimer) {
+      clearTimeout(this.typingTimer);
+    }
   },
   onReady() {
     // 注册全局 Toast 实例
@@ -189,13 +207,31 @@ export default {
       this.statusBarHeight = sysInfo.statusBarHeight || 44;
     },
 
-    async handleLogin() {
-      if (!this.canLogin || this.isLoading) return;
+    // 打字效果
+    startTyping() {
+      this.isTyping = true;
+      this.displaySubtitle = "";
+      let index = 0;
+      const typeChar = () => {
+        if (index < this.fullSubtitle.length) {
+          this.displaySubtitle += this.fullSubtitle[index];
+          index++;
+          this.typingTimer = setTimeout(typeChar, 120);
+        } else {
+          this.isTyping = false;
+        }
+      };
+      typeChar();
+    },
 
+    async handleLogin() {
+      // 先检查用户协议
       if (!this.agreedTerms) {
         this.$refs.customToast.warning("请先同意用户协议");
         return;
       }
+
+      if (!this.canLogin || this.isLoading) return;
 
       // 触发按钮涟漪动画
       this.rippleActive = true;
@@ -363,6 +399,25 @@ $wx-green: #07c160;
     font-size: 28rpx;
     color: $text-secondary;
     letter-spacing: 2rpx;
+  }
+}
+
+// 打字光标
+.typing-cursor {
+  display: inline;
+  color: $color-primary;
+  font-weight: 300;
+  animation: cursor-blink 0.8s infinite;
+}
+
+@keyframes cursor-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
   }
 }
 
