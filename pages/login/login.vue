@@ -30,7 +30,7 @@
           :class="{ 'input-group--focus': usernameFocus }"
         >
           <view class="input-icon">
-            <view class="icon-user"></view>
+            <image class="input-icon-img" src="/static/who.svg" mode="aspectFit" />
           </view>
           <input
             class="input-field"
@@ -49,7 +49,7 @@
           :class="{ 'input-group--focus': passwordFocus }"
         >
           <view class="input-icon">
-            <view class="icon-lock"></view>
+            <image class="input-icon-img" src="/static/passwd.svg" mode="aspectFit" />
           </view>
           <input
             class="input-field"
@@ -61,10 +61,11 @@
             @blur="passwordFocus = false"
           />
           <view class="input-eye" @click="showPassword = !showPassword">
-            <view
-              class="icon-eye"
-              :class="{ 'icon-eye--open': showPassword }"
-            ></view>
+            <image
+              class="input-eye-img"
+              :src="showPassword ? '/static/eye-open.svg' : '/static/eye-off.svg'"
+              mode="aspectFit"
+            />
           </view>
         </view>
 
@@ -95,8 +96,7 @@
         <!-- 微信登录 -->
         <view class="social-login">
           <view class="wx-btn" @click="handleWxLogin">
-            <view class="wx-icon"></view>
-            <view class="wx-ripple"></view>
+            <image class="wx-icon-img" src="/static/wechat.svg" mode="aspectFit" />
           </view>
         </view>
       </view>
@@ -397,82 +397,15 @@ $wx-green: #07c160;
   justify-content: center;
 }
 
-.icon-user {
-  width: 32rpx;
-  height: 32rpx;
-  position: relative;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 14rpx;
-    height: 14rpx;
-    border: 2rpx solid $text-muted;
-    border-radius: 50%;
-    transition: border-color 0.3s;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 24rpx;
-    height: 12rpx;
-    border: 2rpx solid $text-muted;
-    border-radius: 12rpx 12rpx 0 0;
-    border-bottom: none;
-    transition: border-color 0.3s;
-  }
+// SVG 图标样式
+.input-icon-img {
+  width: 36rpx;
+  height: 36rpx;
+  opacity: 0.45;
+  transition: opacity 0.3s;
 
   .input-group--focus & {
-    &::before,
-    &::after {
-      border-color: $color-primary;
-    }
-  }
-}
-
-.icon-lock {
-  width: 28rpx;
-  height: 32rpx;
-  position: relative;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 18rpx;
-    height: 12rpx;
-    border: 2rpx solid $text-muted;
-    border-radius: 9rpx 9rpx 0 0;
-    border-bottom: none;
-    transition: border-color 0.3s;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 20rpx;
-    border: 2rpx solid $text-muted;
-    border-radius: 4rpx;
-    transition: border-color 0.3s;
-  }
-
-  .input-group--focus & {
-    &::before,
-    &::after {
-      border-color: $color-primary;
-    }
+    opacity: 0.8;
   }
 }
 
@@ -501,65 +434,35 @@ $wx-green: #07c160;
   }
 }
 
-.icon-eye {
-  width: 32rpx;
-  height: 20rpx;
-  position: relative;
-  border: 2rpx solid $text-muted;
-  border-radius: 16rpx;
-  transition: border-color 0.2s;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 8rpx;
-    height: 8rpx;
-    background: $text-muted;
-    border-radius: 50%;
-    transition: background 0.2s;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: -2rpx;
-    right: -2rpx;
-    height: 2rpx;
-    background: $text-muted;
-    transform: rotate(-30deg);
-    transition: opacity 0.2s;
-  }
-
-  &--open::after {
-    opacity: 0;
-  }
+// 眼睛 SVG 图标样式
+.input-eye-img {
+  width: 40rpx;
+  height: 28rpx;
+  opacity: 0.45;
+  transition: opacity 0.2s;
 }
 
-// 登录按钮
+// 登录按钮 - 医疗蓝主题
 .login-btn {
   position: relative;
   height: 100rpx;
   margin-top: 24rpx;
   background: linear-gradient(
     135deg,
-    $color-accent 0%,
-    $color-accent-light 100%
+    $color-primary 0%,
+    $color-primary-light 100%
   );
   border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: $shadow-button;
+  box-shadow: 0 8rpx 24rpx rgba(30, 58, 95, 0.25);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:active {
     transform: scale(0.98);
-    box-shadow: 0 4rpx 16rpx rgba(255, 107, 91, 0.2);
+    box-shadow: 0 4rpx 16rpx rgba(30, 58, 95, 0.2);
   }
 
   &--disabled {
@@ -665,38 +568,11 @@ $wx-green: #07c160;
   }
 }
 
-.wx-icon {
-  width: 44rpx;
-  height: 36rpx;
-  position: relative;
-
-  // 微信图标 - 两个气泡
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 26rpx;
-    height: 22rpx;
-    background: #ffffff;
-    border-radius: 13rpx 13rpx 0 13rpx;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 22rpx;
-    height: 18rpx;
-    background: #ffffff;
-    border-radius: 11rpx 11rpx 11rpx 0;
-  }
-}
-
-// 移除微信脉冲动画，保持简洁
-.wx-ripple {
-  display: none;
+// 微信 SVG 图标 - 白色
+.wx-icon-img {
+  width: 48rpx;
+  height: 38rpx;
+  filter: brightness(0) invert(1);
 }
 
 // ==================== 用户协议 ====================
