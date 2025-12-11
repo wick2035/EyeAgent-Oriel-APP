@@ -19,7 +19,7 @@
       <!-- 品牌区域 -->
       <view class="brand" :class="{ 'brand--visible': pageReady }">
         <text class="brand__title">AI医问通</text>
-        <text class="brand__subtitle">您的智能健康助手</text>
+        <text class="brand__subtitle">您的专属智能健康管家</text>
       </view>
 
       <!-- 登录卡片 -->
@@ -30,7 +30,11 @@
           :class="{ 'input-group--focus': usernameFocus }"
         >
           <view class="input-icon">
-            <image class="input-icon-img" src="/static/who.svg" mode="aspectFit" />
+            <image
+              class="input-icon-img"
+              src="/static/who.svg"
+              mode="aspectFit"
+            />
           </view>
           <input
             class="input-field"
@@ -49,7 +53,11 @@
           :class="{ 'input-group--focus': passwordFocus }"
         >
           <view class="input-icon">
-            <image class="input-icon-img" src="/static/passwd.svg" mode="aspectFit" />
+            <image
+              class="input-icon-img"
+              src="/static/passwd.svg"
+              mode="aspectFit"
+            />
           </view>
           <input
             class="input-field"
@@ -63,7 +71,9 @@
           <view class="input-eye" @click="showPassword = !showPassword">
             <image
               class="input-eye-img"
-              :src="showPassword ? '/static/eye-open.svg' : '/static/eye-off.svg'"
+              :src="
+                showPassword ? '/static/eye-open.svg' : '/static/eye-off.svg'
+              "
               mode="aspectFit"
             />
           </view>
@@ -96,7 +106,11 @@
         <!-- 微信登录 -->
         <view class="social-login">
           <view class="wx-btn" @click="handleWxLogin">
-            <image class="wx-icon-img" src="/static/wechat.svg" mode="aspectFit" />
+            <image
+              class="wx-icon-img"
+              src="/static/wechat.svg"
+              mode="aspectFit"
+            />
           </view>
         </view>
       </view>
@@ -337,7 +351,7 @@ $wx-green: #07c160;
   &__title {
     display: block;
     font-family: "PingFang SC", -apple-system, sans-serif;
-    font-size: 52rpx;
+    font-size: 62rpx;
     font-weight: 600;
     color: $text-primary;
     letter-spacing: 4rpx;
