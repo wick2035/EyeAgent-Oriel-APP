@@ -24,7 +24,7 @@
 			<view class="chat-input__actions">
 				<!-- 语音按钮 -->
 				<view class="chat-input__btn chat-input__btn--voice" @click="handleVoice">
-					<view class="voice-icon"></view>
+					<image class="voice-icon" src="@/static/radio.svg" mode="aspectFit" />
 				</view>
 
 				<!-- 停止按钮（仅在AI回复中显示） -->
@@ -43,7 +43,7 @@
 					:class="{ 'chat-input__btn--active': canSend }"
 					@click="handleSend"
 				>
-					<view class="send-icon"></view>
+					<image class="send-icon" src="@/static/send.svg" mode="aspectFit" />
 				</view>
 			</view>
 		</view>
@@ -198,12 +198,7 @@ export default {
 			&.chat-input__btn--active {
 				background: $gradient-ai;
 				.send-icon {
-					&::before {
-						border-right-color: #fff;
-					}
-					&::after {
-						background: #fff;
-					}
+					filter: brightness(0) invert(1);
 				}
 			}
 
@@ -247,22 +242,9 @@ export default {
 			}
 		}
 
-		.voice-icon {
-			&::before {
-				background: $dark-text-muted;
-			}
-			&::after {
-				border-color: $dark-text-muted;
-			}
-		}
-
+		.voice-icon,
 		.send-icon {
-			&::before {
-				border-right-color: $dark-text-muted;
-			}
-			&::after {
-				background: $dark-text-muted;
-			}
+			filter: invert(0.6);
 		}
 
 		.chat-input__btn--stop {
@@ -302,70 +284,16 @@ export default {
 	}
 }
 
-// 语音图标 - 麦克风
+// 语音图标
 .voice-icon {
 	width: 36rpx;
 	height: 36rpx;
-	position: relative;
-
-	// 麦克风主体
-	&::before {
-		content: '';
-		position: absolute;
-		top: 2rpx;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 16rpx;
-		height: 22rpx;
-		background: $text-muted;
-		border-radius: 8rpx;
-	}
-
-	// 麦克风底座
-	&::after {
-		content: '';
-		position: absolute;
-		bottom: 2rpx;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 24rpx;
-		height: 12rpx;
-		border: 3rpx solid $text-muted;
-		border-top: none;
-		border-radius: 0 0 12rpx 12rpx;
-	}
 }
 
-// 发送图标 - 纸飞机样式（朝右）
+// 发送图标
 .send-icon {
 	width: 36rpx;
 	height: 36rpx;
-	position: relative;
-
-	// 纸飞机主体 - 三角形朝右
-	&::before {
-		content: '';
-		position: absolute;
-		top: 2rpx;
-		right: 2rpx;
-		width: 0;
-		height: 0;
-		border-top: 16rpx solid transparent;
-		border-bottom: 16rpx solid transparent;
-		border-right: 28rpx solid $text-muted;
-	}
-
-	// 纸飞机折痕
-	&::after {
-		content: '';
-		position: absolute;
-		bottom: 6rpx;
-		right: 6rpx;
-		width: 14rpx;
-		height: 8rpx;
-		background: $text-muted;
-		transform: skewX(30deg);
-	}
 }
 
 // 停止图标 - 正方形

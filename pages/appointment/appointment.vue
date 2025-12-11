@@ -33,7 +33,7 @@
     <!-- 城市定位 -->
     <view class="location-bar">
       <view class="location-bar__left">
-        <view class="location-bar__icon"></view>
+        <image class="location-bar__icon" src="@/static/location.svg" mode="aspectFit" />
         <text class="location-bar__city">{{ currentCity }}</text>
       </view>
       <view class="location-bar__action" @click="switchCity">
@@ -177,7 +177,7 @@
                 class="city-picker__current"
                 @click="selectCity(locatedCity)"
               >
-                <view class="city-picker__location-icon"></view>
+                <image class="city-picker__location-icon" src="@/static/location.svg" mode="aspectFit" />
                 <text>{{ locatedCity }}</text>
               </view>
             </view>
@@ -651,33 +651,7 @@ export default {
   &__icon {
     width: 28rpx;
     height: 36rpx;
-    position: relative;
     margin-right: $spacing-sm;
-
-    &::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 24rpx;
-      height: 24rpx;
-      border: 4rpx solid $color-accent;
-      border-radius: 50% 50% 50% 0;
-      transform: translateX(-50%) rotate(-45deg);
-    }
-
-    &::after {
-      content: "";
-      position: absolute;
-      top: 6rpx;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 8rpx;
-      height: 8rpx;
-      background: $color-accent;
-      border-radius: 50%;
-    }
   }
 
   &__city {
@@ -1054,14 +1028,6 @@ export default {
   }
 
   .location-bar {
-    &__icon {
-      &::before {
-        border-color: $dark-color-accent;
-      }
-      &::after {
-        background: $dark-color-accent;
-      }
-    }
     &__city {
       color: $dark-text-primary;
     }
@@ -1178,14 +1144,6 @@ export default {
     &__current {
       background: $dark-bg-elevated;
       color: $dark-text-primary;
-    }
-    &__location-icon {
-      &::before {
-        border-color: $dark-color-accent;
-      }
-      &::after {
-        background: $dark-color-accent;
-      }
     }
     &__item {
       background: $dark-bg-elevated;
@@ -1330,32 +1288,7 @@ export default {
   &__location-icon {
     width: 28rpx;
     height: 36rpx;
-    position: relative;
     margin-right: $spacing-sm;
-
-    &::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 50%;
-      width: 24rpx;
-      height: 24rpx;
-      border: 4rpx solid $color-accent;
-      border-radius: 50% 50% 50% 0;
-      transform: translateX(-50%) rotate(-45deg);
-    }
-
-    &::after {
-      content: "";
-      position: absolute;
-      top: 6rpx;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 8rpx;
-      height: 8rpx;
-      background: $color-accent;
-      border-radius: 50%;
-    }
   }
 
   &__grid {

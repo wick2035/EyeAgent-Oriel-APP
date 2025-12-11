@@ -14,7 +14,7 @@
 			</view>
 			<view class="header__right">
 				<view class="header__notify" @click="goToMessages">
-					<view class="notify-icon"></view>
+					<image class="notify-icon" src="@/static/roll.svg" mode="aspectFit" />
 					<view v-if="unreadCount > 0" class="notify-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</view>
 				</view>
 			</view>
@@ -288,34 +288,19 @@ export default {
 .notify-icon {
 	width: 44rpx;
 	height: 48rpx;
-	border: 3rpx solid $text-secondary;
-	border-radius: 22rpx 22rpx 8rpx 8rpx;
-	position: relative;
-
-	&::after {
-		content: '';
-		position: absolute;
-		bottom: -8rpx;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 14rpx;
-		height: 8rpx;
-		background: $text-secondary;
-		border-radius: 0 0 7rpx 7rpx;
-	}
 }
 
 .notify-badge {
 	position: absolute;
-	top: 12rpx;
-	right: 12rpx;
-	min-width: 32rpx;
-	height: 32rpx;
-	padding: 0 8rpx;
+	top: 8rpx;
+	right: 8rpx;
+	min-width: 28rpx;
+	height: 28rpx;
+	padding: 0 6rpx;
 	background: $color-accent;
 	color: #fff;
-	font-size: 20rpx;
-	border-radius: 16rpx;
+	font-size: 18rpx;
+	border-radius: 14rpx;
 	display: flex;
 	align-items: center;
 	justify-content: center;
