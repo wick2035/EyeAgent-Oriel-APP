@@ -98,9 +98,11 @@ GET /api/app/base/doctor-free-time
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| startTime | String | 开始时间 (格式: HH:mm:ss) |
-| endTime | String | 结束时间 (格式: HH:mm:ss) |
+| startTime | String | 开始时间 (格式: HH:mm:ss)，可能是非整点（如 08:30:00） |
+| endTime | String | 结束时间 (格式: HH:mm:ss)，可能是非整点（如 11:30:00） |
 | capacity | Integer | 剩余可预约位置数 |
+| canReserve | Boolean | 是否可预约（容量>0 且当前患者在该时段无预约时为 true） |
+| agendaId | String | 当前患者在该时段的预约ID，无预约时为 null |
 
 **响应示例**
 
@@ -113,19 +115,32 @@ GET /api/app/base/doctor-free-time
       "date": "2025-12-10",
       "hourlySlots": [
         {
+          "startTime": "08:30:00",
+          "endTime": "09:00:00",
+          "capacity": 2,
+          "canReserve": true,
+          "agendaId": null
+        },
+        {
           "startTime": "09:00:00",
           "endTime": "10:00:00",
-          "capacity": 3
+          "capacity": 4,
+          "canReserve": false,
+          "agendaId": "550e8400-e29b-41d4-a716-446655440010"
         },
         {
           "startTime": "10:00:00",
           "endTime": "11:00:00",
-          "capacity": 5
+          "capacity": 5,
+          "canReserve": true,
+          "agendaId": null
         },
         {
-          "startTime": "14:00:00",
-          "endTime": "15:00:00",
-          "capacity": 4
+          "startTime": "11:00:00",
+          "endTime": "11:30:00",
+          "capacity": 2,
+          "canReserve": true,
+          "agendaId": null
         }
       ]
     },
@@ -133,14 +148,18 @@ GET /api/app/base/doctor-free-time
       "date": "2025-12-11",
       "hourlySlots": [
         {
-          "startTime": "09:00:00",
-          "endTime": "10:00:00",
-          "capacity": 5
+          "startTime": "08:30:00",
+          "endTime": "09:00:00",
+          "capacity": 2,
+          "canReserve": true,
+          "agendaId": null
         },
         {
-          "startTime": "10:00:00",
-          "endTime": "11:00:00",
-          "capacity": 5
+          "startTime": "09:00:00",
+          "endTime": "10:00:00",
+          "capacity": 5,
+          "canReserve": true,
+          "agendaId": null
         }
       ]
     },
@@ -199,7 +218,14 @@ POST /api/app/base/reserve-doctor
 - 预约时间不能早于当前时间
 - 系统会自动在该小时内找到第一个可用的时间段进行预约
 
-**响应体结构 (Agenda)**
+**响应体结构**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| data | Agenda | 预约日程对象 |
+| position | Integer | 当前预约是该时段的第几个（从1开始） |
+
+**Agenda 结构**
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
@@ -252,9 +278,14 @@ POST /api/app/base/reserve-doctor
     "category": "APPOINTMENT",
     "createTime": "2025-12-10T08:30:00",
     "updateTime": "2025-12-10T08:30:00"
-  }
+  },
+  "position": 3
 }
 ```
+
+**position 说明**
+- 表示当前预约是该时段的第几个预约（从1开始）
+- 例如 `position: 3` 表示该小时段内已有2个预约，当前是第3个
 
 **错误码**
 
@@ -667,6 +698,8 @@ curl -X GET 'http://localhost:8081/api/app/base/page-doctor-by-hospital?hospital
 
 | 版本 | 日期 | 描述 |
 |------|------|------|
+| 1.4.0 | 2025-12-11 | 预约医生接口返回 position 字段，表示当前预约是该时段第几个 |
+| 1.3.0 | 2025-12-11 | 获取医生空闲时间接口：HourlySlot 新增 canReserve、agendaId 字段，支持非整点时间 |
 | 1.2.0 | 2025-12-11 | 完善患者预约列表接口，返回医生和医院详细信息 |
 | 1.1.0 | 2025-12-11 | 添加获取患者预约列表和取消预约接口文档 |
 | 1.0.0 | 2025-12-10 | 初始版本 |

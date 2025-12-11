@@ -1232,7 +1232,7 @@ export default {
     border-radius: $radius-xl $radius-xl 0 0;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    max-height: 70vh;
+    height: 70vh;
     display: flex;
     flex-direction: column;
 
@@ -1298,8 +1298,12 @@ export default {
 
   &__content {
     flex: 1;
-    padding: $spacing-lg;
     overflow: hidden;
+  }
+
+  &__inner {
+    padding: $spacing-lg;
+    padding-bottom: calc(#{$spacing-lg} + env(safe-area-inset-bottom));
   }
 
   &__section {

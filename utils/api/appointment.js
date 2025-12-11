@@ -54,7 +54,30 @@ function adaptDoctor(apiData) {
 }
 
 /**
- * 适配排班数据 - 将hourlySlots转换为页面需要的格式
+ * 计算时段状态
+ * @param {Object} slot - 时段数据
+ * @returns {string} 状态：available/few/full/booked
+ */
+function getSlotStatus(slot) {
+	// 用户已预约该时段
+	if (slot.agendaId) {
+		return 'booked'
+	}
+	// 不可预约（约满或其他原因）
+	if (slot.canReserve === false || slot.capacity === 0) {
+		return 'full'
+	}
+	// 号源紧张
+	if (slot.capacity <= 3) {
+		return 'few'
+	}
+	// 充足
+	return 'available'
+}
+
+/**
+ * 适配排班数据 - 将slots转换为页面需要的格式
+ * 支持新接口返回的 canReserve 和 agendaId 字段
  */
 function adaptSchedule(apiData) {
 	const scheduleData = {}
@@ -65,7 +88,8 @@ function adaptSchedule(apiData) {
 
 	apiData.forEach(dayData => {
 		const date = dayData.date
-		const slots = dayData.hourlySlots || []
+		// 兼容 hourlySlots 和 slots 两种字段名
+		const slots = dayData.slots || dayData.hourlySlots || []
 
 		scheduleData[date] = slots.map((slot, index) => {
 			const startHour = parseInt(slot.startTime.split(':')[0])
@@ -80,8 +104,8 @@ function adaptSchedule(apiData) {
 				label = '晚上'
 			}
 
-			// 格式化时间显示
-			const startTime = slot.startTime.substring(0, 5) // "09:00:00" -> "09:00"
+			// 格式化时间显示（兼容 "09:00" 和 "09:00:00" 格式）
+			const startTime = slot.startTime.substring(0, 5)
 			const endTime = slot.endTime.substring(0, 5)
 
 			return {
@@ -94,7 +118,11 @@ function adaptSchedule(apiData) {
 				fullEndTime: slot.endTime,
 				totalSlots: slot.capacity,
 				remainingSlots: slot.capacity,
-				status: slot.capacity > 3 ? 'available' : (slot.capacity > 0 ? 'few' : 'full'),
+				// 新增字段：是否可预约、预约ID
+				canReserve: slot.canReserve !== false, // 兼容旧数据，默认可预约
+				agendaId: slot.agendaId || null,
+				// 状态基于接口返回的 canReserve 和 agendaId 计算
+				status: getSlotStatus(slot),
 				price: 0 // API未返回价格，使用默认值
 			}
 		})

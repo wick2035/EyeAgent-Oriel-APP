@@ -123,7 +123,7 @@
 							'timeslot-card--selected': selectedPeriod === period.id,
 							'timeslot-card--disabled': period.status === 'full',
 							'timeslot-card--warning': period.status === 'few',
-							'timeslot-card--booked': isSlotBooked(selectedDate, period.startTime)
+							'timeslot-card--booked': period.status === 'booked'
 						}"
 						@click="selectPeriod(period)"
 					>
@@ -142,11 +142,11 @@
 							</text>
 							<text v-if="period.price > 0" class="timeslot-card__price">¥{{ (period.price / 100).toFixed(0) }}</text>
 						</view>
-						<!-- 已预约标记 - 点击可取消 -->
+						<!-- 已预约标记 - 仅在 agendaId 存在时显示 -->
 						<view
 							class="timeslot-card__booked-tag"
-							v-if="isSlotBooked(selectedDate, period.startTime)"
-							@click.stop="cancelBooking(selectedDate, period.startTime)"
+							v-if="period.agendaId"
+							@click.stop="cancelBooking(period)"
 						>
 							<text>取消预约</text>
 						</view>
@@ -289,46 +289,8 @@ export default {
 			if (!this.selectedDate) {
 				return []
 			}
-
-			// 获取API返回的排班数据
-			const apiPeriods = this.scheduleData[this.selectedDate] || []
-
-			// 查找用户在该日期该医生的预约
-			const userBookedSlots = this.userAppointments.filter(apt => {
-				const aptDate = apt.startTime?.split('T')[0]
-				return aptDate === this.selectedDate && String(apt.doctorId) === String(this.doctorId)
-			})
-
-			// 如果没有用户预约，直接返回API数据
-			if (userBookedSlots.length === 0) {
-				return apiPeriods
-			}
-
-			// 合并：将用户预约的时段添加到排班中（如果不存在）
-			const result = [...apiPeriods]
-
-			userBookedSlots.forEach(apt => {
-				const aptHour = apt.startTime?.split('T')[1]?.substring(0, 5)
-				// 检查该时段是否已在排班数据中
-				const existsInApi = result.some(p => p.startTime === aptHour)
-
-				if (!existsInApi) {
-					// 创建一个"已预约"的虚拟时段
-					result.push({
-						id: `booked-${apt.reserveId || apt.id}`,
-						startTime: aptHour,
-						endTime: apt.endTime?.split('T')[1]?.substring(0, 5) || this.getEndTime(aptHour),
-						label: this.getTimeLabel(aptHour),
-						type: this.getTimeType(aptHour),
-						remainingSlots: 0,
-						status: 'booked',
-						price: 0
-					})
-				}
-			})
-
-			// 按开始时间排序
-			return result.sort((a, b) => a.startTime.localeCompare(b.startTime))
+			// 直接返回 API 数据，状态已在 adaptSchedule 中根据 canReserve/agendaId 处理
+			return this.scheduleData[this.selectedDate] || []
 		},
 		selectedPeriodData() {
 			return this.currentPeriods.find(p => p.id === this.selectedPeriod)
@@ -343,7 +305,9 @@ export default {
 			return '免费'
 		},
 		canSubmit() {
-			return this.selectedDate && this.selectedPeriod && this.selectedPeriodData?.status !== 'full' && !this.submitting
+			const period = this.selectedPeriodData
+			// 使用 canReserve 字段判断是否可预约
+			return this.selectedDate && this.selectedPeriod && period?.canReserve && !this.submitting
 		}
 	},
 	onLoad(options) {
@@ -487,12 +451,13 @@ export default {
 		},
 
 		selectPeriod(period) {
-			if (period.status === 'full') {
+			// 不可预约的时段阻止选择
+			if (!period.canReserve) {
+				if (period.status === 'booked') {
+					// 已预约时段不提示，点击无效
+					return
+				}
 				uni.showToast({ title: '该时段已约满', icon: 'none' })
-				return
-			}
-			// 阻止选择已预约的时段（防止重复预约）
-			if (this.isSlotBooked(this.selectedDate, period.startTime)) {
 				return
 			}
 			this.selectedPeriod = period.id
@@ -505,7 +470,8 @@ export default {
 		},
 
 		getSlotText(period) {
-			if (period.status === 'full' || period.status === 'booked') return '已约满'
+			if (period.status === 'booked') return '预约成功'
+			if (period.status === 'full') return '已约满'
 			return `剩余 ${period.remainingSlots} 号`
 		},
 
@@ -532,25 +498,6 @@ export default {
 			return 'night'
 		},
 
-		// 检查时段是否已被当前用户预约（该医生该日期该时间）
-		isSlotBooked(date, startTime) {
-			return this.userAppointments.some(apt => {
-				const aptDate = apt.startTime?.split('T')[0]
-				const aptHour = apt.startTime?.split('T')[1]?.substring(0, 5)
-				// 使用 String() 统一类型，避免 number vs string 比较问题
-				return aptDate === date && aptHour === startTime && String(apt.doctorId) === String(this.doctorId)
-			})
-		},
-
-		// 获取当前时段的预约记录（用于取消预约）
-		getBookedAppointment(date, startTime) {
-			return this.userAppointments.find(apt => {
-				const aptDate = apt.startTime?.split('T')[0]
-				const aptHour = apt.startTime?.split('T')[1]?.substring(0, 5)
-				return aptDate === date && aptHour === startTime && String(apt.doctorId) === String(this.doctorId)
-			})
-		},
-
 		// 格式化显示日期
 		formatDisplayDate(dateStr) {
 			const date = new Date(dateStr)
@@ -560,18 +507,17 @@ export default {
 			return `${month}月${day}日 ${weekdays[date.getDay()]}`
 		},
 
-		// 点击"取消预约"按钮 - 显示确认弹窗
-		cancelBooking(date, startTime) {
-			const appointment = this.getBookedAppointment(date, startTime)
-			if (!appointment) {
+		// 点击"取消预约"按钮 - 显示确认弹窗（改用 period.agendaId）
+		cancelBooking(period) {
+			if (!period.agendaId) {
 				uni.showToast({ title: '未找到预约记录', icon: 'none' })
 				return
 			}
 			this.cancelingAppointment = {
-				...appointment,
-				displayDate: this.formatDisplayDate(date),
-				displayTime: `${startTime}-${this.getEndTime(startTime)}`,
-				displayPeriod: this.getTimeLabel(startTime)
+				agendaId: period.agendaId,
+				displayDate: this.formatDisplayDate(this.selectedDate),
+				displayTime: `${period.startTime}-${period.endTime}`,
+				displayPeriod: period.label
 			}
 			this.showCancelModal = true
 		},
@@ -582,19 +528,20 @@ export default {
 			this.cancelingAppointment = null
 		},
 
-		// 确认取消预约
+		// 确认取消预约（使用 agendaId）
 		async confirmCancel() {
 			if (this.canceling || !this.cancelingAppointment) return
 
 			this.canceling = true
 			try {
-				const result = await cancelAppointment(
-					this.cancelingAppointment.reserveId || this.cancelingAppointment.id
-				)
+				// 使用 agendaId 取消预约
+				const result = await cancelAppointment(this.cancelingAppointment.agendaId)
 				if (result.code === 200) {
 					this.showCancelModal = false
 					this.showCancelSuccessModal = true
-					await this.refreshUserAppointments()
+					// 清除缓存并重新加载排班数据，以获取最新状态
+					delete this.scheduleData[this.selectedDate]
+					await this.loadSchedule(this.selectedDate)
 				} else {
 					uni.showToast({ title: result.msg || '取消失败', icon: 'none' })
 				}
@@ -633,9 +580,9 @@ export default {
 				if (res.code === 200) {
 					this.appointmentResult = res.data
 					this.showSuccessModal = true
-					// 刷新用户预约列表，使"取消预约"标签显示
-					await this.refreshUserAppointments()
-					// 缓存删除移至 closeSuccessModal，避免弹窗时时段消失
+					// 清除缓存并重新加载排班数据，以获取最新的 canReserve/agendaId 状态
+					delete this.scheduleData[this.selectedDate]
+					await this.loadSchedule(this.selectedDate)
 				} else {
 					uni.showToast({ title: res.msg || '预约失败', icon: 'none' })
 				}
