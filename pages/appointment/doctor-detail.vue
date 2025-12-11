@@ -198,6 +198,51 @@
 			</view>
 		</view>
 
+		<!-- 取消确认弹窗 -->
+		<view v-if="showCancelModal" class="cancel-modal" @click="closeCancelModal">
+			<view class="cancel-modal__content" @click.stop>
+				<view class="cancel-modal__icon">
+					<text class="cancel-modal__question">?</text>
+				</view>
+				<text class="cancel-modal__title">确认取消预约？</text>
+				<view class="cancel-modal__info">
+					<text class="cancel-modal__info-label">您将取消以下预约：</text>
+					<text class="cancel-modal__info-detail">
+						{{ cancelingAppointment?.displayDate }} {{ cancelingAppointment?.displayPeriod }} {{ cancelingAppointment?.displayTime }}
+					</text>
+				</view>
+				<text class="cancel-modal__tips">取消后该时段将释放给其他患者</text>
+				<view class="cancel-modal__actions">
+					<view class="cancel-modal__btn cancel-modal__btn--secondary" @click="closeCancelModal">
+						再想想
+					</view>
+					<view
+						class="cancel-modal__btn cancel-modal__btn--primary"
+						:class="{ 'cancel-modal__btn--loading': canceling }"
+						@click="confirmCancel"
+					>
+						{{ canceling ? '取消中...' : '确认取消' }}
+					</view>
+				</view>
+			</view>
+		</view>
+
+		<!-- 取消成功弹窗 -->
+		<view v-if="showCancelSuccessModal" class="cancel-success-modal" @click="closeCancelSuccessModal">
+			<view class="cancel-success-modal__content" @click.stop>
+				<view class="cancel-success-modal__icon">
+					<view class="cancel-success-check"></view>
+				</view>
+				<text class="cancel-success-modal__title">已取消预约</text>
+				<text class="cancel-success-modal__desc">您的预约已成功取消</text>
+				<text class="cancel-success-modal__sub">该时段已释放</text>
+				<text class="cancel-success-modal__tips">如需重新预约，可选择其他时段</text>
+				<view class="cancel-success-modal__btn" @click="closeCancelSuccessModal">
+					我知道了
+				</view>
+			</view>
+		</view>
+
 		<!-- 顶部通知栏 -->
 		<TopNotificationBar />
 	</view>
@@ -229,7 +274,11 @@ export default {
 			showSuccessModal: false,
 			appointmentResult: null,
 			submitting: false,
-			userAppointments: [] // 用户已预约的记录
+			userAppointments: [], // 用户已预约的记录
+			showCancelModal: false,        // 确认取消弹窗
+			showCancelSuccessModal: false, // 取消成功弹窗
+			cancelingAppointment: null,    // 正在取消的预约
+			canceling: false               // 取消中状态
 		}
 	},
 	computed: {
@@ -502,35 +551,65 @@ export default {
 			})
 		},
 
-		// 取消预约
-		async cancelBooking(date, startTime) {
+		// 格式化显示日期
+		formatDisplayDate(dateStr) {
+			const date = new Date(dateStr)
+			const month = date.getMonth() + 1
+			const day = date.getDate()
+			const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+			return `${month}月${day}日 ${weekdays[date.getDay()]}`
+		},
+
+		// 点击"取消预约"按钮 - 显示确认弹窗
+		cancelBooking(date, startTime) {
 			const appointment = this.getBookedAppointment(date, startTime)
 			if (!appointment) {
 				uni.showToast({ title: '未找到预约记录', icon: 'none' })
 				return
 			}
+			this.cancelingAppointment = {
+				...appointment,
+				displayDate: this.formatDisplayDate(date),
+				displayTime: `${startTime}-${this.getEndTime(startTime)}`,
+				displayPeriod: this.getTimeLabel(startTime)
+			}
+			this.showCancelModal = true
+		},
 
-			uni.showModal({
-				title: '确认取消',
-				content: '确定要取消此预约吗？',
-				success: async (res) => {
-					if (res.confirm) {
-						try {
-							const result = await cancelAppointment(appointment.reserveId || appointment.id)
-							if (result.code === 200) {
-								uni.showToast({ title: '取消成功', icon: 'success' })
-								// 刷新预约列表
-								await this.refreshUserAppointments()
-							} else {
-								uni.showToast({ title: result.msg || '取消失败', icon: 'none' })
-							}
-						} catch (e) {
-							console.error('取消预约失败:', e)
-							uni.showToast({ title: '取消失败', icon: 'none' })
-						}
-					}
+		// 关闭取消确认弹窗
+		closeCancelModal() {
+			this.showCancelModal = false
+			this.cancelingAppointment = null
+		},
+
+		// 确认取消预约
+		async confirmCancel() {
+			if (this.canceling || !this.cancelingAppointment) return
+
+			this.canceling = true
+			try {
+				const result = await cancelAppointment(
+					this.cancelingAppointment.reserveId || this.cancelingAppointment.id
+				)
+				if (result.code === 200) {
+					this.showCancelModal = false
+					this.showCancelSuccessModal = true
+					await this.refreshUserAppointments()
+				} else {
+					uni.showToast({ title: result.msg || '取消失败', icon: 'none' })
 				}
-			})
+			} catch (e) {
+				console.error('取消预约失败:', e)
+				uni.showToast({ title: '取消失败，请重试', icon: 'none' })
+			} finally {
+				this.canceling = false
+			}
+		},
+
+		// 关闭取消成功弹窗
+		closeCancelSuccessModal() {
+			this.showCancelSuccessModal = false
+			this.cancelingAppointment = null
 		},
 
 		async submitAppointment() {
@@ -1339,6 +1418,224 @@ export default {
 	100% { transform: scale(1); opacity: 1; }
 }
 
+@keyframes shake {
+	0%, 100% { transform: rotate(0deg); }
+	25% { transform: rotate(-8deg); }
+	75% { transform: rotate(8deg); }
+}
+
+@keyframes drawCheck {
+	0% { stroke-dashoffset: 50; }
+	100% { stroke-dashoffset: 0; }
+}
+
+// 取消确认弹窗
+.cancel-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	animation: fadeIn 0.3s ease;
+
+	&__content {
+		width: 600rpx;
+		background: $bg-card;
+		border-radius: $radius-xl;
+		padding: $spacing-xl;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	&__icon {
+		width: 120rpx;
+		height: 120rpx;
+		background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: $spacing-lg;
+		box-shadow: 0 12rpx 32rpx rgba(245, 158, 11, 0.3);
+		animation: shake 0.5s ease-in-out 0.3s;
+	}
+
+	&__question {
+		font-size: 64rpx;
+		font-weight: $font-weight-bold;
+		color: #fff;
+		line-height: 1;
+	}
+
+	&__title {
+		font-size: $font-size-xl;
+		font-weight: $font-weight-bold;
+		color: $text-primary;
+		margin-bottom: $spacing-md;
+	}
+
+	&__info {
+		text-align: center;
+		margin-bottom: $spacing-md;
+	}
+
+	&__info-label {
+		font-size: $font-size-base;
+		color: $text-secondary;
+		display: block;
+		margin-bottom: $spacing-xs;
+	}
+
+	&__info-detail {
+		font-size: $font-size-base;
+		font-weight: $font-weight-medium;
+		color: $text-primary;
+		display: block;
+	}
+
+	&__tips {
+		font-size: $font-size-sm;
+		color: $text-muted;
+		text-align: center;
+		margin-bottom: $spacing-xl;
+	}
+
+	&__actions {
+		display: flex;
+		gap: $spacing-md;
+		width: 100%;
+	}
+
+	&__btn {
+		flex: 1;
+		height: 88rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: $font-size-lg;
+		font-weight: $font-weight-semibold;
+		border-radius: $radius-lg;
+		transition: all 0.25s ease;
+
+		&:active {
+			transform: scale(0.98);
+		}
+
+		&--secondary {
+			background: transparent;
+			border: 2rpx solid $border-color;
+			color: $text-secondary;
+		}
+
+		&--primary {
+			background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+			color: #fff;
+		}
+
+		&--loading {
+			opacity: 0.7;
+			pointer-events: none;
+		}
+	}
+}
+
+// 取消成功弹窗
+.cancel-success-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	animation: fadeIn 0.3s ease;
+
+	&__content {
+		width: 600rpx;
+		background: $bg-card;
+		border-radius: $radius-xl;
+		padding: $spacing-xl;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	&__icon {
+		width: 120rpx;
+		height: 120rpx;
+		background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: $spacing-lg;
+		box-shadow: 0 12rpx 32rpx rgba(6, 182, 212, 0.3);
+	}
+
+	&__title {
+		font-size: $font-size-xl;
+		font-weight: $font-weight-bold;
+		color: $text-primary;
+		margin-bottom: $spacing-sm;
+	}
+
+	&__desc {
+		font-size: $font-size-base;
+		color: $text-secondary;
+		margin-bottom: $spacing-xs;
+	}
+
+	&__sub {
+		font-size: $font-size-base;
+		color: $text-secondary;
+		margin-bottom: $spacing-md;
+	}
+
+	&__tips {
+		font-size: $font-size-sm;
+		color: $text-muted;
+		text-align: center;
+		margin-bottom: $spacing-xl;
+	}
+
+	&__btn {
+		width: 100%;
+		height: 88rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+		color: #fff;
+		font-size: $font-size-lg;
+		font-weight: $font-weight-semibold;
+		border-radius: $radius-lg;
+		transition: all 0.25s ease;
+
+		&:active {
+			transform: scale(0.98);
+		}
+	}
+}
+
+.cancel-success-check {
+	width: 40rpx;
+	height: 24rpx;
+	border-left: 8rpx solid #fff;
+	border-bottom: 8rpx solid #fff;
+	transform: rotate(-45deg);
+}
+
 // ========== 深色模式 ==========
 .page--dark {
 	background: $dark-bg-base;
@@ -1472,6 +1769,33 @@ export default {
 		.success-modal__number { color: $dark-color-primary; }
 		.success-modal__tips { color: $dark-text-muted; }
 		.success-modal__btn {
+			background: linear-gradient(135deg, $dark-color-primary 0%, lighten($dark-color-primary, 10%) 100%);
+		}
+	}
+
+	// 取消确认弹窗 - 深色模式
+	.cancel-modal__content {
+		background: $dark-bg-card;
+
+		.cancel-modal__title { color: $dark-text-primary; }
+		.cancel-modal__info-label { color: $dark-text-secondary; }
+		.cancel-modal__info-detail { color: $dark-text-primary; }
+		.cancel-modal__tips { color: $dark-text-muted; }
+		.cancel-modal__btn--secondary {
+			border-color: $dark-border-color;
+			color: $dark-text-secondary;
+		}
+	}
+
+	// 取消成功弹窗 - 深色模式
+	.cancel-success-modal__content {
+		background: $dark-bg-card;
+
+		.cancel-success-modal__title { color: $dark-text-primary; }
+		.cancel-success-modal__desc { color: $dark-text-secondary; }
+		.cancel-success-modal__sub { color: $dark-text-secondary; }
+		.cancel-success-modal__tips { color: $dark-text-muted; }
+		.cancel-success-modal__btn {
 			background: linear-gradient(135deg, $dark-color-primary 0%, lighten($dark-color-primary, 10%) 100%);
 		}
 	}
