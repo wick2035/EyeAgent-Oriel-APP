@@ -49,36 +49,8 @@
 			</view>
 		</view>
 
-		<!-- 健康数据 -->
-		<view class="health-data">
-			<view class="health-data__header">
-				<text class="health-data__title">今日健康</text>
-				<text class="health-data__more" @click="goToHealth">查看更多</text>
-			</view>
-			<view class="health-data__cards">
-				<view class="health-card health-card--steps">
-					<view class="health-card__icon"></view>
-					<view class="health-card__info">
-						<text class="health-card__value">{{ healthData.steps }}</text>
-						<text class="health-card__label">步数</text>
-					</view>
-				</view>
-				<view class="health-card health-card--heart">
-					<view class="health-card__icon"></view>
-					<view class="health-card__info">
-						<text class="health-card__value">{{ healthData.heartRate }}</text>
-						<text class="health-card__label">心率</text>
-					</view>
-				</view>
-				<view class="health-card health-card--sleep">
-					<view class="health-card__icon"></view>
-					<view class="health-card__info">
-						<text class="health-card__value">{{ healthData.sleep }}</text>
-						<text class="health-card__label">睡眠</text>
-					</view>
-				</view>
-			</view>
-		</view>
+		<!-- 眼部健康 -->
+		<EyeHealthSection />
 
 		<!-- 健康资讯 -->
 		<view class="news">
@@ -120,13 +92,15 @@
 <script>
 import TabBar from '@/components/TabBar.vue'
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
+import EyeHealthSection from '@/components/eye-health/EyeHealthSection.vue'
 import { isDarkMode } from '@/store/theme.js'
 import { getUnreadCount } from '@/store/notification.js'
 
 export default {
 	components: {
 		TabBar,
-		TopNotificationBar
+		TopNotificationBar,
+		EyeHealthSection
 	},
 	data() {
 		return {
@@ -137,11 +111,6 @@ export default {
 				{ name: '健康档案', icon: 'record', type: 'info', path: '' },
 				{ name: '用药提醒', icon: 'medicine', type: 'warning', path: '' }
 			],
-			healthData: {
-				steps: '6,482',
-				heartRate: '72',
-				sleep: '7.5h'
-			},
 			newsList: [
 				{
 					id: 1,
@@ -207,9 +176,6 @@ export default {
 			} else {
 				uni.showToast({ title: '功能开发中', icon: 'none' })
 			}
-		},
-		goToHealth() {
-			uni.showToast({ title: '健康详情开发中', icon: 'none' })
 		},
 		goToNews() {
 			uni.showToast({ title: '资讯列表开发中', icon: 'none' })
@@ -434,113 +400,6 @@ export default {
 	}
 }
 
-.health-data {
-	position: relative;
-	z-index: 1;
-	padding: 0 $spacing-lg;
-	margin-bottom: $spacing-lg;
-
-	&__header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: $spacing-md;
-	}
-
-	&__title {
-		font-size: $font-size-lg;
-		font-weight: $font-weight-semibold;
-		color: $text-primary;
-	}
-
-	&__more {
-		font-size: $font-size-sm;
-		color: $color-primary;
-	}
-
-	&__cards {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: $spacing-md;
-	}
-}
-
-.health-card {
-	background: $bg-card;
-	border-radius: $radius-lg;
-	padding: $spacing-md;
-	box-shadow: $shadow-sm;
-	display: flex;
-	align-items: center;
-
-	&__icon {
-		width: 64rpx;
-		height: 64rpx;
-		border-radius: $radius-md;
-		margin-right: $spacing-sm;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	&--steps .health-card__icon {
-		background: rgba(16, 185, 129, 0.1);
-		&::before {
-			content: '';
-			width: 24rpx;
-			height: 32rpx;
-			border-left: 4rpx solid $color-success;
-			border-bottom: 4rpx solid $color-success;
-			transform: rotate(-45deg);
-			margin-top: -8rpx;
-		}
-	}
-
-	&--heart .health-card__icon {
-		background: rgba(239, 68, 68, 0.1);
-		&::before {
-			content: '';
-			width: 28rpx;
-			height: 24rpx;
-			background: $color-error;
-			border-radius: 14rpx 14rpx 0 0;
-			transform: rotate(-45deg);
-			position: relative;
-		}
-	}
-
-	&--sleep .health-card__icon {
-		background: rgba(102, 126, 234, 0.1);
-		&::before {
-			content: '';
-			width: 28rpx;
-			height: 28rpx;
-			border: 4rpx solid #667EEA;
-			border-radius: 50%;
-			border-right-color: transparent;
-			border-bottom-color: transparent;
-			transform: rotate(-45deg);
-		}
-	}
-
-	&__info {
-		display: flex;
-		flex-direction: column;
-	}
-
-	&__value {
-		font-size: $font-size-lg;
-		font-weight: $font-weight-bold;
-		color: $text-primary;
-		line-height: 1.2;
-	}
-
-	&__label {
-		font-size: $font-size-xs;
-		color: $text-muted;
-	}
-}
-
 .news {
 	position: relative;
 	z-index: 1;
@@ -649,14 +508,6 @@ export default {
 
 	.services__title { color: $dark-text-primary; }
 	.service-item__text { color: $dark-text-secondary; }
-
-	.health-data__title { color: $dark-text-primary; }
-	.health-data__more { color: $dark-color-primary; }
-	.health-card {
-		background: $dark-bg-card;
-		&__value { color: $dark-text-primary; }
-		&__label { color: $dark-text-muted; }
-	}
 
 	.news__title { color: $dark-text-primary; }
 	.news__more { color: $dark-color-primary; }
