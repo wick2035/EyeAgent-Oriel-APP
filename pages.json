@@ -78,6 +78,13 @@
 			}
 		},
 		{
+			"path": "pages/profile/appointment-detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "预约详情"
+			}
+		},
+		{
 			"path": "pages/profile/pdf-viewer",
 			"style": {
 				"navigationStyle": "custom",

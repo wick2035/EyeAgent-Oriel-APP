@@ -43,6 +43,7 @@
 						v-for="item in appointments"
 						:key="item.id"
 						class="appointment-card"
+						@click="viewAppointmentDetail(item)"
 					>
 						<view class="appointment-card__header">
 							<view class="appointment-card__status" :class="'appointment-card__status--' + item.status">
@@ -314,6 +315,14 @@ export default {
 		viewPdf(item, type) {
 			uni.navigateTo({
 				url: `/pages/profile/pdf-viewer?url=${encodeURIComponent(item.pdfUrl)}&title=${encodeURIComponent(item.title)}&type=${type}`
+			})
+		},
+
+		viewAppointmentDetail(item) {
+			// 缓存数据以便详情页使用
+			uni.setStorageSync('tempAppointmentDetail', JSON.stringify(item))
+			uni.navigateTo({
+				url: `/pages/profile/appointment-detail?id=${item.id}`
 			})
 		},
 

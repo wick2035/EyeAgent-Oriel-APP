@@ -160,12 +160,15 @@ function adaptReservation(apiData) {
 		endTime: apiData.endTime,
 		status: apiData.status,
 		patientName: apiData.patientName,
+		queuePosition: apiData.queuePosition || null,  // 排队位置（就诊序号）
 		doctorId: String(apiData.doctorId || ''),  // 统一转为字符串，避免类型比较问题
 		doctorName: apiData.doctorName,
 		doctorTitle: apiData.doctorTitle,
 		doctorSpecialty: apiData.doctorSpecialty,
 		department: apiData.department,
 		doctorAvatarUrl: apiData.doctorAvatarUrl,
+		consultationRoom: apiData.consultationRoom || '',  // 就诊室
+		hospitalId: apiData.hospitalId || '',  // 医院ID
 		hospitalName: apiData.hospitalName,
 		hospitalAddress: apiData.hospitalAddress,
 		hospitalLevel: apiData.hospitalLevel

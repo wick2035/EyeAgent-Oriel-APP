@@ -235,8 +235,11 @@ export async function getAppointmentList(params = {}) {
 	const res = await getMyAppointments(params)
 
 	if (res.code === 200) {
-		// 适配数据格式
+		// 适配数据格式，保留所有原始字段用于详情页
 		let list = (res.data.list || []).map(item => ({
+			// 原始字段（详情页需要）
+			...item,
+			// 兼容字段（列表页显示用）
 			id: item.reserveId,
 			status: item.status?.toLowerCase() || 'pending',
 			hospitalName: item.hospitalName || '未知医院',
@@ -246,7 +249,7 @@ export async function getAppointmentList(params = {}) {
 			appointmentDate: item.startTime?.split('T')[0] || '',
 			periodLabel: getPeriodLabel(item.startTime),
 			timeRange: formatTimeRange(item.startTime, item.endTime),
-			queueNumber: 1,
+			queueNumber: item.queuePosition || 1,
 			registrationFee: 0,
 			createTime: item.startTime
 		}))
