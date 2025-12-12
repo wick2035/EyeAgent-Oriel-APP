@@ -12,7 +12,7 @@
 		@touchend="onTouchEnd"
 	>
 		<!-- 删除操作区域 -->
-		<view class="reminder-card__delete" :style="{ width: deleteWidth + 'rpx' }">
+		<view class="reminder-card__delete" :class="{ 'reminder-card__delete--visible': swipeOffset > 0 }" :style="{ width: deleteWidth + 'rpx' }">
 			<view class="reminder-card__delete-btn" @click.stop="handleDelete">
 				<view class="delete-icon"></view>
 			</view>
@@ -196,7 +196,7 @@ export default {
 		right: 0;
 		top: 0;
 		bottom: 0;
-		background: $color-error;
+		background: transparent;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -204,6 +204,10 @@ export default {
 		overflow: hidden;
 		border-radius: 0;
 		z-index: 0;
+
+		&--visible {
+			background: $color-error;
+		}
 	}
 
 	&__delete-btn {
