@@ -122,6 +122,7 @@
 						:class="{
 							'timeslot-card--selected': selectedPeriod === period.id,
 							'timeslot-card--disabled': period.status === 'full',
+							'timeslot-card--passed': period.status === 'passed',
 							'timeslot-card--warning': period.status === 'few',
 							'timeslot-card--booked': period.status === 'booked'
 						}"
@@ -451,6 +452,11 @@ export default {
 		},
 
 		selectPeriod(period) {
+			// 已过时段阻止选择
+			if (period.status === 'passed') {
+				uni.showToast({ title: '该时段已过', icon: 'none' })
+				return
+			}
 			// 不可预约的时段阻止选择
 			if (!period.canReserve) {
 				if (period.status === 'booked') {
@@ -464,12 +470,13 @@ export default {
 		},
 
 		getSlotClass(period) {
-			if (period.status === 'full' || period.status === 'booked') return 'timeslot-card__slots--full'
+			if (period.status === 'passed' || period.status === 'full' || period.status === 'booked') return 'timeslot-card__slots--full'
 			if (period.status === 'few') return 'timeslot-card__slots--few'
 			return 'timeslot-card__slots--available'
 		},
 
 		getSlotText(period) {
+			if (period.status === 'passed') return '已过'
 			if (period.status === 'booked') return '预约成功'
 			if (period.status === 'full') return '已约满'
 			return `剩余 ${period.remainingSlots} 号`
@@ -1007,6 +1014,16 @@ export default {
 		}
 	}
 
+	&--passed {
+		opacity: 0.5;
+
+		.timeslot-card__label,
+		.timeslot-card__time,
+		.timeslot-card__slots {
+			color: $text-muted;
+		}
+	}
+
 	&--warning {
 		.timeslot-card__slots {
 			animation: pulse-warning 2s infinite;
@@ -1221,6 +1238,7 @@ export default {
 	left: 0;
 	right: 0;
 	bottom: 0;
+	z-index: 100; // 确保在时段卡片之上
 	display: flex;
 	align-items: center;
 	padding: $spacing-md $spacing-lg;
@@ -1668,6 +1686,16 @@ export default {
 
 			.timeslot-card__label,
 			.timeslot-card__time {
+				color: $dark-text-muted;
+			}
+		}
+
+		&--passed {
+			opacity: 0.5;
+
+			.timeslot-card__label,
+			.timeslot-card__time,
+			.timeslot-card__slots {
 				color: $dark-text-muted;
 			}
 		}

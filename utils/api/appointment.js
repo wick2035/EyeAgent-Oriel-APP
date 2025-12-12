@@ -56,9 +56,25 @@ function adaptDoctor(apiData) {
 /**
  * 计算时段状态
  * @param {Object} slot - 时段数据
- * @returns {string} 状态：available/few/full/booked
+ * @param {string} date - 日期字符串 YYYY-MM-DD
+ * @returns {string} 状态：available/few/full/booked/passed
  */
-function getSlotStatus(slot) {
+function getSlotStatus(slot, date) {
+	// 检查今天已过的时段
+	const today = new Date()
+	const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+	if (date === todayStr) {
+		const now = new Date()
+		const [hours, minutes] = slot.startTime.split(':').map(Number)
+		const slotTime = new Date()
+		slotTime.setHours(hours, minutes, 0, 0)
+
+		if (now > slotTime) {
+			return 'passed'
+		}
+	}
+
 	// 用户已预约该时段
 	if (slot.agendaId) {
 		return 'booked'
@@ -108,6 +124,9 @@ function adaptSchedule(apiData) {
 			const startTime = slot.startTime.substring(0, 5)
 			const endTime = slot.endTime.substring(0, 5)
 
+			// 计算状态（传入日期用于判断是否已过期）
+			const status = getSlotStatus(slot, date)
+
 			return {
 				id: `${date}-${index}`,
 				type,
@@ -118,11 +137,10 @@ function adaptSchedule(apiData) {
 				fullEndTime: slot.endTime,
 				totalSlots: slot.capacity,
 				remainingSlots: slot.capacity,
-				// 新增字段：是否可预约、预约ID
-				canReserve: slot.canReserve !== false, // 兼容旧数据，默认可预约
+				// 是否可预约：已过期或接口返回不可预约时为 false
+				canReserve: status !== 'passed' && slot.canReserve !== false,
 				agendaId: slot.agendaId || null,
-				// 状态基于接口返回的 canReserve 和 agendaId 计算
-				status: getSlotStatus(slot),
+				status,
 				price: 0 // API未返回价格，使用默认值
 			}
 		})
