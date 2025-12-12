@@ -259,8 +259,18 @@ export async function getAppointmentList(params = {}) {
 			list = list.filter(a => a.status === params.status)
 		}
 
-		// 按时间倒序
-		list.sort((a, b) => new Date(b.createTime || 0) - new Date(a.createTime || 0))
+		// 状态优先级：待就诊 > 已完成 > 已取消
+		const statusPriority = { pending: 1, completed: 2, cancelled: 3, canceled: 3 }
+
+		// 先按状态优先级排序，同状态内按时间倒序
+		list.sort((a, b) => {
+			const priorityA = statusPriority[a.status] || 2
+			const priorityB = statusPriority[b.status] || 2
+			if (priorityA !== priorityB) {
+				return priorityA - priorityB
+			}
+			return new Date(b.createTime || 0) - new Date(a.createTime || 0)
+		})
 
 		return { code: 200, msg: 'ok', data: { list, total: list.length } }
 	}
