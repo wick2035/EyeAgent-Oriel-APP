@@ -46,7 +46,8 @@
 					@click="handleMenu(item)"
 				>
 					<view class="menu-item__icon" :style="{ background: item.bgColor }">
-						<view class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
+						<image v-if="item.icon === 'medicine'" class="menu-icon menu-icon--medicine" src="@/static/medicine.svg" mode="aspectFit" />
+						<view v-else class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
 					</view>
 					<text class="menu-item__text">{{ item.title }}</text>
 					<view class="menu-item__arrow"></view>
@@ -491,19 +492,12 @@ export default {
 	}
 
 	&--medicine {
-		width: 16rpx;
-		border: 3rpx solid $color-success;
-		border-radius: 8rpx;
-		height: 32rpx;
-		&::before {
-			content: '';
-			position: absolute;
-			top: 50%;
-			left: -2rpx;
-			right: -2rpx;
-			height: 3rpx;
-			background: $color-success;
-		}
+		width: 36rpx;
+		height: 36rpx;
+		border: none;
+		border-radius: 0;
+		// 将黑色 SVG 转为绿色 #10B981
+		filter: invert(56%) sepia(52%) saturate(552%) hue-rotate(118deg) brightness(92%) contrast(94%);
 	}
 
 	&--theme {

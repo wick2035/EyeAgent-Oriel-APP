@@ -109,7 +109,7 @@ export default {
 				{ name: '在线问诊', icon: 'consult', type: 'primary', path: '/pages/ai-consult/ai-consult' },
 				{ name: '预约挂号', icon: 'appointment', type: 'success', path: '/pages/appointment/appointment' },
 				{ name: '健康档案', icon: 'record', type: 'info', path: '' },
-				{ name: '用药提醒', icon: 'medicine', type: 'warning', path: '' }
+				{ name: '用药提醒', icon: 'medicine', type: 'warning', path: '/pages/medication/medication-reminder' }
 			],
 			newsList: [
 				{
@@ -172,7 +172,7 @@ export default {
 		},
 		handleService(service) {
 			if (service.path) {
-				uni.switchTab({ url: service.path })
+				uni.navigateTo({ url: service.path })
 			} else {
 				uni.showToast({ title: '功能开发中', icon: 'none' })
 			}
