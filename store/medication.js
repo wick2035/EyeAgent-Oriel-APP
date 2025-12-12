@@ -168,9 +168,10 @@ export async function markAsCompleted(id) {
 	try {
 		const res = await medicationApi.markAsCompleted(id)
 		if (res.code === 200) {
-			const reminder = medicationState.reminders.find(r => r.id === id)
-			if (reminder) {
-				reminder.status = 'READ'
+			const index = medicationState.reminders.findIndex(r => r.id === id)
+			if (index !== -1) {
+				// 创建新对象触发响应式更新
+				medicationState.reminders[index] = { ...medicationState.reminders[index], status: 'READ' }
 				updateTodayStats()
 			}
 			return { success: true }
@@ -189,9 +190,10 @@ export async function unmarkCompleted(id) {
 	try {
 		const res = await medicationApi.unmarkCompleted(id)
 		if (res.code === 200) {
-			const reminder = medicationState.reminders.find(r => r.id === id)
-			if (reminder) {
-				reminder.status = 'SCHEDULED'
+			const index = medicationState.reminders.findIndex(r => r.id === id)
+			if (index !== -1) {
+				// 创建新对象触发响应式更新
+				medicationState.reminders[index] = { ...medicationState.reminders[index], status: 'SCHEDULED' }
 				updateTodayStats()
 			}
 			return { success: true }

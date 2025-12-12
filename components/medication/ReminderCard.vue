@@ -196,13 +196,14 @@ export default {
 		right: 0;
 		top: 0;
 		bottom: 0;
-		background: linear-gradient(90deg, transparent 0%, $color-error 30%);
+		background: $color-error;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		width: 0;
 		overflow: hidden;
-		border-radius: 0 $radius-lg $radius-lg 0;
+		border-radius: 0;
+		z-index: 0;
 	}
 
 	&__delete-btn {
@@ -221,6 +222,7 @@ export default {
 		transition: transform 0.2s ease;
 		will-change: transform;
 		transform: translateZ(0); // 开启 GPU 加速
+		z-index: 1;
 	}
 
 	&__status-bar {

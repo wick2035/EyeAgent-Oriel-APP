@@ -806,7 +806,8 @@ export default {
   }
 
   .welcome__hi {
-    background: $dark-text-primary;
+    background: $dark-bg-elevated;
+    color: $dark-text-primary;
   }
   .welcome__title {
     color: $dark-text-primary;

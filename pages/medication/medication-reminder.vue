@@ -498,7 +498,7 @@ export default {
 	margin-top: $spacing-md;
 
 	&:first-child {
-		margin-top: $spacing-xs;
+		margin-top: 0;
 	}
 
 	&__header {
