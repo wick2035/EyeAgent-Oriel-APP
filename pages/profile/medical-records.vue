@@ -307,7 +307,8 @@ export default {
 			const map = {
 				pending: '待就诊',
 				completed: '已完成',
-				cancelled: '已取消'
+				cancelled: '已取消',
+				canceled: '已取消'
 			}
 			return map[status] || status
 		},
@@ -492,7 +493,8 @@ export default {
 			color: $color-success;
 		}
 
-		&--cancelled {
+		&--cancelled,
+		&--canceled {
 			background: rgba(156, 163, 175, 0.1);
 			color: $text-muted;
 		}

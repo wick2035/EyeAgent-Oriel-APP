@@ -56,9 +56,9 @@
 
 			<!-- 详情卡片 -->
 			<view class="detail-card">
-				<view class="detail-item" v-for="item in detailItems" :key="item.label">
+				<view class="detail-item" v-for="item in detailItems" :key="item.label" @click="handleDetailClick(item)">
 					<text class="detail-label">{{ item.label }}</text>
-					<text class="detail-value" :class="{ 'detail-value--highlight': item.highlight }">
+					<text class="detail-value" :class="{ 'detail-value--highlight': item.highlight, 'detail-value--clickable': item.clickable }">
 						{{ item.value }}
 					</text>
 				</view>
@@ -156,7 +156,8 @@ export default {
 			appointment: {},
 			showCancelDialog: false,
 			canceling: false,
-			qrcodeUrl: ''  // 离线生成的二维码图片路径
+			qrcodeUrl: '',  // 离线生成的二维码图片路径
+			showFullReserveId: false  // 控制是否显示完整就诊码
 		}
 	},
 	computed: {
@@ -212,14 +213,15 @@ export default {
 		// 详情列表项
 		detailItems() {
 			const apt = this.appointment
+			const queueNum = apt.queuePosition || apt.queueNumber
 			return [
 				{ label: '就诊医院', value: apt.hospitalName || '-' },
 				{ label: '就诊时间', value: this.formattedTimeRange },
 				{ label: '就诊医生', value: apt.doctorName && apt.doctorTitle ? `${apt.doctorName} ${apt.doctorTitle}` : (apt.doctorName || '-') },
 				{ label: '就诊科室', value: apt.department || '-' },
 				{ label: '就诊人', value: apt.patientName || '-' },
-				{ label: '就诊码', value: apt.reserveId ? apt.reserveId.substring(0, 8) + '...' : '-', highlight: true },
-				{ label: '就诊序号', value: apt.queuePosition ? `第${apt.queuePosition}号` : '-', highlight: true },
+				{ label: '就诊码', value: apt.reserveId ? (this.showFullReserveId ? apt.reserveId : apt.reserveId.substring(0, 8) + '...') : '-', highlight: true, clickable: !!apt.reserveId, key: 'reserveId' },
+				{ label: '就诊序号', value: queueNum ? `第${queueNum}号` : '-', highlight: true },
 				{ label: '就诊地址', value: apt.consultationRoom || '请以现场指引为准' }
 			]
 		}
@@ -274,6 +276,12 @@ export default {
 		// 返回
 		goBack() {
 			uni.navigateBack()
+		},
+		// 处理详情项点击
+		handleDetailClick(item) {
+			if (item.key === 'reserveId' && item.clickable) {
+				this.showFullReserveId = !this.showFullReserveId
+			}
 		},
 		// 取消预约
 		handleCancel() {

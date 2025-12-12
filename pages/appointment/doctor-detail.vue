@@ -176,10 +176,14 @@
 			</view>
 			<view
 				class="bottom-bar__btn"
-				:class="{ 'bottom-bar__btn--disabled': !canSubmit }"
+				:class="{
+					'bottom-bar__btn--disabled': !canSubmit,
+					'bottom-bar__btn--loading': submitting
+				}"
 				@click="submitAppointment"
 			>
-				确认预约
+				<view v-if="submitting" class="loading-spinner"></view>
+				{{ submitting ? '预约中...' : '确认预约' }}
 			</view>
 		</view>
 
@@ -191,7 +195,7 @@
 				</view>
 				<text class="success-modal__title">预约成功</text>
 				<text class="success-modal__desc">您的挂号序号为</text>
-				<text class="success-modal__number">{{ appointmentResult?.queueNumber || 1 }}</text>
+				<text class="success-modal__number">{{ appointmentResult?.position || appointmentResult?.queueNumber || 1 }}</text>
 				<text class="success-modal__tips">请于就诊当日提前30分钟到达医院取号</text>
 				<view class="success-modal__btn" @click="goToMyAppointments">
 					查看我的预约
@@ -587,9 +591,25 @@ export default {
 				if (res.code === 200) {
 					this.appointmentResult = res.data
 					this.showSuccessModal = true
+
+					// 记录当前选中的时段ID，用于定位下一个可约时段
+					const currentPeriodId = this.selectedPeriod
+
 					// 清除缓存并重新加载排班数据，以获取最新的 canReserve/agendaId 状态
 					delete this.scheduleData[this.selectedDate]
 					await this.loadSchedule(this.selectedDate)
+
+					// 预约成功后，自动选中下一个可约时段
+					const periods = this.scheduleData[this.selectedDate] || []
+					const currentIndex = periods.findIndex(p => p.id === currentPeriodId)
+					// 从当前时段之后查找下一个可约时段
+					const nextAvailable = periods.slice(currentIndex + 1).find(p => p.canReserve && p.status !== 'passed' && p.status !== 'full')
+					if (nextAvailable) {
+						this.selectedPeriod = nextAvailable.id
+					} else {
+						// 如果后面没有可约时段，清空选择
+						this.selectedPeriod = ''
+					}
 				} else {
 					uni.showToast({ title: res.msg || '预约失败', icon: 'none' })
 				}
@@ -607,8 +627,31 @@ export default {
 
 		goToMyAppointments() {
 			this.showSuccessModal = false
-			// 返回预约列表或首页
-			uni.navigateBack({ delta: 4 })
+
+			// 组装预约详情数据（使用API返回的时间数据，而非当前选中的时段）
+			const appointmentDetail = {
+				reserveId: this.appointmentResult?.id || this.appointmentResult?.reserveId,
+				startTime: this.appointmentResult?.startTime,
+				endTime: this.appointmentResult?.endTime,
+				status: 'PENDING',
+				patientName: this.appointmentResult?.patientName,
+				queuePosition: this.appointmentResult?.position || this.appointmentResult?.queueNumber,
+				doctorId: this.doctorId,
+				doctorName: this.doctor?.name,
+				doctorTitle: this.doctor?.title,
+				department: this.departmentName,
+				hospitalId: this.hospitalId,
+				hospitalName: this.hospitalName,
+				hospitalAddress: this.doctor?.hospitalAddress || ''
+			}
+
+			// 存储数据供详情页读取
+			uni.setStorageSync('tempAppointmentDetail', JSON.stringify(appointmentDetail))
+
+			// 跳转到预约详情页
+			uni.navigateTo({
+				url: '/pages/profile/appointment-detail'
+			})
 		},
 
 		goBack() {
@@ -1284,7 +1327,27 @@ export default {
 			background: $text-muted;
 			pointer-events: none;
 		}
+
+		&--loading {
+			pointer-events: none;
+			opacity: 0.85;
+		}
 	}
+}
+
+// Loading spinner
+.loading-spinner {
+	width: 32rpx;
+	height: 32rpx;
+	border: 4rpx solid rgba(255, 255, 255, 0.3);
+	border-top-color: #fff;
+	border-radius: 50%;
+	margin-right: 12rpx;
+	animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
 }
 
 // 成功弹窗
