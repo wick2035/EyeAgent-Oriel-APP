@@ -107,9 +107,9 @@ export default {
 			statusBarHeight: 44,
 			services: [
 				{ name: '在线问诊', icon: 'consult', type: 'primary', path: '/pages/ai-consult/ai-consult' },
-				{ name: '预约挂号', icon: 'appointment', type: 'success', path: '/pages/appointment/appointment' },
+				{ name: '预约挂号', icon: 'appointment', type: 'warning', path: '/pages/appointment/appointment' },
 				{ name: '健康档案', icon: 'record', type: 'info', path: '' },
-				{ name: '用药提醒', icon: 'medicine', type: 'warning', path: '/pages/medication/medication-reminder' }
+				{ name: '用药提醒', icon: 'medicine', type: 'success', path: '/pages/medication/medication-reminder' }
 			],
 			newsList: [
 				{
@@ -172,7 +172,12 @@ export default {
 		},
 		handleService(service) {
 			if (service.path) {
-				uni.navigateTo({ url: service.path })
+				const tabBarPages = ['/pages/index/index', '/pages/appointment/appointment', '/pages/ai-consult/ai-consult', '/pages/messages/messages', '/pages/profile/profile']
+				if (tabBarPages.includes(service.path)) {
+					uni.switchTab({ url: service.path })
+				} else {
+					uni.navigateTo({ url: service.path })
+				}
 			} else {
 				uni.showToast({ title: '功能开发中', icon: 'none' })
 			}
@@ -385,8 +390,8 @@ export default {
 	}
 
 	&--appointment {
-		// 使用 filter 将黑色 SVG 转为 $color-success 绿色
-		filter: invert(56%) sepia(52%) saturate(563%) hue-rotate(109deg) brightness(95%) contrast(92%);
+		// 使用 filter 将黑色 SVG 转为 $color-warning 橙色
+		filter: invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg) brightness(101%) contrast(96%);
 	}
 
 	&--record {
@@ -395,8 +400,8 @@ export default {
 	}
 
 	&--medicine {
-		// 使用 filter 将黑色 SVG 转为 $color-warning 橙色
-		filter: invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg) brightness(101%) contrast(96%);
+		// 使用 filter 将黑色 SVG 转为 $color-success 绿色
+		filter: invert(56%) sepia(52%) saturate(563%) hue-rotate(109deg) brightness(95%) contrast(92%);
 	}
 }
 
