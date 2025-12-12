@@ -46,7 +46,10 @@
 			"path": "pages/ai-consult/ai-consult",
 			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText": "AI问诊"
+				"navigationBarTitleText": "AI问诊",
+				"app-plus": {
+					"softinputMode": "adjustPan"
+				}
 			}
 		},
 		{

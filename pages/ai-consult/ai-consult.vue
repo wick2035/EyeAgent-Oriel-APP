@@ -1,18 +1,24 @@
 <template>
   <view class="page" :class="{ 'page--dark': isDark }">
-    <!-- 状态栏占位 -->
-    <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+    <!-- 固定头部 -->
+    <view class="fixed-header">
+      <!-- 状态栏占位 -->
+      <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
 
-    <!-- 顶部导航栏 -->
-    <view class="navbar">
-      <view class="navbar__left" @click="goBack">
-        <view class="back-icon"></view>
-      </view>
-      <text class="navbar__title">AI问诊</text>
-      <view class="navbar__right" @click="showHistory">
-        <view class="history-icon"></view>
+      <!-- 顶部导航栏 -->
+      <view class="navbar">
+        <view class="navbar__left" @click="goBack">
+          <view class="back-icon"></view>
+        </view>
+        <text class="navbar__title">AI问诊</text>
+        <view class="navbar__right" @click="showHistory">
+          <view class="history-icon"></view>
+        </view>
       </view>
     </view>
+
+    <!-- 头部占位（防止内容被遮挡） -->
+    <view class="header-placeholder" :style="{ height: (statusBarHeight + 44) + 'px' }"></view>
 
     <!-- 内容区域 -->
     <scroll-view
@@ -489,6 +495,21 @@ export default {
   }
 }
 
+// 固定头部容器
+.fixed-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: $bg-base;
+}
+
+// 头部占位
+.header-placeholder {
+  flex-shrink: 0;
+}
+
 .status-bar {
   flex-shrink: 0;
 }
@@ -741,6 +762,9 @@ export default {
 
 // 深色模式
 .page--dark {
+  .fixed-header {
+    background: $dark-bg-base;
+  }
   .navbar__title {
     color: $dark-text-primary;
   }

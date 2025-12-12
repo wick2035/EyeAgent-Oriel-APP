@@ -33,6 +33,7 @@
 				v-model="inputValue"
 				:placeholder="placeholder"
 				:disabled="disabled"
+				:cursor-spacing="20"
 				@input="handleInput"
 				@confirm="handleSend"
 				@focus="handleFocus"
@@ -119,6 +120,12 @@ export default {
 		value(val) {
 			this.inputValue = val
 		}
+	},
+	mounted() {
+		// 监听键盘高度变化
+		uni.onKeyboardHeightChange(res => {
+			this.$emit('keyboardChange', res.height)
+		})
 	},
 	methods: {
 		handleInput(e) {
