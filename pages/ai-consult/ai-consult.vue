@@ -42,29 +42,15 @@
         >
         <text class="welcome__subtitle">有任何健康问题都可以问我</text>
 
-        <!-- 快捷功能条 -->
-        <scroll-view class="quick-actions" scroll-x show-scrollbar="false">
-          <view
-            v-for="(action, index) in quickActions"
-            :key="index"
-            class="quick-action"
-            @click="handleQuickAction(action)"
-          >
-            <text class="quick-action__icon">{{ action.icon }}</text>
-            <text class="quick-action__text">{{ action.text }}</text>
-          </view>
-        </scroll-view>
-
         <!-- 快捷提示词 -->
         <view class="prompts">
           <view class="prompts__header">
-            <text class="prompts__title">这些问题我可以帮您</text>
             <view class="prompts__refresh" @click="refreshPrompts">
               <view class="refresh-icon"></view>
               <text class="prompts__refresh-text">换一换</text>
             </view>
           </view>
-          <view class="prompts__list">
+          <view class="prompts__tags">
             <QuickPrompt
               v-for="prompt in prompts"
               :key="prompt.id"
@@ -106,9 +92,12 @@
       ref="chatInput"
       :disabled="isSending"
       :isSending="isSending"
+      :quickActions="quickActions"
+      :showQuickActions="!hasMessages"
       @send="handleSend"
       @voice="handleVoice"
       @stop="handleStop"
+      @quickAction="handleQuickAction"
     />
 
     <!-- 底部导航 -->
@@ -683,58 +672,13 @@ export default {
   }
 }
 
-// 快捷功能条
-.quick-actions {
-  white-space: nowrap;
-  margin-bottom: $spacing-xl;
-  padding: 0 $spacing-lg;
-
-  // 确保内容可以水平滚动
-  ::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.quick-action {
-  display: inline-flex;
-  align-items: center;
-  padding: $spacing-sm $spacing-lg;
-  background: $bg-card;
-  border: 2rpx solid $border-color;
-  border-radius: $radius-full;
-  margin-right: $spacing-md;
-  transition: all 0.25s ease;
-  flex-shrink: 0;
-
-  &:active {
-    transform: scale(0.95);
-    background: $bg-elevated;
-  }
-
-  &__icon {
-    font-size: $font-size-lg;
-    margin-right: $spacing-xs;
-  }
-
-  &__text {
-    font-size: $font-size-sm;
-    color: $text-primary;
-    font-weight: $font-weight-medium;
-  }
-}
-
 // 快捷提示词
 .prompts {
   &__header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-bottom: $spacing-md;
-  }
-
-  &__title {
-    font-size: $font-size-base;
-    color: $text-secondary;
   }
 
   &__refresh {
@@ -747,6 +691,12 @@ export default {
     font-size: $font-size-sm;
     color: $color-primary;
     margin-left: $spacing-xs;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
   }
 }
 
@@ -816,17 +766,6 @@ export default {
     color: $dark-text-secondary;
   }
 
-  .quick-action {
-    background: $dark-bg-card;
-    border-color: $dark-border-color;
-    &__text {
-      color: $dark-text-primary;
-    }
-  }
-
-  .prompts__title {
-    color: $dark-text-secondary;
-  }
   .prompts__refresh-text {
     color: $dark-color-primary;
   }

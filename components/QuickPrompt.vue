@@ -1,8 +1,6 @@
 <template>
-	<view class="prompt-card" :class="{ 'prompt-card--dark': isDark }" @click="handleClick">
-		<view class="prompt-card__tag">#</view>
-		<text class="prompt-card__text">{{ text }}</text>
-		<view class="prompt-card__arrow"></view>
+	<view class="prompt-tag" :class="{ 'prompt-tag--dark': isDark }" @click="handleClick">
+		<text class="prompt-tag__text">{{ text }}</text>
 	</view>
 </template>
 
@@ -35,73 +33,36 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.prompt-card {
-	display: flex;
+.prompt-tag {
+	display: inline-flex;
 	align-items: center;
-	padding: $spacing-md $spacing-lg;
-	background: $bg-card;
-	border: 2rpx solid $border-color;
-	border-radius: $radius-lg;
-	margin-bottom: $spacing-md;
-	transition: all 0.25s ease;
+	padding: 16rpx 28rpx;
+	background: #F2F3F5;
+	border-radius: 32rpx;
+	transition: all 0.2s ease;
 
 	&:active {
-		transform: scale(0.98);
-		background: $bg-elevated;
-	}
-
-	&__tag {
-		width: 44rpx;
-		height: 44rpx;
-		background: rgba(30, 58, 95, 0.08);
-		border-radius: $radius-sm;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: $font-size-lg;
-		font-weight: $font-weight-semibold;
-		color: $color-primary;
-		margin-right: $spacing-md;
-		flex-shrink: 0;
+		transform: scale(0.96);
+		background: #E8E9EB;
 	}
 
 	&__text {
-		flex: 1;
-		font-size: $font-size-base;
-		color: $text-primary;
-		line-height: $line-height-normal;
-	}
-
-	&__arrow {
-		width: 16rpx;
-		height: 16rpx;
-		border-top: 3rpx solid $text-muted;
-		border-right: 3rpx solid $text-muted;
-		transform: rotate(45deg);
-		margin-left: $spacing-md;
-		flex-shrink: 0;
+		font-size: 28rpx;
+		color: #1A1A1A;
+		line-height: 1.4;
+		white-space: nowrap;
 	}
 
 	// 深色模式
 	&--dark {
-		background: $dark-bg-card;
-		border-color: $dark-border-color;
+		background: #2A2D32;
 
 		&:active {
-			background: $dark-bg-elevated;
+			background: #353940;
 		}
 
-		.prompt-card__tag {
-			background: rgba(74, 144, 217, 0.15);
-			color: $dark-color-primary;
-		}
-
-		.prompt-card__text {
-			color: $dark-text-primary;
-		}
-
-		.prompt-card__arrow {
-			border-color: $dark-text-muted;
+		.prompt-tag__text {
+			color: #E5E5E5;
 		}
 	}
 }

@@ -1,5 +1,25 @@
 <template>
 	<view class="chat-input" :class="{ 'chat-input--dark': isDark }">
+		<!-- 功能按钮区域 -->
+		<scroll-view
+			v-if="showQuickActions && quickActions.length"
+			class="chat-input__quick-actions"
+			scroll-x
+			:show-scrollbar="false"
+		>
+			<view class="quick-actions-inner">
+				<view
+					v-for="(action, index) in quickActions"
+					:key="index"
+					class="quick-action-btn"
+					@click="handleQuickAction(action)"
+				>
+					<text class="quick-action-btn__icon">{{ action.icon }}</text>
+					<text class="quick-action-btn__text">{{ action.text }}</text>
+				</view>
+			</view>
+		</scroll-view>
+
 		<view class="chat-input__wrapper">
 			<!-- AI标识图标 -->
 			<view class="chat-input__ai-icon">
@@ -71,6 +91,14 @@ export default {
 		value: {
 			type: String,
 			default: ''
+		},
+		quickActions: {
+			type: Array,
+			default: () => []
+		},
+		showQuickActions: {
+			type: Boolean,
+			default: false
 		}
 	},
 	data() {
@@ -117,6 +145,9 @@ export default {
 			this.isFocused = false
 			this.$emit('blur')
 		},
+		handleQuickAction(action) {
+			this.$emit('quickAction', action)
+		},
 		// 外部调用清空输入
 		clear() {
 			this.inputValue = ''
@@ -136,9 +167,14 @@ export default {
 	right: 0;
 	bottom: calc(120rpx + env(safe-area-inset-bottom));
 	z-index: 100;
-	background: rgba(255, 255, 255, 0.95);
-	backdrop-filter: blur(20px);
-	-webkit-backdrop-filter: blur(20px);
+	background: transparent;
+
+	// 功能按钮区域
+	&__quick-actions {
+		white-space: nowrap;
+		padding: 0 $spacing-lg;
+		margin-bottom: $spacing-sm;
+	}
 
 	&__wrapper {
 		display: flex;
@@ -146,6 +182,7 @@ export default {
 		padding: $spacing-md $spacing-lg;
 		background: $bg-card;
 		margin: $spacing-md;
+		margin-top: 0;
 		border-radius: $radius-xl;
 		box-shadow: $shadow-md;
 	}
@@ -219,8 +256,7 @@ export default {
 
 	// 深色模式
 	&--dark {
-		background: rgba(22, 27, 34, 0.95);
-		border-top-color: $dark-border-color-light;
+		background: transparent;
 
 		.chat-input__wrapper {
 			background: $dark-bg-card;
@@ -250,6 +286,55 @@ export default {
 		.chat-input__btn--stop {
 			background: rgba(239, 68, 68, 0.15);
 		}
+
+		.quick-action-btn {
+			background: #2A2D32;
+			border-color: #3A3D42;
+
+			&:active {
+				background: #353940;
+			}
+
+			&__text {
+				color: #E5E5E5;
+			}
+		}
+	}
+}
+
+// 功能按钮内层容器
+.quick-actions-inner {
+	display: inline-flex;
+	gap: $spacing-md;
+	padding: $spacing-xs 0;
+}
+
+// 功能按钮样式
+.quick-action-btn {
+	display: inline-flex;
+	align-items: center;
+	padding: 14rpx 24rpx;
+	background: #FFFFFF;
+	border: 2rpx solid #E8E8E8;
+	border-radius: 36rpx;
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+	transition: all 0.2s ease;
+	flex-shrink: 0;
+
+	&:active {
+		transform: scale(0.96);
+		background: #F5F5F5;
+	}
+
+	&__icon {
+		font-size: 32rpx;
+		margin-right: 8rpx;
+	}
+
+	&__text {
+		font-size: 26rpx;
+		color: #1A1A1A;
+		font-weight: 500;
 	}
 }
 
