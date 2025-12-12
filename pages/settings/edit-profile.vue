@@ -65,14 +65,10 @@
 						</view>
 
 						<!-- 生日 -->
-						<view class="form-item">
+						<view class="form-item" @click="openBirthdayPicker">
 							<text class="form-item__label">生日</text>
-							<picker mode="date" :value="formData.birthday" :end="today" @change="onBirthdayChange">
-								<view class="form-item__picker">
-									<text class="form-item__value">{{ formData.birthday || '请选择' }}</text>
-									<view class="form-item__arrow"></view>
-								</view>
-							</picker>
+							<text class="form-item__value">{{ formData.birthday || '请选择' }}</text>
+							<view class="form-item__arrow"></view>
 						</view>
 
 						<!-- 身份证号 -->
@@ -130,6 +126,39 @@
 			</view>
 		</view>
 
+		<!-- 生日选择器弹窗 -->
+		<view class="picker-mask" v-if="showBirthdayPicker" @click="showBirthdayPicker = false">
+			<view class="picker-popup" @click.stop>
+				<view class="picker-header">
+					<text class="picker-cancel" @click="showBirthdayPicker = false">取消</text>
+					<text class="picker-title">选择生日</text>
+					<text class="picker-confirm" @click="confirmBirthday">确定</text>
+				</view>
+				<view class="birthday-picker-body">
+					<picker-view
+						class="birthday-picker-view"
+						:value="birthdayPickerValue"
+						:immediate-change="true"
+						@change="onBirthdayPickerChange"
+						indicator-style="height: 88rpx;"
+					>
+						<!-- 年 -->
+						<picker-view-column>
+							<view class="picker-item" v-for="year in years" :key="year">{{ year }}年</view>
+						</picker-view-column>
+						<!-- 月 -->
+						<picker-view-column>
+							<view class="picker-item" v-for="month in months" :key="month">{{ month }}月</view>
+						</picker-view-column>
+						<!-- 日 -->
+						<picker-view-column>
+							<view class="picker-item" v-for="day in days" :key="day">{{ day }}日</view>
+						</picker-view-column>
+					</picker-view>
+				</view>
+			</view>
+		</view>
+
 		<!-- 顶部通知栏 -->
 		<TopNotificationBar />
 	</view>
@@ -162,7 +191,13 @@ export default {
 				{ label: '男', value: 1 },
 				{ label: '女', value: 2 }
 			],
-			today: ''
+			today: '',
+			// 生日选择器相关
+			showBirthdayPicker: false,
+			years: [],
+			months: [],
+			days: [],
+			birthdayPickerValue: [0, 0, 0]
 		}
 	},
 	computed: {
@@ -185,6 +220,7 @@ export default {
 	onLoad() {
 		this.getStatusBarHeight()
 		this.initFormData()
+		this.initBirthdayPicker()
 		this.today = this.formatDate(new Date())
 		setTimeout(() => {
 			this.pageReady = true
@@ -229,8 +265,105 @@ export default {
 			})
 		},
 
-		onBirthdayChange(e) {
-			this.formData.birthday = e.detail.value
+		// 初始化生日选择器
+		initBirthdayPicker() {
+			const currentYear = new Date().getFullYear()
+			// 生成年份数组：当前年 - 1900（倒序，解决滚动位置偏移问题）
+			this.years = []
+			for (let i = currentYear; i >= 1900; i--) {
+				this.years.push(i)
+			}
+			// 生成月份数组：1-12
+			this.months = []
+			for (let i = 1; i <= 12; i++) {
+				this.months.push(i)
+			}
+			// 默认生成当前年1月的天数
+			this.updateDays(this.years[0], 1)
+		},
+
+		// 获取指定年月的天数
+		getDaysInMonth(year, month) {
+			// 闰年判断
+			const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0)
+			const daysInMonth = [31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+			return daysInMonth[month - 1]
+		},
+
+		// 更新日期数组
+		updateDays(year, month) {
+			const maxDays = this.getDaysInMonth(year, month)
+			this.days = []
+			for (let i = 1; i <= maxDays; i++) {
+				this.days.push(i)
+			}
+		},
+
+		// 打开生日选择器
+		openBirthdayPicker() {
+			const currentYear = new Date().getFullYear()
+			let yearIdx = 0 // 默认当前年（倒序数组，当前年在索引0）
+			let monthIdx = 0
+			let dayIdx = 0
+
+			// 如果已有生日，解析并设置选中位置
+			if (this.formData.birthday) {
+				const parts = this.formData.birthday.split('-')
+				if (parts.length === 3) {
+					const year = parseInt(parts[0])
+					const month = parseInt(parts[1])
+					const day = parseInt(parts[2])
+
+					// 倒序数组：索引 = 当前年 - 选中年
+					yearIdx = currentYear - year
+					if (yearIdx < 0 || yearIdx >= this.years.length) yearIdx = 0
+
+					monthIdx = month - 1
+					dayIdx = day - 1
+
+					// 更新日期数组
+					this.updateDays(year, month)
+				}
+			}
+
+			// 先重置为0，延迟设置正确值，等待picker-view渲染完成
+			this.birthdayPickerValue = [0, 0, 0]
+			this.showBirthdayPicker = true
+			setTimeout(() => {
+				this.birthdayPickerValue = [yearIdx, monthIdx, dayIdx]
+			}, 150)
+		},
+
+		// 滚动变化处理
+		onBirthdayPickerChange(e) {
+			const val = e.detail.value
+			const year = this.years[val[0]]
+			const month = this.months[val[1]]
+
+			// 更新日期数组
+			this.updateDays(year, month)
+
+			// 修正日期索引（如果超出范围）
+			let dayIdx = val[2]
+			if (dayIdx >= this.days.length) {
+				dayIdx = this.days.length - 1
+			}
+
+			this.birthdayPickerValue = [val[0], val[1], dayIdx]
+		},
+
+		// 确认生日选择
+		confirmBirthday() {
+			const yearIdx = this.birthdayPickerValue[0]
+			const monthIdx = this.birthdayPickerValue[1]
+			const dayIdx = this.birthdayPickerValue[2]
+
+			const year = this.years[yearIdx]
+			const month = String(this.months[monthIdx]).padStart(2, '0')
+			const day = String(this.days[dayIdx]).padStart(2, '0')
+
+			this.formData.birthday = `${year}-${month}-${day}`
+			this.showBirthdayPicker = false
 		},
 
 		confirmGender() {
@@ -704,6 +837,26 @@ $accent-coral-light: #FF8A7A;
 	}
 }
 
+// ==================== 生日选择器 ====================
+.birthday-picker-body {
+	padding: 0 32rpx;
+}
+
+.birthday-picker-view {
+	width: 100%;
+	height: 440rpx;
+}
+
+.picker-item {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 88rpx;
+	line-height: 88rpx;
+	font-size: 32rpx;
+	color: $light-text-primary;
+}
+
 // 底部留白
 .bottom-space {
 	height: calc(60rpx + env(safe-area-inset-bottom));
@@ -837,6 +990,10 @@ $accent-coral-light: #FF8A7A;
 		&__check {
 			border-color: $accent-coral;
 		}
+	}
+
+	.picker-item {
+		color: $dark-text-light;
 	}
 }
 </style>

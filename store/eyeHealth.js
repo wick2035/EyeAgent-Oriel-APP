@@ -115,8 +115,8 @@ export function getAdultHealthData() {
 	return [
 		{
 			id: 'stability-assessment',
-			title: '近视稳定性',
-			mainValue: '15',
+			title: '视力稳定性',
+			mainValue: '95',
 			mainUnit: '%',
 			status: RISK_LEVEL.NORMAL
 		},
@@ -129,7 +129,7 @@ export function getAdultHealthData() {
 		},
 		{
 			id: 'health-index',
-			title: '健康指数',
+			title: '眼健康指数',
 			mainValue: '85',
 			mainUnit: '/100',
 			status: RISK_LEVEL.NORMAL
