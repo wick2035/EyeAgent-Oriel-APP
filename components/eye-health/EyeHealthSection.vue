@@ -9,22 +9,21 @@
 			<text class="eye-health__more" @click="goToDetail">查看更多</text>
 		</view>
 
-		<!-- 健康卡片列表 -->
-		<view class="eye-health__cards">
-			<EyeHealthCard
-				v-for="(item, index) in healthData"
-				:key="item.id"
-				:title="item.title"
-				:icon="item.icon"
-				:main-value="item.mainValue"
-				:main-unit="item.mainUnit"
-				:main-label="item.mainLabel"
-				:sub-items="item.subItems"
-				:status="item.status"
-				:delay="index * 0.1"
-				@click="handleCardClick(item)"
-			/>
-		</view>
+		<!-- 横向滚动卡片 -->
+		<scroll-view class="eye-health__scroll" scroll-x enable-flex>
+			<view class="eye-health__cards">
+				<EyeHealthCard
+					v-for="(item, index) in healthData"
+					:key="item.id"
+					:title="item.title"
+					:main-value="item.mainValue"
+					:main-unit="item.mainUnit"
+					:status="item.status"
+					:delay="index * 0.08"
+					@click="handleCardClick(item)"
+				/>
+			</view>
+		</scroll-view>
 	</view>
 </template>
 
@@ -95,14 +94,14 @@ export default {
 .eye-health {
 	position: relative;
 	z-index: 1;
-	padding: 0 32rpx;
 	margin-bottom: 32rpx;
 
 	&__header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 24rpx;
+		margin-bottom: 20rpx;
+		padding: 0 32rpx;
 	}
 
 	&__title-wrap {
@@ -138,10 +137,16 @@ export default {
 		}
 	}
 
+	&__scroll {
+		width: 100%;
+		white-space: nowrap;
+	}
+
 	&__cards {
-		display: flex;
-		flex-direction: column;
-		gap: 24rpx;
+		display: inline-flex;
+		gap: 20rpx;
+		padding: 0 32rpx;
+		padding-bottom: 8rpx; // 给阴影留空间
 	}
 
 	// 深色模式

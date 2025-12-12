@@ -58,31 +58,22 @@ export function getChildHealthData() {
 		{
 			id: 'myopia-risk',
 			title: '近视发生风险',
-			icon: 'eye',
 			mainValue: '28',
 			mainUnit: '%',
-			mainLabel: '近视发生概率',
-			subItems: [],
 			status: RISK_LEVEL.ATTENTION
 		},
 		{
 			id: 'eye-health-risk',
 			title: '眼健康风险',
-			icon: 'shield',
 			mainValue: '中等',
 			mainUnit: '',
-			mainLabel: '视疲劳风险',
-			subItems: [],
 			status: RISK_LEVEL.NORMAL
 		},
 		{
 			id: 'development-index',
 			title: '视力发育指数',
-			icon: 'chart',
 			mainValue: '78',
 			mainUnit: '/100',
-			mainLabel: '综合指数',
-			subItems: [],
 			status: RISK_LEVEL.NORMAL
 		}
 	]
@@ -96,31 +87,22 @@ export function getStudentHealthData() {
 		{
 			id: 'progression-risk',
 			title: '近视进展风险',
-			icon: 'eye',
 			mainValue: '42',
 			mainUnit: '%',
-			mainLabel: '加深风险',
-			subItems: [],
 			status: RISK_LEVEL.MEDIUM
 		},
 		{
 			id: 'related-disease-risk',
 			title: '相关眼病风险',
-			icon: 'alert',
 			mainValue: '高',
 			mainUnit: '',
-			mainLabel: '视疲劳风险',
-			subItems: [],
 			status: RISK_LEVEL.HIGH
 		},
 		{
 			id: 'health-index',
 			title: '视力健康指数',
-			icon: 'chart',
 			mainValue: '70',
 			mainUnit: '/100',
-			mainLabel: '综合指数',
-			subItems: [],
 			status: RISK_LEVEL.ATTENTION
 		}
 	]
@@ -133,32 +115,23 @@ export function getAdultHealthData() {
 	return [
 		{
 			id: 'stability-assessment',
-			title: '近视稳定性评估',
-			icon: 'eye',
+			title: '近视稳定性',
 			mainValue: '15',
 			mainUnit: '%',
-			mainLabel: '近视变化风险',
-			subItems: [],
 			status: RISK_LEVEL.NORMAL
 		},
 		{
 			id: 'adult-disease-risk',
-			title: '成人眼病风险',
-			icon: 'alert',
+			title: '眼病风险',
 			mainValue: '偏高',
 			mainUnit: '',
-			mainLabel: '干眼风险',
-			subItems: [],
 			status: RISK_LEVEL.MEDIUM
 		},
 		{
 			id: 'health-index',
-			title: '视力健康指数',
-			icon: 'chart',
+			title: '健康指数',
 			mainValue: '85',
 			mainUnit: '/100',
-			mainLabel: '健康指数',
-			subItems: [],
 			status: RISK_LEVEL.NORMAL
 		}
 	]
