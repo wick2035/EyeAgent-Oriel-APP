@@ -50,12 +50,6 @@
 
         <!-- 快捷提示词 -->
         <view class="prompts">
-          <view class="prompts__header">
-            <view class="prompts__refresh" @click="refreshPrompts">
-              <view class="refresh-icon"></view>
-              <text class="prompts__refresh-text">换一换</text>
-            </view>
-          </view>
           <view class="prompts__tags">
             <QuickPrompt
               v-for="prompt in prompts"
@@ -64,6 +58,12 @@
               :text="prompt.text"
               @click="handlePromptClick"
             />
+          </view>
+          <view class="prompts__footer">
+            <view class="prompts__refresh" @click="refreshPrompts">
+              <view class="refresh-icon"></view>
+              <text class="prompts__refresh-text">换一换</text>
+            </view>
           </view>
         </view>
       </view>
@@ -629,7 +629,7 @@ export default {
     display: block;
     font-size: $font-size-base;
     color: $text-secondary;
-    margin-bottom: $spacing-xl;
+    margin-bottom: $spacing-md;
   }
 }
 
@@ -695,11 +695,17 @@ export default {
 
 // 快捷提示词
 .prompts {
-  &__header {
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+  }
+
+  &__footer {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    margin-bottom: $spacing-md;
+    margin-top: $spacing-md;
   }
 
   &__refresh {
@@ -712,12 +718,6 @@ export default {
     font-size: $font-size-sm;
     color: $color-primary;
     margin-left: $spacing-xs;
-  }
-
-  &__tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16rpx;
   }
 }
 
