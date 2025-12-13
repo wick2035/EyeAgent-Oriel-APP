@@ -81,13 +81,15 @@ export default {
 		}
 
 		.message__bubble {
-			background: $color-primary;
+			background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
 			color: #fff;
-			border-radius: $radius-lg $radius-lg 8rpx $radius-lg;
+			border-radius: 20rpx 20rpx 6rpx 20rpx;
+			box-shadow: 0 4rpx 16rpx rgba(13, 148, 136, 0.25);
 		}
 
 		.message__text {
 			color: #fff;
+			letter-spacing: 0.5rpx;
 		}
 
 		.message__time {
@@ -103,9 +105,14 @@ export default {
 
 	&--ai {
 		.message__bubble {
-			background: $bg-card;
-			border: 1rpx solid $border-color-light;
-			border-radius: $radius-lg $radius-lg $radius-lg 8rpx;
+			background: #fff;
+			border: 1rpx solid rgba(13, 148, 136, 0.12);
+			border-radius: 20rpx 20rpx 20rpx 6rpx;
+			box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+		}
+
+		.message__text {
+			color: #374151;
 		}
 	}
 
@@ -120,7 +127,7 @@ export default {
 		margin-right: $spacing-md;
 
 		&--user {
-			background: $color-primary-light;
+			background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
 		}
 	}
 
@@ -130,8 +137,7 @@ export default {
 
 	&__bubble {
 		display: inline-block;
-		padding: $spacing-md $spacing-lg;
-		box-shadow: $shadow-sm;
+		padding: 16rpx 24rpx;
 		max-width: 100%;
 	}
 
@@ -151,16 +157,18 @@ export default {
 	// 深色模式
 	&--dark {
 		&.message--ai .message__bubble {
-			background: $dark-bg-card;
-			border-color: $dark-border-color;
+			background: #1F2937;
+			border-color: rgba(20, 184, 166, 0.15);
+			box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 		}
 
 		&.message--ai .message__text {
-			color: $dark-text-primary;
+			color: rgba(255, 255, 255, 0.92);
 		}
 
 		&.message--user .message__bubble {
-			background: $dark-color-primary;
+			background: linear-gradient(135deg, #0F766E 0%, #0D9488 100%);
+			box-shadow: 0 4rpx 16rpx rgba(13, 148, 136, 0.3);
 		}
 
 		&.message--user .message__text {
@@ -172,7 +180,7 @@ export default {
 		}
 
 		.message__avatar--user {
-			background: $dark-color-primary;
+			background: linear-gradient(135deg, #0F766E 0%, #0D9488 100%);
 		}
 	}
 }
