@@ -3,7 +3,10 @@
     <!-- 固定头部 -->
     <view class="fixed-header">
       <!-- 状态栏占位 -->
-      <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+      <view
+        class="status-bar"
+        :style="{ height: statusBarHeight + 'px' }"
+      ></view>
 
       <!-- 顶部导航栏 -->
       <view class="navbar">
@@ -18,7 +21,10 @@
     </view>
 
     <!-- 头部占位（防止内容被遮挡） -->
-    <view class="header-placeholder" :style="{ height: (statusBarHeight + 44) + 'px' }"></view>
+    <view
+      class="header-placeholder"
+      :style="{ height: statusBarHeight + 44 + 'px' }"
+    ></view>
 
     <!-- 内容区域 -->
     <scroll-view
@@ -163,7 +169,7 @@ export default {
       ],
       prompts: [],
       // 打字效果
-      fullTitle: "我是小Eye，您的AI健康助手~",
+      fullTitle: "我是小Eye, 您的AI眼健康助手~",
       displayTitle: "",
       isTyping: false,
       typingTimer: null,
