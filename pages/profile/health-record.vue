@@ -152,6 +152,7 @@
 							v-model="editValue"
 							:placeholder="editingFieldPlaceholder"
 							placeholder-class="sheet-placeholder"
+							:cursor-spacing="20"
 						/>
 					</view>
 
@@ -163,6 +164,7 @@
 							v-model="editValue"
 							:placeholder="editingFieldPlaceholder"
 							placeholder-class="sheet-placeholder"
+							:cursor-spacing="20"
 						/>
 						<text class="number-unit">{{ editingFieldUnit }}</text>
 					</view>
@@ -175,6 +177,7 @@
 							:placeholder="editingFieldPlaceholder"
 							placeholder-class="sheet-placeholder"
 							:maxlength="200"
+							:cursor-spacing="20"
 						/>
 					</view>
 
@@ -577,6 +580,7 @@ $bmi-obese: #EF4444;
 	background: #F0F4F8;
 	border-radius: 24rpx;
 	margin-bottom: 32rpx;
+	border: 1rpx solid #D0D7DE;
 	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 
 	&__avatar {
@@ -1114,10 +1118,24 @@ $bmi-obese: #EF4444;
 		color: $dark-text-muted;
 	}
 
-	// 身份卡片（深色模式用珊瑚色）
+	// 身份卡片（深色模式用蓝色）
 	.identity-card {
-		background: linear-gradient(135deg, $accent-coral 0%, #FF8A7A 100%);
-		box-shadow: 0 8rpx 32rpx rgba(255, 107, 91, 0.25);
+		background: linear-gradient(135deg, #1E3A5F 0%, #2D5A87 100%);
+		box-shadow: 0 8rpx 32rpx rgba(30, 58, 95, 0.25);
+		border-color: rgba(255, 255, 255, 0.1);
+	}
+
+	.identity-name {
+		color: #fff;
+	}
+
+	.identity-id,
+	.identity-age {
+		color: rgba(255, 255, 255, 0.8);
+	}
+
+	.identity-divider {
+		background: rgba(255, 255, 255, 0.4);
 	}
 
 	// 分组区域
