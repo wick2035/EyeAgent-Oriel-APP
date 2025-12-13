@@ -152,7 +152,9 @@ export default {
 			})
 		},
 		goToHealthRecord() {
-			uni.showToast({ title: '健康档案开发中', icon: 'none' })
+			uni.navigateTo({
+				url: '/pages/profile/health-record'
+			})
 		},
 		handleMenu(item) {
 			if (item.type === 'switch') return

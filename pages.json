@@ -81,6 +81,13 @@
 			}
 		},
 		{
+			"path": "pages/profile/health-record",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "健康档案"
+			}
+		},
+		{
 			"path": "pages/profile/appointment-detail",
 			"style": {
 				"navigationStyle": "custom",

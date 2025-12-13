@@ -138,7 +138,6 @@ import {
 	updateReminder,
 	deleteReminder,
 	markAsCompleted,
-	unmarkCompleted,
 	setEditingReminder,
 	clearEditingReminder
 } from '@/store/medication.js'
@@ -232,15 +231,13 @@ export default {
 			}
 		},
 		async handleToggleComplete(id, complete) {
+			// 只支持标记完成，不支持取消完成
 			if (complete) {
 				const result = await markAsCompleted(id)
 				if (result.success) {
 					uni.showToast({ title: '已完成', icon: 'success' })
-				}
-			} else {
-				const result = await unmarkCompleted(id)
-				if (result.success) {
-					uni.showToast({ title: '已取消', icon: 'none' })
+				} else {
+					uni.showToast({ title: result.message || '操作失败', icon: 'none' })
 				}
 			}
 		},

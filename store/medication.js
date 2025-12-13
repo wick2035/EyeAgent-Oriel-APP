@@ -50,6 +50,7 @@ export function getGroupedReminders() {
 	]
 
 	medicationState.reminders.forEach(reminder => {
+		if (!reminder.scheduledTime) return
 		const hour = parseInt(reminder.scheduledTime.substring(11, 13))
 		if (hour >= 6 && hour < 12) {
 			groups[0].items.push(reminder)
@@ -71,18 +72,19 @@ export function getGroupedReminders() {
 function updateTodayStats() {
 	const today = new Date().toISOString().split('T')[0]
 	const todayReminders = medicationState.reminders.filter(r =>
-		r.scheduledTime.startsWith(today) && r.enabled
+		r.scheduledTime && r.scheduledTime.startsWith(today) && r.enabled !== false
 	)
 
 	medicationState.todayStats.total = todayReminders.length
+	// 使用新的状态值判断：READ 表示已完成
 	medicationState.todayStats.completed = todayReminders.filter(r =>
 		r.status === 'READ'
 	).length
 
-	// 找下一个待服药提醒
+	// 找下一个待服药提醒（SCHEDULED 或 UNREAD 状态）
 	const now = new Date().toISOString()
 	const upcoming = todayReminders
-		.filter(r => r.status !== 'READ' && r.scheduledTime > now)
+		.filter(r => (r.status === 'SCHEDULED' || r.status === 'UNREAD') && r.scheduledTime > now)
 		.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime))
 
 	medicationState.todayStats.nextReminder = upcoming[0] || null
@@ -119,7 +121,7 @@ export async function createReminder(data) {
 			await fetchReminders()
 			return { success: true, id: res.data?.id }
 		}
-		return { success: false }
+		return { success: false, message: res.msg }
 	} catch (err) {
 		console.error('创建用药提醒失败:', err)
 		return { success: false, error: err }
@@ -136,7 +138,7 @@ export async function updateReminder(id, data) {
 			await fetchReminders()
 			return { success: true }
 		}
-		return { success: false }
+		return { success: false, message: res.msg }
 	} catch (err) {
 		console.error('更新用药提醒失败:', err)
 		return { success: false, error: err }
@@ -154,7 +156,7 @@ export async function deleteReminder(id) {
 			updateTodayStats()
 			return { success: true }
 		}
-		return { success: false }
+		return { success: false, message: res.msg }
 	} catch (err) {
 		console.error('删除用药提醒失败:', err)
 		return { success: false, error: err }
@@ -170,58 +172,15 @@ export async function markAsCompleted(id) {
 		if (res.code === 200) {
 			const index = medicationState.reminders.findIndex(r => r.id === id)
 			if (index !== -1) {
-				// 创建新对象触发响应式更新
+				// 创建新对象触发响应式更新，状态改为READ
 				medicationState.reminders[index] = { ...medicationState.reminders[index], status: 'READ' }
 				updateTodayStats()
 			}
 			return { success: true }
 		}
-		return { success: false }
+		return { success: false, message: res.msg }
 	} catch (err) {
 		console.error('标记完成失败:', err)
-		return { success: false, error: err }
-	}
-}
-
-/**
- * 取消完成
- */
-export async function unmarkCompleted(id) {
-	try {
-		const res = await medicationApi.unmarkCompleted(id)
-		if (res.code === 200) {
-			const index = medicationState.reminders.findIndex(r => r.id === id)
-			if (index !== -1) {
-				// 创建新对象触发响应式更新
-				medicationState.reminders[index] = { ...medicationState.reminders[index], status: 'SCHEDULED' }
-				updateTodayStats()
-			}
-			return { success: true }
-		}
-		return { success: false }
-	} catch (err) {
-		console.error('取消完成失败:', err)
-		return { success: false, error: err }
-	}
-}
-
-/**
- * 切换提醒开关
- */
-export async function toggleReminder(id, enabled) {
-	try {
-		const res = await medicationApi.toggleReminder(id, enabled)
-		if (res.code === 200) {
-			const reminder = medicationState.reminders.find(r => r.id === id)
-			if (reminder) {
-				reminder.enabled = enabled
-				updateTodayStats()
-			}
-			return { success: true }
-		}
-		return { success: false }
-	} catch (err) {
-		console.error('切换提醒开关失败:', err)
 		return { success: false, error: err }
 	}
 }
@@ -291,8 +250,6 @@ export default {
 	updateReminder,
 	deleteReminder,
 	markAsCompleted,
-	unmarkCompleted,
-	toggleReminder,
 	setEditingReminder,
 	clearEditingReminder,
 	syncWithNotification,

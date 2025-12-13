@@ -71,17 +71,11 @@
 							<view class="form-item__arrow"></view>
 						</view>
 
-						<!-- 身份证号 -->
+						<!-- 身份证号（只读） -->
 						<view class="form-item form-item--no-border">
 							<text class="form-item__label">身份证号</text>
-							<input
-								class="form-item__input"
-								type="idcard"
-								v-model="formData.idCard"
-								placeholder="请输入身份证号"
-								placeholder-class="form-placeholder"
-								maxlength="18"
-							/>
+							<text class="form-item__value form-item__value--disabled">{{ maskedIdCard }}</text>
+							<view class="form-item__tag">已实名</view>
 						</view>
 					</view>
 				</view>
@@ -168,6 +162,8 @@
 import { getUserInfo, updateUserInfo } from '@/store/user.js'
 import { isDarkMode } from '@/store/theme.js'
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
+import { getPatientInfo, modifyPatientInfo } from '@/utils/api/patient.js'
+import { maskIdNumber } from '@/store/patient.js'
 
 export default {
 	components: {
@@ -215,6 +211,9 @@ export default {
 		phoneDisplay() {
 			const userInfo = getUserInfo()
 			return userInfo.phone || '未绑定'
+		},
+		maskedIdCard() {
+			return maskIdNumber(this.formData.idCard)
 		}
 	},
 	onLoad() {
@@ -232,7 +231,8 @@ export default {
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
 		},
 
-		initFormData() {
+		async initFormData() {
+			// 先从本地获取基础数据
 			const userInfo = getUserInfo()
 			this.formData.name = userInfo.name || ''
 			this.formData.avatar = userInfo.avatar || ''
@@ -240,6 +240,29 @@ export default {
 			this.formData.birthday = userInfo.birthday || ''
 			this.formData.idCard = userInfo.idCard || ''
 			this.tempGender = this.formData.gender
+
+			// 尝试从API获取最新数据
+			try {
+				const response = await getPatientInfo()
+				if (response.code === 200 && response.data) {
+					const patient = response.data
+					this.formData.name = patient.patientName || this.formData.name
+					// 性别转换：API返回 male/female，本地用 1/2
+					if (patient.gender === 'male') {
+						this.formData.gender = 1
+					} else if (patient.gender === 'female') {
+						this.formData.gender = 2
+					}
+					// 生日格式处理
+					if (patient.dateOfBirth) {
+						this.formData.birthday = patient.dateOfBirth.split('T')[0]
+					}
+					this.formData.idCard = patient.idNumber || this.formData.idCard
+					this.tempGender = this.formData.gender
+				}
+			} catch (error) {
+				console.log('从API获取患者信息失败，使用本地数据:', error)
+			}
 		},
 
 		formatDate(date) {
@@ -380,24 +403,46 @@ export default {
 			uni.showLoading({ title: '保存中...' })
 
 			try {
-				// 模拟API调用延迟
-				await new Promise(resolve => setTimeout(resolve, 800))
+				// 构建API请求数据
+				const apiData = {
+					patientName: this.formData.name
+				}
 
-				// 更新本地用户信息
-				updateUserInfo({
-					name: this.formData.name,
-					avatar: this.formData.avatar,
-					gender: this.formData.gender,
-					birthday: this.formData.birthday,
-					idCard: this.formData.idCard
-				})
+				// 性别转换：本地 1/2 转为 API 的 male/female
+				if (this.formData.gender === 1) {
+					apiData.gender = 'male'
+				} else if (this.formData.gender === 2) {
+					apiData.gender = 'female'
+				}
 
-				uni.hideLoading()
-				uni.showToast({ title: '保存成功', icon: 'success' })
+				// 生日格式转换
+				if (this.formData.birthday) {
+					apiData.dateOfBirth = this.formData.birthday + 'T00:00:00'
+				}
 
-				setTimeout(() => {
-					uni.navigateBack()
-				}, 1000)
+				// 调用API保存
+				const response = await modifyPatientInfo(apiData)
+
+				if (response.code === 200) {
+					// 同时更新本地用户信息
+					updateUserInfo({
+						name: this.formData.name,
+						avatar: this.formData.avatar,
+						gender: this.formData.gender,
+						birthday: this.formData.birthday,
+						idCard: this.formData.idCard
+					})
+
+					uni.hideLoading()
+					uni.showToast({ title: '保存成功', icon: 'success' })
+
+					setTimeout(() => {
+						uni.navigateBack()
+					}, 1000)
+				} else {
+					uni.hideLoading()
+					uni.showToast({ title: response.msg || '保存失败', icon: 'none' })
+				}
 			} catch (error) {
 				uni.hideLoading()
 				uni.showToast({ title: '保存失败，请重试', icon: 'none' })
@@ -741,6 +786,48 @@ $accent-coral-light: #FF8A7A;
 		color: #10B981;
 		margin-left: 16rpx;
 	}
+
+	&__lock {
+		width: 28rpx;
+		height: 28rpx;
+		position: relative;
+		margin-left: 16rpx;
+		flex-shrink: 0;
+
+		&::before {
+			content: '';
+			position: absolute;
+			bottom: 4rpx;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 18rpx;
+			height: 12rpx;
+			border: 2rpx solid $light-text-muted;
+			border-radius: 3rpx;
+		}
+
+		&::after {
+			content: '';
+			position: absolute;
+			top: 4rpx;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 10rpx;
+			height: 8rpx;
+			border: 2rpx solid $light-text-muted;
+			border-radius: 5rpx 5rpx 0 0;
+			border-bottom: none;
+		}
+	}
+
+	&--readonly {
+		background: rgba(0, 0, 0, 0.02);
+
+		.form-item__value--masked {
+			color: $light-text-muted;
+			letter-spacing: 2rpx;
+		}
+	}
 }
 
 .form-placeholder {
@@ -952,6 +1039,17 @@ $accent-coral-light: #FF8A7A;
 
 	.form-placeholder {
 		color: $dark-text-muted;
+	}
+
+	.form-item--readonly {
+		background: rgba(255, 255, 255, 0.02);
+	}
+
+	.form-item__lock {
+		&::before,
+		&::after {
+			border-color: $dark-text-muted;
+		}
 	}
 
 	.picker-mask {

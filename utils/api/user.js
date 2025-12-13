@@ -205,7 +205,7 @@ export async function logout() {
 	}
 
 	try {
-		await post('/api/auth/logout')
+		await post('/api/app/base/logout')
 		clearLoginState()
 		return { success: true }
 	} catch (error) {

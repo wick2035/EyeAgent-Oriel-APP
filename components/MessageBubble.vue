@@ -81,10 +81,10 @@ export default {
 		}
 
 		.message__bubble {
-			background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+			background: linear-gradient(135deg, #667EEA 0%, #764BA2 50%, #F093FB 100%);
 			color: #fff;
 			border-radius: 20rpx 20rpx 6rpx 20rpx;
-			box-shadow: 0 4rpx 16rpx rgba(59, 130, 246, 0.25);
+			box-shadow: 0 4rpx 16rpx rgba(102, 126, 234, 0.3);
 		}
 
 		.message__text {
@@ -106,7 +106,7 @@ export default {
 	&--ai {
 		.message__bubble {
 			background: #fff;
-			border: 1rpx solid rgba(37, 99, 235, 0.1);
+			border: 1rpx solid rgba(102, 126, 234, 0.1);
 			border-radius: 20rpx 20rpx 20rpx 6rpx;
 			box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 		}
@@ -127,7 +127,7 @@ export default {
 		margin-right: $spacing-md;
 
 		&--user {
-			background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+			background: linear-gradient(135deg, #667EEA 0%, #764BA2 50%, #F093FB 100%);
 		}
 	}
 
@@ -158,7 +158,7 @@ export default {
 	&--dark {
 		&.message--ai .message__bubble {
 			background: #1F2937;
-			border-color: rgba(59, 130, 246, 0.15);
+			border-color: rgba(102, 126, 234, 0.15);
 			box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 		}
 
@@ -167,8 +167,8 @@ export default {
 		}
 
 		&.message--user .message__bubble {
-			background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
-			box-shadow: 0 4rpx 16rpx rgba(37, 99, 235, 0.3);
+			background: linear-gradient(135deg, #5A67D8 0%, #6B46A0 50%, #D53F8C 100%);
+			box-shadow: 0 4rpx 16rpx rgba(102, 126, 234, 0.35);
 		}
 
 		&.message--user .message__text {
@@ -180,7 +180,7 @@ export default {
 		}
 
 		.message__avatar--user {
-			background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
+			background: linear-gradient(135deg, #5A67D8 0%, #6B46A0 50%, #D53F8C 100%);
 		}
 	}
 }

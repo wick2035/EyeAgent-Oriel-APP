@@ -134,7 +134,11 @@ export default {
 			this.$emit('click', this.id)
 		},
 		handleToggleComplete() {
-			this.$emit('toggle-complete', this.id, !this.isCompleted)
+			// 已完成状态不允许取消
+			if (this.isCompleted) {
+				return
+			}
+			this.$emit('toggle-complete', this.id, true)
 		},
 		handleDelete() {
 			this.$emit('delete', this.id)
