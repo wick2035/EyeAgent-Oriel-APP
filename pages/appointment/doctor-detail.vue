@@ -59,7 +59,7 @@
             />
             <view class="doctor-info__stat-content">
               <text class="doctor-info__stat-value">{{
-                doctor?.consultCount || 0
+                doctor?.consultCount || 1000
               }}</text>
               <text class="doctor-info__stat-label">问诊量</text>
             </view>
@@ -73,7 +73,7 @@
             />
             <view class="doctor-info__stat-content">
               <text class="doctor-info__stat-value"
-                >{{ doctor?.experience || 0 }}年</text
+                >{{ doctor?.experience || 10 }}年</text
               >
               <text class="doctor-info__stat-label">从医年限</text>
             </view>
@@ -950,6 +950,8 @@ export default {
       // 从医年限图标原始尺寸较大，缩小一点保持视觉一致
       width: 53rpx;
       height: 53rpx;
+      // 下移图标使其与其他图标视觉对齐
+      margin-top: 4rpx;
     }
   }
 
