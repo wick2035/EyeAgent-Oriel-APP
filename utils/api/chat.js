@@ -120,20 +120,37 @@ export async function getMessages(conversationId) {
 	throw new Error(response.msg || '获取消息失败')
 }
 
+// 眼科相关提示词库
+const eyePrompts = [
+	{ id: 1, text: '眼睛干涩疲劳怎么缓解？', icon: 'eye' },
+	{ id: 2, text: '长时间看手机眼睛酸痛怎么办？', icon: 'eye' },
+	{ id: 3, text: '近视度数加深太快怎么控制？', icon: 'eye' },
+	{ id: 4, text: '可以帮我预约医生吗？', icon: 'eye' },
+	{ id: 5, text: '眼睛经常流泪是什么原因？', icon: 'eye' },
+	{ id: 6, text: '眼睛红血丝多是怎么回事？', icon: 'eye' },
+	{ id: 7, text: '飞蚊症需要治疗吗？', icon: 'eye' },
+	{ id: 8, text: '眼睛痒是过敏还是感染？', icon: 'eye' },
+	{ id: 9, text: '青光眼有哪些早期症状？', icon: 'eye' },
+	{ id: 10, text: '白内障什么时候需要手术？', icon: 'eye' },
+	{ id: 11, text: '干眼症怎么治疗效果好？', icon: 'eye' },
+	{ id: 12, text: '眼压高会导致什么问题？', icon: 'eye' },
+	{ id: 13, text: '散光和近视有什么区别？', icon: 'eye' },
+	{ id: 14, text: '隐形眼镜戴久了眼睛不舒服？', icon: 'eye' },
+	{ id: 15, text: '眼底检查能查出什么问题？', icon: 'eye' },
+	{ id: 16, text: '糖尿病会影响眼睛吗？', icon: 'eye' },
+	{ id: 17, text: '麦粒肿反复发作怎么办？', icon: 'eye' },
+	{ id: 18, text: '激光近视手术安全吗？', icon: 'eye' },
+	{ id: 19, text: '老花眼能预防吗？', icon: 'eye' },
+	{ id: 20, text: '眼睛模糊看不清是什么原因？', icon: 'eye' }
+]
+
 /**
  * 获取快捷提示词列表
  * @returns {Promise<Array>}
  */
 export function getQuickPrompts() {
-	// 暂时返回本地数据，后续可对接API
-	return Promise.resolve([
-		{ id: 1, text: '最近总是头痛是怎么回事？', icon: 'headache' },
-		{ id: 2, text: '体检报告中的指标异常怎么看？', icon: 'report' },
-		{ id: 3, text: '感冒了应该吃什么药？', icon: 'medicine' },
-		{ id: 4, text: '如何改善睡眠质量？', icon: 'sleep' },
-		{ id: 5, text: '眼睛干涩疲劳怎么缓解？', icon: 'eye' },
-		{ id: 6, text: '血压偏高需要注意什么？', icon: 'heart' }
-	])
+	// 返回前5条
+	return Promise.resolve(eyePrompts.slice(0, 5))
 }
 
 /**
@@ -141,23 +158,9 @@ export function getQuickPrompts() {
  * @returns {Promise<Array>}
  */
 export function refreshQuickPrompts() {
-	// 暂时返回本地数据，后续可对接API
-	const allPrompts = [
-		{ id: 1, text: '最近总是头痛是怎么回事？', icon: 'headache' },
-		{ id: 2, text: '体检报告中的指标异常怎么看？', icon: 'report' },
-		{ id: 3, text: '感冒了应该吃什么药？', icon: 'medicine' },
-		{ id: 4, text: '如何改善睡眠质量？', icon: 'sleep' },
-		{ id: 5, text: '眼睛干涩疲劳怎么缓解？', icon: 'eye' },
-		{ id: 6, text: '血压偏高需要注意什么？', icon: 'heart' },
-		{ id: 7, text: '腰酸背痛是什么原因？', icon: 'back' },
-		{ id: 8, text: '胃不舒服应该怎么调理？', icon: 'stomach' },
-		{ id: 9, text: '皮肤过敏了怎么处理？', icon: 'skin' },
-		{ id: 10, text: '最近容易疲劳是怎么回事？', icon: 'fatigue' }
-	]
-
-	// 随机打乱并返回4个
-	const shuffled = allPrompts.sort(() => Math.random() - 0.5)
-	return Promise.resolve(shuffled.slice(0, 4))
+	// 随机打乱并返回5个
+	const shuffled = [...eyePrompts].sort(() => Math.random() - 0.5)
+	return Promise.resolve(shuffled.slice(0, 5))
 }
 
 export default {

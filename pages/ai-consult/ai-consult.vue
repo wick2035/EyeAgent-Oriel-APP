@@ -58,8 +58,6 @@
               :text="prompt.text"
               @click="handlePromptClick"
             />
-          </view>
-          <view class="prompts__footer">
             <view class="prompts__refresh" @click="refreshPrompts">
               <view class="refresh-icon"></view>
               <text class="prompts__refresh-text">换一换</text>
@@ -629,7 +627,7 @@ export default {
     display: block;
     font-size: $font-size-base;
     color: $text-secondary;
-    margin-bottom: $spacing-md;
+    margin-bottom: $spacing-lg;
   }
 }
 
@@ -699,19 +697,14 @@ export default {
     display: flex;
     flex-wrap: wrap;
     gap: 16rpx;
-  }
-
-  &__footer {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    margin-top: $spacing-md;
+    align-items: flex-end;
   }
 
   &__refresh {
     display: flex;
     align-items: center;
     padding: $spacing-xs $spacing-sm;
+    margin-left: auto;
   }
 
   &__refresh-text {
