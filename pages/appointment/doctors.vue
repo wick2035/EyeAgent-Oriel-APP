@@ -68,7 +68,7 @@
 
 						<view class="doctor-card__stats">
 							<view class="doctor-card__rating">
-								<view class="star-icon"></view>
+								<image class="star-icon" src="@/static/star.svg" mode="aspectFit" />
 								<text class="doctor-card__rating-value">{{ doctor.rating }}</text>
 							</view>
 							<text class="doctor-card__consult">{{ doctor.consultCount }}人已问诊</text>
@@ -548,34 +548,9 @@ export default {
 .star-icon {
 	width: 24rpx;
 	height: 24rpx;
-	position: relative;
 	margin-right: 4rpx;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 0;
-		height: 0;
-		border-left: 12rpx solid transparent;
-		border-right: 12rpx solid transparent;
-		border-bottom: 8rpx solid $color-warning;
-	}
-
-	&::after {
-		content: '';
-		position: absolute;
-		bottom: 0;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 0;
-		height: 0;
-		border-left: 12rpx solid transparent;
-		border-right: 12rpx solid transparent;
-		border-top: 16rpx solid $color-warning;
-	}
+	// 将黑色SVG转为橙色 $color-warning (#F59E0B)
+	filter: invert(63%) sepia(63%) saturate(2201%) hue-rotate(360deg) brightness(101%) contrast(96%);
 }
 
 // 骨架屏

@@ -116,6 +116,13 @@
 			}
 		},
 		{
+			"path": "pages/settings/change-password",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "修改密码"
+			}
+		},
+		{
 			"path": "pages/medication/medication-reminder",
 			"style": {
 				"navigationStyle": "custom",

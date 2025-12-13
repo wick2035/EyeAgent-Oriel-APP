@@ -282,8 +282,14 @@ export async function changePassword(oldPassword, newPassword) {
 	}
 
 	try {
-		await put('/api/user/password', { oldPassword, newPassword })
-		return { success: true }
+		const response = await post('/api/app/base/change-password', { oldPassword, newPassword })
+		if (response.code === 200) {
+			return { success: true }
+		}
+		return {
+			success: false,
+			message: response.msg || '修改密码失败'
+		}
 	} catch (error) {
 		return {
 			success: false,

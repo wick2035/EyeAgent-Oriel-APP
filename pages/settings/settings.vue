@@ -173,8 +173,13 @@ export default {
 		},
 
 		handleMenu(type) {
+			if (type === 'password') {
+				uni.navigateTo({
+					url: '/pages/settings/change-password'
+				})
+				return
+			}
 			const messages = {
-				password: '修改密码功能开发中',
 				bindPhone: '手机绑定功能开发中',
 				agreement: '用户协议页面开发中',
 				privacy: '隐私政策页面开发中'

@@ -19,7 +19,7 @@
 				</view>
 			</view>
 			<view class="user-card__action" @click="goToSettings">
-				<view class="settings-icon"></view>
+				<image class="settings-icon" src="@/static/setting.svg" mode="aspectFit" />
 			</view>
 		</view>
 
@@ -65,7 +65,8 @@
 					@click="handleMenu(item)"
 				>
 					<view class="menu-item__icon" :style="{ background: item.bgColor }">
-						<view class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
+						<image v-if="item.icon === 'theme'" class="menu-icon menu-icon--theme" src="@/static/moon.svg" mode="aspectFit" />
+						<view v-else class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
 					</view>
 					<text class="menu-item__text">{{ item.title }}</text>
 					<view v-if="item.type === 'switch'" class="menu-item__switch">
@@ -284,21 +285,6 @@ export default {
 .settings-icon {
 	width: 40rpx;
 	height: 40rpx;
-	border: 3rpx solid $text-secondary;
-	border-radius: 50%;
-	position: relative;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 16rpx;
-		height: 16rpx;
-		border: 3rpx solid $text-secondary;
-		border-radius: 50%;
-	}
 }
 
 .health-entry {
@@ -503,18 +489,10 @@ export default {
 	}
 
 	&--theme {
-		border: 3rpx solid #667EEA;
-		border-radius: 50%;
-		&::before {
-			content: '';
-			position: absolute;
-			top: 4rpx;
-			right: 4rpx;
-			width: 14rpx;
-			height: 14rpx;
-			background: #667EEA;
-			border-radius: 50%;
-		}
+		width: 36rpx;
+		height: 36rpx;
+		// 将黑色SVG转为紫色 #667EEA
+		filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(218deg) brightness(98%) contrast(85%);
 	}
 
 	&--help {
@@ -571,8 +549,10 @@ export default {
 		background: $dark-bg-card;
 		&__name { color: $dark-text-primary; }
 	}
-	.settings-icon { border-color: $dark-text-secondary; }
-	.settings-icon::before { border-color: $dark-text-secondary; }
+	.settings-icon {
+		// 深色模式下将黑色SVG转为浅色
+		filter: invert(70%) sepia(10%) saturate(200%) hue-rotate(180deg) brightness(90%);
+	}
 
 	.health-entry {
 		background: linear-gradient(135deg, $dark-color-primary 0%, rgba(74, 144, 217, 0.8) 100%);

@@ -32,19 +32,19 @@
 				<!-- 数据统计 -->
 				<view class="doctor-info__stats">
 					<view class="doctor-info__stat">
-						<view class="doctor-info__stat-icon doctor-info__stat-icon--star"></view>
+						<image class="doctor-info__stat-icon doctor-info__stat-icon--star" src="@/static/star.svg" mode="aspectFit" />
 						<text class="doctor-info__stat-value">{{ doctor?.rating || '-' }}</text>
 						<text class="doctor-info__stat-label">评分</text>
 					</view>
 					<view class="doctor-info__divider"></view>
 					<view class="doctor-info__stat">
-						<view class="doctor-info__stat-icon doctor-info__stat-icon--consult"></view>
+						<image class="doctor-info__stat-icon doctor-info__stat-icon--consult" src="@/static/wenzhenliang.svg" mode="aspectFit" />
 						<text class="doctor-info__stat-value">{{ doctor?.consultCount || 0 }}</text>
 						<text class="doctor-info__stat-label">问诊量</text>
 					</view>
 					<view class="doctor-info__divider"></view>
 					<view class="doctor-info__stat">
-						<view class="doctor-info__stat-icon doctor-info__stat-icon--exp"></view>
+						<image class="doctor-info__stat-icon doctor-info__stat-icon--exp" src="@/static/congyinianxian.svg" mode="aspectFit" />
 						<text class="doctor-info__stat-value">{{ doctor?.experience || 0 }}年</text>
 						<text class="doctor-info__stat-label">从医年限</text>
 					</view>
@@ -799,54 +799,20 @@ export default {
 		width: 40rpx;
 		height: 40rpx;
 		margin-bottom: $spacing-xs;
-		position: relative;
 
-		&--star::before {
-			content: '';
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			width: 0;
-			height: 0;
-			border-left: 20rpx solid transparent;
-			border-right: 20rpx solid transparent;
-			border-bottom: 14rpx solid $color-warning;
+		&--star {
+			// 将黑色SVG转为橙色 $color-warning (#F59E0B)
+			filter: invert(63%) sepia(63%) saturate(2201%) hue-rotate(360deg) brightness(101%) contrast(96%);
 		}
 
-		&--consult::before {
-			content: '';
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			width: 28rpx;
-			height: 28rpx;
-			border: 4rpx solid $color-info;
-			border-radius: 50%;
+		&--consult {
+			// 将黑色SVG转为蓝色 $color-info (#3B82F6)
+			filter: invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(100%) contrast(95%);
 		}
 
-		&--exp::before {
-			content: '';
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			width: 24rpx;
-			height: 24rpx;
-			border: 4rpx solid $color-success;
-			border-radius: 50%;
-		}
-		&--exp::after {
-			content: '';
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			width: 12rpx;
-			height: 4rpx;
-			background: $color-success;
-			transform-origin: left center;
-			transform: translateY(-50%) rotate(-45deg);
+		&--exp {
+			// 将黑色SVG转为绿色 $color-success (#10B981)
+			filter: invert(56%) sepia(52%) saturate(552%) hue-rotate(118deg) brightness(92%) contrast(94%);
 		}
 	}
 

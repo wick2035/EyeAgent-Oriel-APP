@@ -87,7 +87,7 @@
 						@click="viewPdf(item, 'record')"
 					>
 						<view class="report-card__icon report-card__icon--record">
-							<view class="record-icon"></view>
+							<image class="record-icon" src="@/static/bingli.svg" mode="aspectFit" />
 						</view>
 						<view class="report-card__content">
 							<text class="report-card__title">{{ item.title }}</text>
@@ -96,7 +96,7 @@
 							<text class="report-card__date">{{ item.visitDate }}</text>
 						</view>
 						<view class="report-card__action">
-							<view class="pdf-icon"></view>
+							<image class="pdf-icon" src="@/static/pdf.svg" mode="aspectFit" />
 						</view>
 					</view>
 					<view v-if="records.length === 0" class="empty-state">
@@ -133,7 +133,7 @@
 							<text class="report-card__date">{{ item.visitDate }}</text>
 						</view>
 						<view class="report-card__action">
-							<view class="pdf-icon"></view>
+							<image class="pdf-icon" src="@/static/pdf.svg" mode="aspectFit" />
 						</view>
 					</view>
 					<view v-if="prescriptions.length === 0" class="empty-state">
@@ -178,7 +178,7 @@
 						</view>
 						<view class="diagnosis-card__footer">
 							<text class="diagnosis-card__view">查看完整报告</text>
-							<view class="pdf-icon pdf-icon--small"></view>
+							<image class="pdf-icon pdf-icon--small" src="@/static/pdf.svg" mode="aspectFit" />
 						</view>
 					</view>
 					<view v-if="diagnoses.length === 0" class="empty-state">
@@ -697,31 +697,10 @@ export default {
 }
 
 .record-icon {
-	width: 36rpx;
-	height: 44rpx;
-	position: relative;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 28rpx;
-		height: 36rpx;
-		border: 3rpx solid $color-info;
-		border-radius: 4rpx;
-	}
-
-	&::after {
-		content: '';
-		position: absolute;
-		top: 8rpx;
-		left: 6rpx;
-		width: 16rpx;
-		height: 3rpx;
-		background: $color-info;
-		box-shadow: 0 8rpx 0 $color-info, 0 16rpx 0 $color-info;
-	}
+	width: 40rpx;
+	height: 40rpx;
+	// 将黑色SVG转为蓝色 $color-info (#3B82F6)
+	filter: invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(100%) contrast(95%);
 }
 
 .prescription-icon {
@@ -758,43 +737,10 @@ export default {
 .pdf-icon {
 	width: 40rpx;
 	height: 48rpx;
-	position: relative;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 32rpx;
-		height: 40rpx;
-		border: 3rpx solid $color-accent;
-		border-radius: 4rpx;
-	}
-
-	&::after {
-		content: 'PDF';
-		position: absolute;
-		bottom: 4rpx;
-		left: 50%;
-		transform: translateX(-50%);
-		font-size: 14rpx;
-		color: $color-accent;
-		font-weight: bold;
-	}
 
 	&--small {
 		width: 32rpx;
 		height: 40rpx;
-
-		&::before {
-			width: 26rpx;
-			height: 32rpx;
-		}
-
-		&::after {
-			font-size: 12rpx;
-			bottom: 2rpx;
-		}
 	}
 }
 
@@ -1043,18 +989,13 @@ export default {
 	}
 
 	.record-icon {
-		&::before { border-color: $dark-color-primary; }
-		&::after { background: $dark-color-primary; box-shadow: 0 8rpx 0 $dark-color-primary, 0 16rpx 0 $dark-color-primary; }
+		// 深色模式下保持蓝色
+		filter: invert(55%) sepia(68%) saturate(1000%) hue-rotate(185deg) brightness(100%) contrast(95%);
 	}
 
 	.prescription-icon::before { color: $color-success; }
 
 	.medicine-tag { background: rgba(16, 185, 129, 0.15); }
-
-	.pdf-icon {
-		&::before { border-color: $dark-color-accent; }
-		&::after { color: $dark-color-accent; }
-	}
 
 	.diagnosis-card {
 		background: $dark-bg-card;
