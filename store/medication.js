@@ -39,7 +39,7 @@ export function getCompletionRate() {
 }
 
 /**
- * 获取按时间分组的提醒列表
+ * 获取按时间分组的提醒列表（旧版，保留备用）
  */
 export function getGroupedReminders() {
 	const groups = [
@@ -64,6 +64,101 @@ export function getGroupedReminders() {
 	})
 
 	return groups.filter(g => g.items.length > 0)
+}
+
+/**
+ * 获取按日期/状态分组的提醒列表
+ * 分组顺序：今天 -> 明天 -> 以后 -> 已完成
+ */
+export function getGroupedRemindersByDate() {
+	const now = new Date()
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+	const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+	const dayAfterTomorrow = new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000)
+
+	const groups = {
+		today: { key: 'today', label: '今天', showDate: false, items: [] },
+		tomorrow: { key: 'tomorrow', label: '明天', showDate: false, items: [] },
+		later: { key: 'later', label: '以后', showDate: true, items: [] },
+		completed: { key: 'completed', label: '已完成', showDate: true, items: [] }
+	}
+
+	medicationState.reminders.forEach(reminder => {
+		if (!reminder.scheduledTime) return
+
+		const scheduledDate = new Date(reminder.scheduledTime)
+		const scheduledDay = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate())
+
+		// 已完成 (READ状态)
+		if (reminder.status === 'READ') {
+			groups.completed.items.push(reminder)
+			return
+		}
+
+		// 按日期分组未完成的提醒
+		if (scheduledDay.getTime() === today.getTime()) {
+			groups.today.items.push(reminder)
+		} else if (scheduledDay.getTime() === tomorrow.getTime()) {
+			groups.tomorrow.items.push(reminder)
+		} else if (scheduledDay >= dayAfterTomorrow) {
+			groups.later.items.push(reminder)
+		} else {
+			// 过期的未完成提醒放入今天
+			groups.today.items.push(reminder)
+		}
+	})
+
+	// 各分组内按时间排序
+	Object.values(groups).forEach(group => {
+		group.items.sort((a, b) => (a.scheduledTime || '').localeCompare(b.scheduledTime || ''))
+	})
+
+	// 已完成分组按最近完成的优先
+	groups.completed.items.reverse()
+
+	// 返回所有分组（包括空分组）
+	return Object.values(groups)
+}
+
+/**
+ * 格式化时间显示
+ * @param {string} scheduledTime - ISO 格式时间戳
+ * @param {boolean} showDate - 是否显示日期
+ * @returns {string} 格式化后的时间字符串
+ */
+export function formatDisplayTime(scheduledTime, showDate = false) {
+	if (!scheduledTime) return ''
+
+	const date = new Date(scheduledTime)
+	const hour = date.getHours()
+	const minute = date.getMinutes().toString().padStart(2, '0')
+
+	// 时段判断
+	let period = ''
+	if (hour >= 5 && hour < 9) {
+		period = '早上'
+	} else if (hour >= 9 && hour < 12) {
+		period = '上午'
+	} else if (hour >= 12 && hour < 14) {
+		period = '中午'
+	} else if (hour >= 14 && hour < 18) {
+		period = '下午'
+	} else if (hour >= 18 && hour < 22) {
+		period = '晚上'
+	} else {
+		period = '深夜'
+	}
+
+	const timeStr = `${period}${hour}:${minute}`
+
+	if (!showDate) {
+		return timeStr
+	}
+
+	// 显示日期
+	const month = date.getMonth() + 1
+	const day = date.getDate()
+	return `${month}月${day}日 ${timeStr}`
 }
 
 /**
@@ -245,6 +340,8 @@ export default {
 	getMedicationState,
 	getCompletionRate,
 	getGroupedReminders,
+	getGroupedRemindersByDate,
+	formatDisplayTime,
 	fetchReminders,
 	createReminder,
 	updateReminder,

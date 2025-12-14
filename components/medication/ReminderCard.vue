@@ -2,54 +2,57 @@
 	<view
 		class="reminder-card"
 		:class="[
-			`reminder-card--${status}`,
-			{ 'reminder-card--dark': isDark },
-			{ 'reminder-card--disabled': !enabled }
+			{ 'reminder-card--completed': isCompleted },
+			{ 'reminder-card--dark': isDark }
 		]"
-		@click="handleClick"
 		@touchstart="onTouchStart"
 		@touchmove="onTouchMove"
 		@touchend="onTouchEnd"
 	>
 		<!-- 删除操作区域 -->
-		<view class="reminder-card__delete" :class="{ 'reminder-card__delete--visible': swipeOffset > 0 }" :style="{ width: deleteWidth + 'rpx' }">
+		<view
+			class="reminder-card__delete"
+			:class="{ 'reminder-card__delete--visible': swipeOffset > 0 }"
+			:style="{ width: swipeOffset + 'rpx' }"
+		>
 			<view class="reminder-card__delete-btn" @click.stop="handleDelete">
 				<view class="delete-icon"></view>
 			</view>
 		</view>
 
 		<!-- 卡片主体 -->
-		<view class="reminder-card__body" :style="{ transform: `translateX(${-swipeOffset}rpx)` }">
-			<!-- 左侧状态条 -->
-			<view class="reminder-card__status-bar"></view>
+		<view
+			class="reminder-card__body"
+			:style="{ transform: `translateX(${-swipeOffset}rpx)` }"
+			@click="handleCardClick"
+		>
+			<!-- 左侧复选框 -->
+			<view
+				class="reminder-card__checkbox"
+				:class="{ 'reminder-card__checkbox--checked': isCompleted }"
+				@click.stop="handleToggleComplete"
+			>
+				<view v-if="isCompleted" class="check-tick"></view>
+			</view>
 
+			<!-- 内容区域 -->
 			<view class="reminder-card__content">
-				<!-- 药物图标 -->
-				<view class="reminder-card__icon" :class="[`reminder-card__icon--${medicineType}`]">
-					<view class="drug-icon" :class="[`drug-icon--${medicineType}`]"></view>
-				</view>
-
-				<!-- 药物信息 -->
+				<!-- 第一行：药品信息 -->
 				<view class="reminder-card__info">
-					<text class="reminder-card__name">{{ medicineName }}</text>
-					<text class="reminder-card__spec">{{ medicineSpec }} · {{ dosage }}</text>
-					<view class="reminder-card__meta">
-						<view class="reminder-card__time">
-							<view class="time-icon"></view>
-							<text>{{ formatTime }}</text>
-						</view>
-						<text class="reminder-card__frequency">{{ frequency }}</text>
-					</view>
+					<text
+						class="reminder-card__name"
+						:class="{ 'reminder-card__name--completed': isCompleted }"
+					>{{ medicineName }}</text>
+					<text class="reminder-card__spec">{{ medicineSpec }}</text>
+					<text v-if="dosage" class="reminder-card__dosage">·{{ dosage }}</text>
+					<text v-if="frequency" class="reminder-card__frequency">（{{ frequency }}）</text>
 				</view>
 
-				<!-- 完成按钮 -->
-				<view
-					class="reminder-card__check"
-					:class="{ 'reminder-card__check--completed': isCompleted }"
-					@click.stop="handleToggleComplete"
-				>
-					<view v-if="isCompleted" class="check-icon"></view>
-				</view>
+				<!-- 第二行：时间 -->
+				<text
+					class="reminder-card__time"
+					:class="{ 'reminder-card__time--completed': isCompleted }"
+				>{{ displayTime }}</text>
 			</view>
 		</view>
 	</view>
@@ -57,6 +60,7 @@
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
+import { formatDisplayTime } from '@/store/medication.js'
 
 export default {
 	name: 'ReminderCard',
@@ -77,11 +81,6 @@ export default {
 			type: String,
 			default: ''
 		},
-		medicineType: {
-			type: String,
-			default: 'pill', // drops, pill, capsule, injection
-			validator: (value) => ['drops', 'pill', 'capsule', 'injection'].includes(value)
-		},
 		frequency: {
 			type: String,
 			default: ''
@@ -92,12 +91,11 @@ export default {
 		},
 		status: {
 			type: String,
-			default: 'SCHEDULED', // SCHEDULED, UNREAD, READ
-			validator: (value) => ['SCHEDULED', 'UNREAD', 'READ'].includes(value)
+			default: 'SCHEDULED'
 		},
-		enabled: {
+		showDate: {
 			type: Boolean,
-			default: true
+			default: false
 		},
 		index: {
 			type: Number,
@@ -110,7 +108,7 @@ export default {
 			startX: 0,
 			startY: 0,
 			isSwiping: false,
-			deleteWidth: 160
+			deleteWidth: 140
 		}
 	},
 	computed: {
@@ -120,13 +118,12 @@ export default {
 		isCompleted() {
 			return this.status === 'READ'
 		},
-		formatTime() {
-			if (!this.scheduledTime) return ''
-			return this.scheduledTime.substring(11, 16)
+		displayTime() {
+			return formatDisplayTime(this.scheduledTime, this.showDate)
 		}
 	},
 	methods: {
-		handleClick() {
+		handleCardClick() {
 			if (this.swipeOffset > 0) {
 				this.swipeOffset = 0
 				return
@@ -134,7 +131,6 @@ export default {
 			this.$emit('click', this.id)
 		},
 		handleToggleComplete() {
-			// 已完成状态不允许取消
 			if (this.isCompleted) {
 				return
 			}
@@ -153,13 +149,10 @@ export default {
 			const deltaX = this.startX - e.touches[0].clientX
 			const deltaY = Math.abs(e.touches[0].clientY - this.startY)
 
-			// 如果还没确定滑动方向
 			if (!this.isSwiping) {
-				// 垂直移动大于水平移动，认为是页面滚动，不处理卡片滑动
 				if (deltaY > Math.abs(deltaX)) {
 					return
 				}
-				// 水平移动达到阈值才开始卡片滑动
 				if (Math.abs(deltaX) < 10) {
 					return
 				}
@@ -167,10 +160,8 @@ export default {
 			}
 
 			if (deltaX > 0) {
-				// 向左滑动
 				this.swipeOffset = Math.min(deltaX * 2, this.deleteWidth)
 			} else {
-				// 向右滑动恢复
 				this.swipeOffset = Math.max(0, this.swipeOffset + deltaX * 2)
 			}
 		},
@@ -188,13 +179,14 @@ export default {
 
 <style lang="scss" scoped>
 .reminder-card {
-	margin: 0 $spacing-lg $spacing-md;
+	margin: 0 $spacing-lg $spacing-sm;
 	position: relative;
 	overflow: hidden;
 	border-radius: $radius-lg;
-	animation: card-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-	animation-delay: calc(var(--index, 0) * 0.06s);
+	animation: card-fade-in 0.35s ease-out backwards;
+	animation-delay: calc(var(--index, 0) * 0.05s);
 
+	// 删除区域
 	&__delete {
 		position: absolute;
 		right: 0;
@@ -206,7 +198,6 @@ export default {
 		justify-content: center;
 		width: 0;
 		overflow: hidden;
-		border-radius: 0;
 		z-index: 0;
 
 		&--visible {
@@ -215,143 +206,105 @@ export default {
 	}
 
 	&__delete-btn {
-		width: 80rpx;
-		height: 80rpx;
+		width: 100%;
+		height: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
+	// 卡片主体
 	&__body {
-		background: $bg-card;
+		background: #FFFFFF;
 		border-radius: $radius-lg;
-		box-shadow: $shadow-sm;
-		position: relative;
+		padding: $spacing-lg;
+		display: flex;
+		align-items: center;
+		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 		transition: transform 0.2s ease;
 		will-change: transform;
-		transform: translateZ(0); // 开启 GPU 加速
+		transform: translateZ(0);
 		z-index: 1;
+		position: relative;
 	}
 
-	&__status-bar {
-		position: absolute;
-		left: 0;
-		top: 0;
-		bottom: 0;
-		width: 6rpx;
-		background: #6366F1;
-		border-radius: 3rpx 0 0 3rpx;
-		transition: background 0.3s ease;
-	}
-
-	&--READ &__status-bar {
-		background: #10B981;
-	}
-
-	&--UNREAD &__status-bar {
-		background: #F59E0B;
-		animation: status-pulse 1.5s ease-in-out infinite;
-	}
-
-	&__content {
-		display: flex;
-		align-items: center;
-		padding: $spacing-lg;
-		padding-left: calc($spacing-lg + 6rpx);
-	}
-
-	&__icon {
-		width: 80rpx;
-		height: 80rpx;
-		border-radius: $radius-md;
+	// 复选框
+	&__checkbox {
+		width: 48rpx;
+		height: 48rpx;
+		border-radius: 50%;
+		border: 3rpx solid #D1D5DB;
+		margin-right: $spacing-md;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-right: $spacing-md;
 		flex-shrink: 0;
+		transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-		&--drops {
-			background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0.2) 100%);
-		}
-
-		&--pill {
-			background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.2) 100%);
-		}
-
-		&--capsule {
-			background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.2) 100%);
-		}
-
-		&--injection {
-			background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.2) 100%);
+		&--checked {
+			background: #10B981;
+			border-color: #10B981;
+			animation: check-bounce 0.4s ease;
 		}
 	}
 
-	&__info {
+	// 内容区域
+	&__content {
 		flex: 1;
 		min-width: 0;
+	}
+
+	// 药品信息行
+	&__info {
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		margin-bottom: 8rpx;
 	}
 
 	&__name {
 		font-size: $font-size-lg;
 		font-weight: $font-weight-semibold;
 		color: $text-primary;
-		display: block;
-		margin-bottom: 4rpx;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		margin-right: 8rpx;
+
+		&--completed {
+			text-decoration: line-through;
+			color: #9CA3AF;
+		}
 	}
 
 	&__spec {
 		font-size: $font-size-sm;
 		color: $text-secondary;
-		display: block;
-		margin-bottom: $spacing-xs;
 	}
 
-	&__meta {
-		display: flex;
-		align-items: center;
-	}
-
-	&__time {
+	&__dosage {
 		font-size: $font-size-sm;
-		color: $text-muted;
-		display: flex;
-		align-items: center;
+		color: $text-secondary;
 	}
 
 	&__frequency {
-		font-size: $font-size-xs;
+		font-size: $font-size-sm;
 		color: $text-muted;
-		margin-left: $spacing-md;
-		padding: 4rpx 12rpx;
-		background: $bg-elevated;
-		border-radius: $radius-xs;
 	}
 
-	&__check {
-		width: 56rpx;
-		height: 56rpx;
-		border-radius: 50%;
-		border: 3rpx solid #6366F1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-left: $spacing-md;
-		flex-shrink: 0;
-		transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+	// 时间
+	&__time {
+		font-size: $font-size-sm;
+		color: $text-secondary;
 
 		&--completed {
-			background: #10B981;
-			border-color: #10B981;
-			transform: scale(1.1);
+			text-decoration: line-through;
+			color: #9CA3AF;
 		}
 	}
 
-	&--disabled {
-		opacity: 0.5;
+	// 已完成卡片
+	&--completed {
+		.reminder-card__body {
+			background: #FAFAFA;
+		}
 	}
 
 	// 深色模式
@@ -361,152 +314,56 @@ export default {
 			box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 		}
 
-		.reminder-card__name {
-			color: $dark-text-primary;
+		.reminder-card__checkbox {
+			border-color: #4B5563;
 		}
 
-		.reminder-card__spec {
+		.reminder-card__name {
+			color: $dark-text-primary;
+
+			&--completed {
+				color: #6B7280;
+			}
+		}
+
+		.reminder-card__spec,
+		.reminder-card__dosage {
 			color: $dark-text-secondary;
 		}
 
-		.reminder-card__time {
-			color: $dark-text-muted;
-		}
-
 		.reminder-card__frequency {
-			background: $dark-bg-elevated;
 			color: $dark-text-muted;
 		}
-	}
-}
 
-// 药物图标
-.drug-icon {
-	&--drops {
-		width: 36rpx;
-		height: 48rpx;
-		position: relative;
+		.reminder-card__time {
+			color: $dark-text-secondary;
 
-		&::before {
-			content: '';
-			position: absolute;
-			bottom: 0;
-			left: 50%;
-			transform: translateX(-50%);
-			width: 24rpx;
-			height: 36rpx;
-			border: 3rpx solid #06B6D4;
-			border-radius: 12rpx 12rpx 6rpx 6rpx;
+			&--completed {
+				color: #6B7280;
+			}
 		}
 
-		&::after {
-			content: '';
-			position: absolute;
-			top: 0;
-			left: 50%;
-			transform: translateX(-50%);
-			width: 12rpx;
-			height: 14rpx;
-			background: #06B6D4;
-			border-radius: 0 0 6rpx 6rpx;
+		&.reminder-card--completed {
+			.reminder-card__body {
+				background: rgba(0, 0, 0, 0.2);
+			}
 		}
-	}
-
-	&--pill {
-		width: 44rpx;
-		height: 20rpx;
-		border-radius: 10rpx;
-		background: linear-gradient(90deg, #10B981 50%, #6EE7B7 50%);
-		border: 2rpx solid #10B981;
-	}
-
-	&--capsule {
-		width: 42rpx;
-		height: 18rpx;
-		border-radius: 9rpx;
-		background: linear-gradient(90deg, #F59E0B 50%, #FCD34D 50%);
-		border: 2rpx solid #F59E0B;
-		transform: rotate(-30deg);
-	}
-
-	&--injection {
-		width: 48rpx;
-		height: 16rpx;
-		position: relative;
-
-		&::before {
-			content: '';
-			position: absolute;
-			left: 0;
-			top: 0;
-			width: 36rpx;
-			height: 16rpx;
-			border: 2rpx solid #EF4444;
-			border-radius: 2rpx;
-			background: linear-gradient(90deg, transparent 60%, rgba(239, 68, 68, 0.2) 100%);
-		}
-
-		&::after {
-			content: '';
-			position: absolute;
-			right: 0;
-			top: 50%;
-			transform: translateY(-50%);
-			width: 12rpx;
-			height: 2rpx;
-			background: #EF4444;
-		}
-	}
-}
-
-// 时间图标
-.time-icon {
-	width: 24rpx;
-	height: 24rpx;
-	border: 2rpx solid $text-muted;
-	border-radius: 50%;
-	margin-right: 6rpx;
-	position: relative;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 2rpx;
-		height: 8rpx;
-		background: $text-muted;
-		transform-origin: bottom center;
-		transform: translate(-50%, -100%) rotate(0deg);
-	}
-
-	&::after {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 2rpx;
-		height: 6rpx;
-		background: $text-muted;
-		transform-origin: bottom center;
-		transform: translate(-50%, -100%) rotate(90deg);
 	}
 }
 
 // 勾选图标
-.check-icon {
-	width: 14rpx;
-	height: 24rpx;
+.check-tick {
+	width: 12rpx;
+	height: 20rpx;
 	border-right: 4rpx solid #fff;
 	border-bottom: 4rpx solid #fff;
-	transform: rotate(45deg);
-	margin-top: -6rpx;
+	transform: rotate(45deg) translateY(-2rpx);
 }
 
 // 删除图标
 .delete-icon {
-	width: 32rpx;
-	height: 32rpx;
+	width: 36rpx;
+	height: 36rpx;
 	position: relative;
 
 	&::before,
@@ -515,8 +372,8 @@ export default {
 		position: absolute;
 		top: 50%;
 		left: 50%;
-		width: 24rpx;
-		height: 3rpx;
+		width: 28rpx;
+		height: 4rpx;
 		background: #fff;
 		border-radius: 2rpx;
 	}
@@ -530,19 +387,23 @@ export default {
 	}
 }
 
-@keyframes card-slide-in {
+// 动画
+@keyframes card-fade-in {
 	from {
 		opacity: 0;
-		transform: translateX(-30rpx);
+		transform: translateY(16rpx);
 	}
 	to {
 		opacity: 1;
-		transform: translateX(0);
+		transform: translateY(0);
 	}
 }
 
-@keyframes status-pulse {
-	0%, 100% { opacity: 1; }
-	50% { opacity: 0.5; }
+@keyframes check-bounce {
+	0% { transform: scale(1); }
+	30% { transform: scale(1.25); }
+	50% { transform: scale(0.9); }
+	70% { transform: scale(1.1); }
+	100% { transform: scale(1); }
 }
 </style>

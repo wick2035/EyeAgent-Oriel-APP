@@ -1,11 +1,7 @@
 <template>
 	<view class="page" :class="{ 'page--dark': isDark }">
-		<!-- 氛围背景 -->
-		<view class="atmosphere-bg">
-			<view class="pulse-orb pulse-orb--1"></view>
-			<view class="pulse-orb pulse-orb--2"></view>
-			<view class="pulse-orb pulse-orb--3"></view>
-		</view>
+		<!-- 简洁背景 -->
+		<view class="page-bg"></view>
 
 		<!-- 固定头部区域 -->
 		<view class="fixed-header" :style="{ paddingTop: statusBarHeight + 'px' }">
@@ -19,18 +15,10 @@
 					<view class="add-icon"></view>
 				</view>
 			</view>
-
-			<!-- 统计卡片 -->
-			<StatsCard
-				:total="todayStats.total"
-				:completed="todayStats.completed"
-				:nextReminder="todayStats.nextReminder"
-				:countdown="nextCountdown"
-			/>
 		</view>
 
 		<!-- 头部占位 -->
-		<view class="header-placeholder" :style="{ height: (statusBarHeight + 44 + 150) + 'px' }"></view>
+		<view class="header-placeholder" :style="{ height: (statusBarHeight + 44) + 'px' }"></view>
 
 		<!-- 提醒列表 -->
 		<scroll-view
@@ -45,41 +33,49 @@
 				<view
 					v-for="(group, gIndex) in groupedReminders"
 					:key="group.key"
-					class="time-group"
+					class="date-group"
 				>
-					<!-- 时间分组标题 -->
-					<view class="time-group__header">
-						<view class="time-group__icon" :class="[`time-group__icon--${group.icon}`]">
-							<view class="time-icon-inner" :class="[`time-icon-inner--${group.icon}`]"></view>
-						</view>
-						<text class="time-group__title">{{ group.label }}</text>
-						<text class="time-group__count">{{ group.items.length }}项</text>
+					<!-- 分组标题 -->
+					<view
+						class="date-group__header"
+						@click="toggleGroupExpand(group.key)"
+					>
+						<text class="date-group__title">{{ group.label }}</text>
+						<!-- 展开/收起箭头 -->
+						<view
+							class="date-group__arrow"
+							:class="{ 'date-group__arrow--expanded': expandedGroups[group.key] }"
+						></view>
 					</view>
 
 					<!-- 提醒卡片列表 -->
-					<ReminderCard
-						v-for="(item, index) in group.items"
-						:key="item.id"
-						:id="item.id"
-						:medicineName="item.medicineName"
-						:medicineSpec="item.medicineSpec"
-						:dosage="item.dosage"
-						:medicineType="item.medicineType"
-						:frequency="item.frequency"
-						:scheduledTime="item.scheduledTime"
-						:status="item.status"
-						:enabled="item.enabled"
-						:index="gIndex * 10 + index"
-						:style="{ '--index': gIndex * 10 + index }"
-						@click="handleCardClick"
-						@toggle-complete="handleToggleComplete"
-						@delete="handleDeleteClick"
-					/>
+					<view
+						class="date-group__list"
+						:class="{ 'date-group__list--collapsed': !expandedGroups[group.key] }"
+					>
+						<ReminderCard
+							v-for="(item, index) in group.items"
+							:key="item.id"
+							:id="item.id"
+							:medicineName="item.medicineName"
+							:medicineSpec="item.medicineSpec"
+							:dosage="item.dosage"
+							:frequency="item.frequency"
+							:scheduledTime="item.scheduledTime"
+							:status="item.status"
+							:showDate="group.showDate"
+							:index="gIndex * 10 + index"
+							:style="{ '--index': gIndex * 10 + index }"
+							@click="handleCardClick"
+							@toggle-complete="handleToggleComplete"
+							@delete="handleDeleteClick"
+						/>
+					</view>
 				</view>
 			</template>
 
-			<!-- 空状态 -->
-			<EmptyState v-else-if="!loading" @add="showAddModal" />
+			<!-- 空状态 - 仅当所有分组都没有内容时显示 -->
+			<EmptyState v-if="!loading && !hasAnyReminders" @add="showAddModal" />
 
 			<!-- 加载中 -->
 			<view v-if="loading" class="loading-state">
@@ -93,7 +89,6 @@
 
 		<!-- 悬浮添加按钮 -->
 		<view class="fab" @click="showAddModal">
-			<view class="fab__pulse"></view>
 			<view class="fab__icon"></view>
 		</view>
 
@@ -121,7 +116,6 @@
 </template>
 
 <script>
-import StatsCard from '@/components/medication/StatsCard.vue'
 import ReminderCard from '@/components/medication/ReminderCard.vue'
 import EmptyState from '@/components/medication/EmptyState.vue'
 import ReminderModal from '@/components/medication/ReminderModal.vue'
@@ -131,8 +125,7 @@ import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import { isDarkMode } from '@/store/theme.js'
 import {
 	getMedicationState,
-	getGroupedReminders,
-	getNextReminderCountdown,
+	getGroupedRemindersByDate,
 	fetchReminders,
 	createReminder,
 	updateReminder,
@@ -144,7 +137,6 @@ import {
 
 export default {
 	components: {
-		StatsCard,
 		ReminderCard,
 		EmptyState,
 		ReminderModal,
@@ -158,7 +150,12 @@ export default {
 			modalVisible: false,
 			isRefreshing: false,
 			deletingId: null,
-			countdownTimer: null
+			expandedGroups: {
+				today: true,
+				tomorrow: true,
+				later: true,
+				completed: false // 已完成默认收起
+			}
 		}
 	},
 	computed: {
@@ -171,17 +168,14 @@ export default {
 		loading() {
 			return this.medicationState.loading
 		},
-		todayStats() {
-			return this.medicationState.todayStats
-		},
 		groupedReminders() {
-			return getGroupedReminders()
+			return getGroupedRemindersByDate()
+		},
+		hasAnyReminders() {
+			return this.groupedReminders.some(g => g.items.length > 0)
 		},
 		editingReminder() {
 			return this.medicationState.editingReminder
-		},
-		nextCountdown() {
-			return getNextReminderCountdown()
 		}
 	},
 	onLoad() {
@@ -189,18 +183,12 @@ export default {
 		const sysInfo = uni.getSystemInfoSync()
 		this.statusBarHeight = sysInfo.statusBarHeight || 0
 
-		// 计算 scroll-view 高度 = 屏幕高度 - 头部占位高度
-		const headerHeight = this.statusBarHeight + 44 + 150 // navbar(44) + stats card(150)
+		// 计算 scroll-view 高度 = 屏幕高度 - 导航栏高度
+		const headerHeight = this.statusBarHeight + 44
 		this.scrollHeight = sysInfo.windowHeight - headerHeight
 
 		// 加载数据
 		this.loadData()
-
-		// 启动倒计时更新
-		this.startCountdownTimer()
-	},
-	onUnload() {
-		this.stopCountdownTimer()
 	},
 	onShow() {
 		// 页面显示时刷新数据
@@ -223,6 +211,9 @@ export default {
 			this.modalVisible = false
 			clearEditingReminder()
 		},
+		toggleGroupExpand(key) {
+			this.expandedGroups[key] = !this.expandedGroups[key]
+		},
 		handleCardClick(id) {
 			const reminder = this.medicationState.reminders.find(r => r.id === id)
 			if (reminder) {
@@ -231,7 +222,6 @@ export default {
 			}
 		},
 		async handleToggleComplete(id, complete) {
-			// 只支持标记完成，不支持取消完成
 			if (complete) {
 				const result = await markAsCompleted(id)
 				if (result.success) {
@@ -256,13 +246,11 @@ export default {
 		},
 		async handleSubmit(formData) {
 			if (this.editingReminder) {
-				// 编辑模式
 				const result = await updateReminder(this.editingReminder.id, formData)
 				if (result.success) {
 					uni.showToast({ title: '保存成功', icon: 'success' })
 				}
 			} else {
-				// 新增模式
 				const result = await createReminder(formData)
 				if (result.success) {
 					uni.showToast({ title: '添加成功', icon: 'success' })
@@ -273,18 +261,6 @@ export default {
 			this.isRefreshing = true
 			await this.loadData()
 			this.isRefreshing = false
-		},
-		startCountdownTimer() {
-			this.countdownTimer = setInterval(() => {
-				// 强制更新倒计时显示
-				this.$forceUpdate()
-			}, 60000) // 每分钟更新一次
-		},
-		stopCountdownTimer() {
-			if (this.countdownTimer) {
-				clearInterval(this.countdownTimer)
-				this.countdownTimer = null
-			}
 		}
 	}
 }
@@ -293,11 +269,16 @@ export default {
 <style lang="scss" scoped>
 .page {
 	min-height: 100vh;
-	background: $bg-base;
 	position: relative;
 
 	&--dark {
-		background: $dark-bg-base;
+		.page-bg {
+			background: $dark-bg-base;
+		}
+
+		.fixed-header {
+			background: $dark-bg-base;
+		}
 
 		.navbar__title {
 			color: $dark-text-primary;
@@ -312,12 +293,12 @@ export default {
 			background: #10B981;
 		}
 
-		.time-group__title {
+		.date-group__title {
 			color: $dark-text-primary;
 		}
 
-		.time-group__count {
-			color: $dark-text-muted;
+		.date-group__arrow {
+			border-color: $dark-text-muted;
 		}
 
 		.loading-text {
@@ -326,67 +307,15 @@ export default {
 	}
 }
 
-// 氛围背景
-.atmosphere-bg {
+// 简洁背景
+.page-bg {
 	position: fixed;
 	top: 0;
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background: linear-gradient(
-		165deg,
-		#E6F9F3 0%,
-		#F0FDF9 30%,
-		$bg-base 60%,
-		#F0F5FA 100%
-	);
-	overflow: hidden;
-	z-index: 0;
-	animation: bg-fade-in 0.6s ease-out;
-
-	.page--dark & {
-		background: linear-gradient(
-			165deg,
-			rgba(16, 185, 129, 0.08) 0%,
-			$dark-bg-base 40%,
-			$dark-bg-base 100%
-		);
-	}
-}
-
-// 脉动光晕
-.pulse-orb {
-	position: absolute;
-	border-radius: 50%;
-	filter: blur(60rpx);
-	animation: orb-pulse 4s ease-in-out infinite;
-
-	&--1 {
-		width: 300rpx;
-		height: 300rpx;
-		top: -100rpx;
-		right: -80rpx;
-		background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 70%);
-		animation-delay: 0s;
-	}
-
-	&--2 {
-		width: 200rpx;
-		height: 200rpx;
-		top: 40%;
-		left: -60rpx;
-		background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%);
-		animation-delay: -1.5s;
-	}
-
-	&--3 {
-		width: 250rpx;
-		height: 250rpx;
-		bottom: 20%;
-		right: -40rpx;
-		background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
-		animation-delay: -3s;
-	}
+	background: #F5F6FA;
+	z-index: -1;
 }
 
 // 固定头部
@@ -396,21 +325,7 @@ export default {
 	left: 0;
 	right: 0;
 	z-index: 100;
-	background: linear-gradient(
-		165deg,
-		#E6F9F3 0%,
-		#F0FDF9 30%,
-		$bg-base 100%
-	);
-
-	.page--dark & {
-		background: linear-gradient(
-			165deg,
-			rgba(16, 185, 129, 0.08) 0%,
-			$dark-bg-base 40%,
-			$dark-bg-base 100%
-		);
-	}
+	background: #F5F6FA;
 }
 
 // 头部占位
@@ -490,33 +405,15 @@ export default {
 	z-index: 5;
 }
 
-// 时间分组
-.time-group {
-	margin-top: $spacing-md;
-
-	&:first-child {
-		margin-top: 0;
-	}
+// 日期分组
+.date-group {
+	margin-bottom: $spacing-sm;
 
 	&__header {
 		display: flex;
 		align-items: center;
-		padding: $spacing-sm $spacing-lg;
-	}
-
-	&__icon {
-		width: 40rpx;
-		height: 40rpx;
-		border-radius: 50%;
-		margin-right: $spacing-sm;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-
-		&--morning { background: linear-gradient(135deg, #FCD34D 0%, #FBBF24 100%); }
-		&--noon { background: linear-gradient(135deg, #FB923C 0%, #F97316 100%); }
-		&--evening { background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%); }
-		&--night { background: linear-gradient(135deg, #64748B 0%, #475569 100%); }
+		padding: $spacing-md $spacing-lg;
+		cursor: pointer;
 	}
 
 	&__title {
@@ -525,55 +422,27 @@ export default {
 		color: $text-primary;
 	}
 
-	&__count {
-		font-size: $font-size-sm;
-		color: $text-muted;
-		margin-left: $spacing-sm;
-	}
-}
+	&__arrow {
+		width: 16rpx;
+		height: 16rpx;
+		border-right: 3rpx solid $text-muted;
+		border-bottom: 3rpx solid $text-muted;
+		transform: rotate(45deg);
+		margin-left: auto;
+		transition: transform 0.3s ease;
 
-// 时间图标内部
-.time-icon-inner {
-	width: 16rpx;
-	height: 16rpx;
-
-	&--morning {
-		background: #fff;
-		border-radius: 50%;
-		box-shadow: 0 0 8rpx rgba(255, 255, 255, 0.5);
+		&--expanded {
+			transform: rotate(-135deg);
+		}
 	}
 
-	&--noon {
-		background: #fff;
-		border-radius: 50%;
-	}
+	&__list {
+		overflow: hidden;
+		transition: max-height 0.3s ease, opacity 0.3s ease;
 
-	&--evening {
-		width: 12rpx;
-		height: 12rpx;
-		border: 2rpx solid #fff;
-		border-radius: 50%;
-		border-right-color: transparent;
-		border-bottom-color: transparent;
-		transform: rotate(-45deg);
-	}
-
-	&--night {
-		width: 12rpx;
-		height: 12rpx;
-		border: 2rpx solid #fff;
-		border-radius: 50%;
-		position: relative;
-
-		&::after {
-			content: '';
-			position: absolute;
-			top: -2rpx;
-			right: -4rpx;
-			width: 10rpx;
-			height: 10rpx;
-			background: linear-gradient(135deg, #64748B 0%, #475569 100%);
-			border-radius: 50%;
+		&--collapsed {
+			max-height: 0;
+			opacity: 0;
 		}
 	}
 }
@@ -611,42 +480,27 @@ export default {
 .fab {
 	position: fixed;
 	right: $spacing-lg;
-	bottom: calc(140rpx + env(safe-area-inset-bottom) + $spacing-lg);
+	bottom: calc(120rpx + env(safe-area-inset-bottom));
 	width: 112rpx;
 	height: 112rpx;
-	background: linear-gradient(135deg, #0F766E 0%, #10B981 50%, #34D399 100%);
+	background: #10B981;
 	border-radius: 50%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	box-shadow:
-		0 8rpx 32rpx rgba(16, 185, 129, 0.35),
-		0 4rpx 12rpx rgba(16, 185, 129, 0.25);
+	box-shadow: 0 8rpx 24rpx rgba(16, 185, 129, 0.35);
 	z-index: 100;
-	animation: fab-bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s backwards;
+	animation: fab-scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s backwards;
 	transition: transform 0.2s ease, box-shadow 0.2s ease;
 
 	&:active {
-		transform: scale(0.9);
-		box-shadow:
-			0 4rpx 16rpx rgba(16, 185, 129, 0.25),
-			0 2rpx 6rpx rgba(16, 185, 129, 0.2);
-	}
-
-	&__pulse {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		border-radius: 50%;
-		border: 2rpx solid rgba(16, 185, 129, 0.5);
-		animation: fab-pulse 2s ease-out infinite;
+		transform: scale(0.92);
+		box-shadow: 0 4rpx 12rpx rgba(16, 185, 129, 0.25);
 	}
 
 	&__icon {
-		width: 40rpx;
-		height: 40rpx;
+		width: 32rpx;
+		height: 32rpx;
 		position: relative;
 
 		&::before,
@@ -676,49 +530,18 @@ export default {
 }
 
 // 动画
-@keyframes bg-fade-in {
-	from { opacity: 0; }
-	to { opacity: 1; }
+@keyframes spin {
+	to { transform: rotate(360deg); }
 }
 
-@keyframes orb-pulse {
-	0%, 100% {
-		transform: scale(1);
-		opacity: 0.6;
-	}
-	50% {
-		transform: scale(1.2);
-		opacity: 1;
-	}
-}
-
-
-@keyframes fab-bounce-in {
+@keyframes fab-scale-in {
 	from {
 		opacity: 0;
 		transform: scale(0);
-	}
-	60% {
-		transform: scale(1.2);
 	}
 	to {
 		opacity: 1;
 		transform: scale(1);
 	}
-}
-
-@keyframes fab-pulse {
-	0% {
-		transform: scale(1);
-		opacity: 0.8;
-	}
-	100% {
-		transform: scale(1.5);
-		opacity: 0;
-	}
-}
-
-@keyframes spin {
-	to { transform: rotate(360deg); }
 }
 </style>
