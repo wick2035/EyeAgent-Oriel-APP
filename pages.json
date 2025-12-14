@@ -130,6 +130,20 @@
 			}
 		},
 		{
+			"path": "pages/settings/user-agreement",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "用户协议"
+			}
+		},
+		{
+			"path": "pages/settings/privacy-policy",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "隐私政策"
+			}
+		},
+		{
 			"path": "pages/medication/medication-reminder",
 			"style": {
 				"navigationStyle": "custom",

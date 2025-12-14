@@ -288,11 +288,15 @@ export default {
     },
 
     openUserAgreement() {
-      this.$refs.customToast.info("用户协议页面开发中");
+      uni.navigateTo({
+        url: '/pages/settings/user-agreement'
+      })
     },
 
     openPrivacyPolicy() {
-      this.$refs.customToast.info("隐私政策页面开发中");
+      uni.navigateTo({
+        url: '/pages/settings/privacy-policy'
+      })
     },
   },
 };

@@ -173,18 +173,21 @@ export default {
 		},
 
 		handleMenu(type) {
-			if (type === 'password') {
-				uni.navigateTo({
-					url: '/pages/settings/change-password'
-				})
+			const routes = {
+				password: '/pages/settings/change-password',
+				agreement: '/pages/settings/user-agreement',
+				privacy: '/pages/settings/privacy-policy'
+			}
+			if (routes[type]) {
+				uni.navigateTo({ url: routes[type] })
 				return
 			}
 			const messages = {
-				bindPhone: '手机绑定功能开发中',
-				agreement: '用户协议页面开发中',
-				privacy: '隐私政策页面开发中'
+				bindPhone: '手机绑定功能开发中'
 			}
-			uni.showToast({ title: messages[type], icon: 'none' })
+			if (messages[type]) {
+				uni.showToast({ title: messages[type], icon: 'none' })
+			}
 		},
 
 		loadNotifySetting() {
@@ -572,11 +575,13 @@ $accent-coral-light: #FF8A7A;
 		}
 
 		// 手机图标
-		&--phone {
-			border: 2rpx solid #45B7D1;
-			border-radius: 6rpx;
+		&--phone::before {
+			content: '';
 			width: 26rpx;
 			height: 38rpx;
+			border: 2rpx solid #45B7D1;
+			border-radius: 6rpx;
+			position: absolute;
 		}
 		&--phone::after {
 			content: '';
@@ -585,7 +590,7 @@ $accent-coral-light: #FF8A7A;
 			background: #45B7D1;
 			border-radius: 2rpx;
 			position: absolute;
-			bottom: 6rpx;
+			bottom: 8rpx;
 		}
 
 		// 主题图标
