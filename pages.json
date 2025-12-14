@@ -8,6 +8,13 @@
 			}
 		},
 		{
+			"path": "pages/login/register",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "注册"
+			}
+		},
+		{
 			"path": "pages/index/index",
 			"style": {
 				"navigationStyle": "custom",

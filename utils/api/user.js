@@ -299,6 +299,114 @@ export async function changePassword(oldPassword, newPassword) {
 }
 
 /**
+ * 发送短信验证码
+ * @param {string} phone - 手机号
+ * @returns {Promise<object>}
+ */
+export async function sendSms(phone) {
+	if (MOCK_MODE) {
+		return new Promise((resolve) => {
+			setTimeout(() => {
+				resolve({ success: true })
+			}, 500)
+		})
+	}
+
+	try {
+		const response = await post('/patient/sendSms', { phone })
+		if (response.code === 200) {
+			return { success: true }
+		}
+		return {
+			success: false,
+			message: response.msg || '发送失败'
+		}
+	} catch (error) {
+		return {
+			success: false,
+			message: error.message || '发送失败'
+		}
+	}
+}
+
+/**
+ * 患者注册
+ * @param {object} data - 注册信息
+ * @param {string} data.patientName - 患者姓名
+ * @param {string} data.gender - 性别 MALE/FEMALE
+ * @param {number} data.age - 年龄
+ * @param {string} data.phone - 手机号
+ * @param {string} data.idNumber - 身份证号
+ * @param {string} data.password - 密码
+ * @param {string} [data.email] - 邮箱（可选）
+ * @returns {Promise<object>}
+ */
+export async function register(data) {
+	if (MOCK_MODE) {
+		return new Promise((resolve) => {
+			setTimeout(() => {
+				const token = generateMockToken()
+				const user = {
+					id: 'test_patient_001',
+					name: data.patientName,
+					phone: data.phone
+				}
+				setLoginState(token, user)
+				resolve({
+					success: true,
+					token,
+					user
+				})
+			}, 800)
+		})
+	}
+
+	try {
+		const requestData = {
+			patientName: data.patientName,
+			gender: data.gender,
+			age: data.age,
+			phone: data.phone,
+			idNumber: data.idNumber,
+			password: data.password
+		}
+
+		// 邮箱为可选字段
+		if (data.email) {
+			requestData.email = data.email
+		}
+
+		const response = await post('/patient/register', requestData)
+
+		if (response.code === 200 && response.data) {
+			// 注册成功，自动登录
+			const { token, patientId, patientName, phone } = response.data
+			const user = {
+				id: patientId,
+				name: patientName,
+				phone: phone
+			}
+			setLoginState(token, user)
+			return {
+				success: true,
+				token,
+				user
+			}
+		}
+
+		return {
+			success: false,
+			message: response.msg || '注册失败'
+		}
+	} catch (error) {
+		return {
+			success: false,
+			message: error.message || '注册失败，请稍后重试'
+		}
+	}
+}
+
+/**
  * 上传头像
  * @param {string} filePath - 本地文件路径
  * @returns {Promise<object>}

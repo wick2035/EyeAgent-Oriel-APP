@@ -118,6 +118,12 @@
         </view>
       </view>
 
+      <!-- 注册入口 -->
+      <view class="register-link" :class="{ 'register-link--visible': pageReady }">
+        <text class="register-link__text">还没有账号？</text>
+        <text class="register-link__btn" @click="goToRegister">立即注册</text>
+      </view>
+
       <!-- 用户协议 -->
       <view class="agreement" :class="{ 'agreement--visible': pageReady }">
         <view
@@ -296,6 +302,12 @@ export default {
     openPrivacyPolicy() {
       uni.navigateTo({
         url: '/pages/settings/privacy-policy'
+      })
+    },
+
+    goToRegister() {
+      uni.navigateTo({
+        url: '/pages/login/register'
       })
     },
   },
@@ -646,6 +658,36 @@ $wx-green: #07c160;
   width: 56rpx;
   height: 44rpx;
   filter: brightness(0) invert(1);
+}
+
+// ==================== 注册入口 ====================
+.register-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 40rpx;
+  gap: 8rpx;
+  opacity: 0;
+  transition: opacity 0.6s ease 0.35s;
+
+  &--visible {
+    opacity: 1;
+  }
+
+  &__text {
+    font-size: 26rpx;
+    color: $text-muted;
+  }
+
+  &__btn {
+    font-size: 26rpx;
+    color: $color-primary;
+    font-weight: 500;
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
 }
 
 // ==================== 用户协议 ====================
