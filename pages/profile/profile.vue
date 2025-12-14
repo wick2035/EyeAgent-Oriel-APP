@@ -47,6 +47,7 @@
 				>
 					<view class="menu-item__icon" :style="{ background: item.bgColor }">
 						<image v-if="item.icon === 'medicine'" class="menu-icon menu-icon--medicine" src="@/static/medicine.svg" mode="aspectFit" />
+						<image v-else-if="item.icon === 'telemedicine'" class="menu-icon menu-icon--telemedicine" src="@/static/cloud.svg" mode="aspectFit" />
 						<view v-else class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
 					</view>
 					<text class="menu-item__text">{{ item.title }}</text>
@@ -109,7 +110,7 @@ export default {
 			statusBarHeight: 44,
 			serviceMenus: [
 				{ title: '就诊记录', icon: 'record', bgColor: 'rgba(30, 58, 95, 0.1)' },
-				{ title: '我的收藏', icon: 'star', bgColor: 'rgba(245, 158, 11, 0.1)' },
+				{ title: '远程复诊', icon: 'telemedicine', bgColor: 'rgba(14, 165, 233, 0.1)' },
 				{ title: '用药提醒', icon: 'medicine', bgColor: 'rgba(16, 185, 129, 0.1)' }
 			],
 			settingMenus: [
@@ -172,6 +173,14 @@ export default {
 			if (item.icon === 'medicine') {
 				uni.navigateTo({
 					url: '/pages/medication/medication-reminder'
+				})
+				return
+			}
+
+			// 远程复诊跳转
+			if (item.icon === 'telemedicine') {
+				uni.navigateTo({
+					url: '/pages/profile/telemedicine'
 				})
 				return
 			}
@@ -486,6 +495,15 @@ export default {
 		border-radius: 0;
 		// 将黑色 SVG 转为绿色 #10B981
 		filter: invert(56%) sepia(52%) saturate(552%) hue-rotate(118deg) brightness(92%) contrast(94%);
+	}
+
+	&--telemedicine {
+		width: 36rpx;
+		height: 36rpx;
+		border: none;
+		border-radius: 0;
+		// 将黑色SVG转为天空蓝 #0EA5E9
+		filter: invert(52%) sepia(94%) saturate(1095%) hue-rotate(176deg) brightness(98%) contrast(92%);
 	}
 
 	&--theme {
