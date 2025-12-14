@@ -26,7 +26,7 @@
 		<!-- 健康档案入口 -->
 		<view class="health-entry" @click="goToHealthRecord">
 			<view class="health-entry__icon">
-				<view class="health-icon"></view>
+				<image class="health-icon-img" src="@/static/Heath-file.svg" mode="aspectFit" />
 			</view>
 			<view class="health-entry__content">
 				<text class="health-entry__title">我的健康档案</text>
@@ -344,34 +344,11 @@ export default {
 	}
 }
 
-.health-icon {
-	width: 40rpx;
-	height: 40rpx;
-	position: relative;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 0;
-		transform: translateY(-50%);
-		width: 40rpx;
-		height: 12rpx;
-		background: #fff;
-		border-radius: 6rpx;
-	}
-
-	&::after {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 12rpx;
-		height: 40rpx;
-		background: #fff;
-		border-radius: 6rpx;
-	}
+.health-icon-img {
+	width: 44rpx;
+	height: 44rpx;
+	// 黑色SVG转为白色
+	filter: brightness(0) invert(1);
 }
 
 .menu-section {
