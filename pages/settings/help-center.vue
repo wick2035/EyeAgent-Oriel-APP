@@ -1327,8 +1327,9 @@ $accent-yellow: #F59E0B;
 	bottom: 0;
 	background: rgba(0, 0, 0, 0.5);
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: center;
+	padding-top: 15vh;
 	z-index: 1000;
 	animation: fade-in 0.3s ease;
 
