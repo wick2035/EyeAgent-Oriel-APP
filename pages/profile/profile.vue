@@ -185,6 +185,14 @@ export default {
 				return
 			}
 
+			// 帮助中心跳转
+			if (item.icon === 'help') {
+				uni.navigateTo({
+					url: '/pages/settings/help-center'
+				})
+				return
+			}
+
 			uni.showToast({ title: `${item.title}开发中`, icon: 'none' })
 		},
 		toggleTheme(e) {

@@ -144,6 +144,13 @@
 			}
 		},
 		{
+			"path": "pages/settings/help-center",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "帮助中心"
+			}
+		},
+		{
 			"path": "pages/medication/medication-reminder",
 			"style": {
 				"navigationStyle": "custom",
