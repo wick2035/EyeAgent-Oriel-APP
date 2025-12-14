@@ -303,7 +303,7 @@ export default {
 	align-items: center;
 	margin: 0 $spacing-lg $spacing-lg;
 	padding: $spacing-lg;
-	background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+	background: linear-gradient(135deg, #1E3A5F 0%, #4A90D9 100%);
 	border-radius: $radius-xl;
 	box-shadow: $shadow-md;
 
@@ -550,7 +550,7 @@ export default {
 	}
 
 	.health-entry {
-		background: linear-gradient(135deg, $dark-color-primary 0%, rgba(74, 144, 217, 0.8) 100%);
+		background: linear-gradient(135deg, #1E3A5F 0%, rgba(74, 144, 217, 0.9) 100%);
 	}
 
 	.menu-section__title { color: $dark-text-muted; }
