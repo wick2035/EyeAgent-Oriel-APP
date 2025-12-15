@@ -81,6 +81,11 @@
 				<view class="section" :class="{ 'card--visible': pageReady }" style="--delay: 0.3s">
 					<text class="section__title">关于</text>
 					<view class="section__card">
+						<view class="menu-item" @click="handleMenu('about')">
+							<view class="menu-item__icon menu-item__icon--about"></view>
+							<text class="menu-item__text">关于我们</text>
+							<view class="menu-item__arrow"></view>
+						</view>
 						<view class="menu-item" @click="handleMenu('agreement')">
 							<view class="menu-item__icon menu-item__icon--doc"></view>
 							<text class="menu-item__text">用户协议</text>
@@ -176,7 +181,8 @@ export default {
 			const routes = {
 				password: '/pages/settings/change-password',
 				agreement: '/pages/settings/user-agreement',
-				privacy: '/pages/settings/privacy-policy'
+				privacy: '/pages/settings/privacy-policy',
+				about: '/pages/settings/about'
 			}
 			if (routes[type]) {
 				uni.navigateTo({ url: routes[type] })
@@ -713,6 +719,32 @@ $accent-coral-light: #FF8A7A;
 			color: #3B82F6;
 		}
 
+		// 关于我们图标
+		&--about {
+			border: 2rpx solid #1E3A5F;
+			border-radius: 50%;
+			width: 32rpx;
+			height: 32rpx;
+		}
+		&--about::before {
+			content: '';
+			width: 4rpx;
+			height: 10rpx;
+			background: #1E3A5F;
+			position: absolute;
+			bottom: 6rpx;
+			border-radius: 2rpx;
+		}
+		&--about::after {
+			content: '';
+			width: 4rpx;
+			height: 4rpx;
+			background: #1E3A5F;
+			position: absolute;
+			top: 6rpx;
+			border-radius: 50%;
+		}
+
 		// 版本图标
 		&--version {
 			border: 2rpx solid $light-text-muted;
@@ -927,6 +959,16 @@ $accent-coral-light: #FF8A7A;
 		}
 		&__icon--version::before {
 			border-bottom-color: $dark-text-muted;
+		}
+
+		&__icon--about {
+			border-color: $dark-text-muted;
+		}
+		&__icon--about::before {
+			background: $dark-text-muted;
+		}
+		&__icon--about::after {
+			background: $dark-text-muted;
 		}
 	}
 

@@ -154,7 +154,7 @@ const MOCK_PRESCRIPTIONS = [
 const MOCK_DIAGNOSES = [
 	{
 		id: 'diag-001',
-		title: 'AI眼底筛查报告',
+		title: 'AI近视检查诊断报告',
 		symptoms: ['视力下降', '眼前黑影', '视物变形'],
 		aiDiagnosis: '根据眼底照片分析，双眼存在糖尿病视网膜病变特征，主要表现为：微血管瘤、硬性渗出、棉絮斑。建议进一步行眼底荧光造影检查。',
 		suggestions: [
@@ -163,15 +163,15 @@ const MOCK_DIAGNOSES = [
 			'如出现视力急剧下降，应立即就诊',
 			'控制血压、血脂，保持健康生活方式'
 		],
-		confidence: 92,
-		severity: 'moderate',
+		confidence: 72,
+		severity: 'mild',
 		visitDate: '2024-10-20',
 		pdfUrl: 'https://example.com/diagnoses/diag-001.pdf',
 		createTime: '2024-10-20 09:50:00'
 	},
 	{
 		id: 'diag-002',
-		title: 'AI干眼症评估报告',
+		title: 'AI近视检查诊断报告',
 		symptoms: ['眼睛干涩', '异物感', '视疲劳', '畏光'],
 		aiDiagnosis: '根据症状问卷和泪膜分析，诊断为中度干眼症，主要原因可能为睑板腺功能障碍导致的蒸发过强型干眼。',
 		suggestions: [
@@ -181,14 +181,14 @@ const MOCK_DIAGNOSES = [
 			'增加环境湿度，避免空调直吹'
 		],
 		confidence: 88,
-		severity: 'mild',
+		severity: 'moderate',
 		visitDate: '2024-11-05',
 		pdfUrl: 'https://example.com/diagnoses/diag-002.pdf',
 		createTime: '2024-11-05 14:20:00'
 	},
 	{
 		id: 'diag-003',
-		title: 'AI白内障评估报告',
+		title: 'AI近视检查诊断报告',
 		symptoms: ['视力模糊', '眩光', '色觉改变'],
 		aiDiagnosis: '根据裂隙灯检查图像分析，右眼晶状体皮质及核混浊明显，符合老年性白内障（成熟期）表现，左眼晶状体轻度混浊。',
 		suggestions: [

@@ -158,6 +158,13 @@
 			}
 		},
 		{
+			"path": "pages/settings/about",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "关于我们"
+			}
+		},
+		{
 			"path": "pages/medication/medication-reminder",
 			"style": {
 				"navigationStyle": "custom",

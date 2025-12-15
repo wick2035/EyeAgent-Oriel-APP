@@ -193,6 +193,14 @@ export default {
 				return
 			}
 
+			// 关于我们跳转
+			if (item.icon === 'about') {
+				uni.navigateTo({
+					url: '/pages/settings/about'
+				})
+				return
+			}
+
 			uni.showToast({ title: `${item.title}开发中`, icon: 'none' })
 		},
 		toggleTheme(e) {
