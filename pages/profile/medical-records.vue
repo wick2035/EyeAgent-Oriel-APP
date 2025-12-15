@@ -119,8 +119,11 @@
               >
               <text class="report-card__date">{{ item.visitDate }}</text>
             </view>
-            <view class="report-card__action">
+            <view v-if="item.fileId" class="report-card__action">
               <image class="pdf-icon" src="@/static/pdf.svg" mode="aspectFit" />
+            </view>
+            <view v-else class="report-card__action report-card__action--pending">
+              <text class="pending-text">生成中</text>
             </view>
           </view>
           <view v-if="records.length === 0" class="empty-state">
@@ -164,8 +167,11 @@
               </view>
               <text class="report-card__date">{{ item.visitDate }}</text>
             </view>
-            <view class="report-card__action">
+            <view v-if="item.fileId" class="report-card__action">
               <image class="pdf-icon" src="@/static/pdf.svg" mode="aspectFit" />
+            </view>
+            <view v-else class="report-card__action report-card__action--pending">
+              <text class="pending-text">生成中</text>
             </view>
           </view>
           <view v-if="prescriptions.length === 0" class="empty-state">
@@ -219,12 +225,15 @@
               <text class="diagnosis-card__result">{{ item.aiDiagnosis }}</text>
             </view>
             <view class="diagnosis-card__footer">
-              <text class="diagnosis-card__view">查看完整报告</text>
-              <image
-                class="pdf-icon pdf-icon--small"
-                src="@/static/pdf.svg"
-                mode="aspectFit"
-              />
+              <template v-if="item.fileId">
+                <text class="diagnosis-card__view">查看完整报告</text>
+                <image
+                  class="pdf-icon pdf-icon--small"
+                  src="@/static/pdf.svg"
+                  mode="aspectFit"
+                />
+              </template>
+              <text v-else class="diagnosis-card__pending">报告生成中...</text>
             </view>
           </view>
           <view v-if="diagnoses.length === 0" class="empty-state">
@@ -368,10 +377,13 @@ export default {
     },
 
     viewPdf(item, type) {
+      // 检查是否有文件ID
+      if (!item.fileId) {
+        uni.showToast({ title: '报告正在生成中', icon: 'none' });
+        return;
+      }
       uni.navigateTo({
-        url: `/pages/profile/pdf-viewer?url=${encodeURIComponent(
-          item.pdfUrl
-        )}&title=${encodeURIComponent(item.title)}&type=${type}`,
+        url: `/pages/profile/pdf-viewer?fileId=${item.fileId}&title=${encodeURIComponent(item.title)}&type=${type}`,
       });
     },
 
@@ -766,7 +778,21 @@ export default {
   &__action {
     flex-shrink: 0;
     margin-left: $spacing-md;
+
+    &--pending {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   }
+}
+
+.pending-text {
+  font-size: $font-size-xs;
+  color: $text-muted;
+  background: $bg-elevated;
+  padding: 6rpx 12rpx;
+  border-radius: $radius-sm;
 }
 
 .record-icon {
@@ -927,6 +953,11 @@ export default {
     font-size: $font-size-sm;
     color: $color-primary;
     margin-right: $spacing-xs;
+  }
+
+  &__pending {
+    font-size: $font-size-sm;
+    color: $text-muted;
   }
 }
 
@@ -1139,6 +1170,14 @@ export default {
     &__view {
       color: $dark-color-primary;
     }
+    &__pending {
+      color: $dark-text-muted;
+    }
+  }
+
+  .pending-text {
+    background: $dark-bg-elevated;
+    color: $dark-text-muted;
   }
 
   .symptom-tag {

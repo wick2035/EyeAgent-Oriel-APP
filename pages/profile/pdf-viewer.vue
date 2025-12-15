@@ -25,13 +25,22 @@
 			<text class="loading-text">文档加载中...</text>
 		</view>
 
-		<!-- PDF查看器 -->
+		<!-- PDF查看器 (仅非APP-PLUS环境使用) -->
+		<!-- #ifndef APP-PLUS -->
 		<web-view
-			v-if="pdfUrl && !loading"
+			v-if="pdfUrl && !loading && !loadError"
 			:src="viewerUrl"
 			@load="onWebViewLoad"
 			@error="onWebViewError"
 		></web-view>
+		<!-- #endif -->
+
+		<!-- APP-PLUS 环境提示 -->
+		<!-- #ifdef APP-PLUS -->
+		<view v-if="!loading && !loadError && pdfUrl" class="loading-container">
+			<text class="loading-text">正在打开文档...</text>
+		</view>
+		<!-- #endif -->
 
 		<!-- 加载失败 -->
 		<view v-if="loadError" class="error-container">
@@ -68,6 +77,7 @@
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
+import { getFileDownloadUrl } from '@/utils/api/medical.js'
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 export default {
@@ -79,6 +89,7 @@ export default {
 			statusBarHeight: 44,
 			title: '查看文档',
 			pdfUrl: '',
+			fileId: '', // 文件ID，用于获取下载链接
 			docType: '', // record/prescription/diagnosis
 			loading: true,
 			loadError: false,
@@ -111,9 +122,6 @@ export default {
 	onLoad(options) {
 		this.getStatusBarHeight()
 
-		if (options.url) {
-			this.pdfUrl = decodeURIComponent(options.url)
-		}
 		if (options.title) {
 			this.title = decodeURIComponent(options.title)
 		}
@@ -121,18 +129,151 @@ export default {
 			this.docType = options.type
 		}
 
-		// 模拟加载
-		setTimeout(() => {
+		// 优先使用 fileId 获取下载链接
+		if (options.fileId) {
+			this.fileId = options.fileId
+			this.fetchPdfUrl()
+		} else if (options.url) {
+			// 兼容旧的直接传递URL的方式
+			this.pdfUrl = decodeURIComponent(options.url)
 			this.loading = false
-		}, 1000)
+		} else {
+			this.loading = false
+			this.loadError = true
+			this.errorMessage = '未提供文件信息'
+		}
 	},
 	methods: {
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
 		},
+		// 通过fileId获取PDF下载链接
+		async fetchPdfUrl() {
+			try {
+				const res = await getFileDownloadUrl(this.fileId)
+				console.log('获取PDF链接响应:', res)
+				if (res.code === 200 && res.data) {
+					// 修复后端返回 localhost 的问题，替换为正确的公网地址
+					this.pdfUrl = res.data.replace('http://localhost:19000', 'http://1.117.233.43:19000')
+
+					// APP-PLUS 环境直接下载并打开
+					console.log('isAppPlus:', this.isAppPlus())
+					console.log('pdfUrl:', this.pdfUrl)
+					if (this.isAppPlus()) {
+						this.downloadAndOpen()
+					} else {
+						this.loading = false
+					}
+				} else {
+					this.loading = false
+					this.loadError = true
+					this.errorMessage = res.msg || '获取文档链接失败'
+				}
+			} catch (e) {
+				console.error('获取PDF链接失败:', e)
+				this.loading = false
+				this.loadError = true
+				this.errorMessage = '网络错误，请稍后重试'
+			}
+		},
+		// APP-PLUS 环境下载并打开PDF
+		downloadAndOpen() {
+			console.log('开始下载PDF:', this.pdfUrl)
+			uni.showLoading({ title: '正在加载文档...' })
+
+			// #ifdef APP-PLUS
+			// 使用 plus.downloader 进行下载
+			const dtask = plus.downloader.createDownload(
+				this.pdfUrl,
+				{
+					filename: '_doc/pdf_temp.pdf',
+					timeout: 60
+				},
+				(d, status) => {
+					uni.hideLoading()
+					console.log('plus下载完成, status:', status)
+					if (status === 200) {
+						this.loading = false
+						const filePath = d.filename
+						console.log('准备打开文档:', filePath)
+						plus.runtime.openFile(filePath, {}, (err) => {
+							console.error('打开文档失败:', err.message)
+							this.loadError = true
+							this.errorMessage = '无法打开文档: ' + err.message
+						})
+					} else {
+						console.error('下载状态码异常:', status)
+						this.loading = false
+						this.loadError = true
+						this.errorMessage = '下载失败，状态码: ' + status
+					}
+				}
+			)
+			dtask.addEventListener('statechanged', (task, status) => {
+				console.log('下载状态:', task.state, '已下载:', task.downloadedSize, '总大小:', task.totalSize)
+				// state: -1失败, 0初始, 1开始, 2连接, 3接收数据, 4完成
+				if (task.state === -1) {
+					uni.hideLoading()
+					console.error('下载失败, 状态-1')
+					this.loading = false
+					this.loadError = true
+					this.errorMessage = '下载失败'
+				}
+			})
+			// 监听错误事件
+			dtask.addEventListener('error', (task, err) => {
+				uni.hideLoading()
+				console.error('下载错误:', err)
+				this.loading = false
+				this.loadError = true
+				this.errorMessage = '下载出错: ' + (err || '未知错误')
+			})
+			dtask.start()
+			// #endif
+
+			// #ifndef APP-PLUS
+			uni.downloadFile({
+				url: this.pdfUrl,
+				success: (res) => {
+					console.log('下载结果:', res.statusCode, res.tempFilePath)
+					uni.hideLoading()
+					if (res.statusCode === 200) {
+						this.loading = false
+						uni.openDocument({
+							filePath: res.tempFilePath,
+							showMenu: true,
+							success: () => console.log('打开文档成功'),
+							fail: (err) => {
+								console.error('打开文档失败:', err)
+								this.loadError = true
+								this.errorMessage = '无法打开文档'
+							}
+						})
+					} else {
+						this.loading = false
+						this.loadError = true
+						this.errorMessage = '下载失败，请重试'
+					}
+				},
+				fail: (err) => {
+					uni.hideLoading()
+					console.error('下载失败:', err)
+					this.loading = false
+					this.loadError = true
+					this.errorMessage = '下载失败，请检查网络'
+				}
+			})
+			// #endif
+		},
 		isWechat() {
 			// #ifdef MP-WEIXIN
+			return true
+			// #endif
+			return false
+		},
+		isAppPlus() {
+			// #ifdef APP-PLUS
 			return true
 			// #endif
 			return false
@@ -153,12 +294,17 @@ export default {
 		retryLoad() {
 			this.loading = true
 			this.loadError = false
-			// 重新触发加载
-			const url = this.pdfUrl
-			this.pdfUrl = ''
-			setTimeout(() => {
-				this.pdfUrl = url
-			}, 100)
+			// 如果有fileId，重新获取下载链接
+			if (this.fileId) {
+				this.fetchPdfUrl()
+			} else {
+				// 重新触发加载
+				const url = this.pdfUrl
+				this.pdfUrl = ''
+				setTimeout(() => {
+					this.pdfUrl = url
+				}, 100)
+			}
 		},
 		openInBrowser() {
 			// #ifdef H5
