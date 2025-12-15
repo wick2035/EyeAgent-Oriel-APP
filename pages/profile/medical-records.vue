@@ -75,7 +75,7 @@
 			</view>
 
 			<!-- 病历报告 -->
-			<view v-if="currentTab === 1" class="record-list">
+			<view v-if="currentTab === 2" class="record-list">
 				<view v-if="loading" class="skeleton-list">
 					<view v-for="i in 3" :key="i" class="skeleton-card"></view>
 				</view>
@@ -107,7 +107,7 @@
 			</view>
 
 			<!-- 处方记录 -->
-			<view v-if="currentTab === 2" class="record-list">
+			<view v-if="currentTab === 3" class="record-list">
 				<view v-if="loading" class="skeleton-list">
 					<view v-for="i in 3" :key="i" class="skeleton-card"></view>
 				</view>
@@ -144,7 +144,7 @@
 			</view>
 
 			<!-- 智能诊断报告 -->
-			<view v-if="currentTab === 3" class="record-list">
+			<view v-if="currentTab === 1" class="record-list">
 				<view v-if="loading" class="skeleton-list">
 					<view v-for="i in 3" :key="i" class="skeleton-card"></view>
 				</view>
@@ -164,7 +164,7 @@
 								<text class="diagnosis-card__date">{{ item.visitDate }}</text>
 							</view>
 							<view class="diagnosis-card__confidence" :class="'diagnosis-card__confidence--' + item.severity">
-								<text>可信度 {{ item.confidence }}%</text>
+								<text>近视风险 {{ item.confidence }}%</text>
 							</view>
 						</view>
 						<view class="diagnosis-card__body">
@@ -212,9 +212,9 @@ export default {
 			currentTab: 0,
 			tabs: [
 				{ label: '预约记录', key: 'appointment' },
+				{ label: '诊断报告', key: 'diagnosis' },
 				{ label: '病历报告', key: 'record' },
-				{ label: '处方记录', key: 'prescription' },
-				{ label: '诊断报告', key: 'diagnosis' }
+				{ label: '处方记录', key: 'prescription' }
 			],
 			loading: false,
 			appointments: [],
@@ -264,26 +264,29 @@ export default {
 			try {
 				switch (this.currentTab) {
 					case 0:
-						// 移除缓存检查，每次都加载
+						// 预约记录 - 移除缓存检查，每次都加载
 						const res = await getAppointmentList()
 						if (res.code === 200) this.appointments = res.data.list || []
 						break
 					case 1:
+						// 诊断报告
+						if (this.diagnoses.length === 0) {
+							const res = await getDiagnosisList()
+							if (res.code === 200) this.diagnoses = res.data.list || []
+						}
+						break
+					case 2:
+						// 病历报告
 						if (this.records.length === 0) {
 							const res = await getMedicalRecordList()
 							if (res.code === 200) this.records = res.data.list || []
 						}
 						break
-					case 2:
+					case 3:
+						// 处方记录
 						if (this.prescriptions.length === 0) {
 							const res = await getPrescriptionList()
 							if (res.code === 200) this.prescriptions = res.data.list || []
-						}
-						break
-					case 3:
-						if (this.diagnoses.length === 0) {
-							const res = await getDiagnosisList()
-							if (res.code === 200) this.diagnoses = res.data.list || []
 						}
 						break
 				}
