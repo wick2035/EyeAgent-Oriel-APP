@@ -131,7 +131,7 @@ export async function getPrescriptionList() {
 
 		const list = dataArray.map(item => ({
 			id: item.prescription?.id,
-			title: item.prescription?.prescriptionType || '处方记录',
+			title: (item.prescription?.prescriptionType ? item.prescription.prescriptionType + '处方单' : '处方记录'),
 			hospitalName: item.prescription?.hospitalName || '',
 			doctorName: item.prescription?.prescriberName || '',
 			visitDate: item.prescription?.prescriptionDate?.split('T')[0] || '',

@@ -25,22 +25,10 @@
 			<text class="loading-text">文档加载中...</text>
 		</view>
 
-		<!-- PDF查看器 (仅非APP-PLUS环境使用) -->
-		<!-- #ifndef APP-PLUS -->
-		<web-view
-			v-if="pdfUrl && !loading && !loadError"
-			:src="viewerUrl"
-			@load="onWebViewLoad"
-			@error="onWebViewError"
-		></web-view>
-		<!-- #endif -->
-
-		<!-- APP-PLUS 环境提示 -->
-		<!-- #ifdef APP-PLUS -->
-		<view v-if="!loading && !loadError && pdfUrl" class="loading-container">
-			<text class="loading-text">正在打开文档...</text>
+		<!-- PDF查看区域占位 -->
+		<view v-if="pdfReady && !loading && !loadError" class="pdf-container">
+			<!-- PDF通过plus.webview显示在此区域 -->
 		</view>
-		<!-- #endif -->
 
 		<!-- 加载失败 -->
 		<view v-if="loadError" class="error-container">
@@ -60,12 +48,12 @@
 		<!-- 底部操作栏 -->
 		<view v-if="!loading && !loadError" class="bottom-bar">
 			<view class="bottom-bar__item" @click="handleDownload">
-				<view class="download-icon"></view>
+				<image class="bottom-bar__icon" src="/static/download.svg" mode="aspectFit"></image>
 				<text class="bottom-bar__text">下载</text>
 			</view>
 			<view class="bottom-bar__divider"></view>
 			<view class="bottom-bar__item" @click="handleShare">
-				<view class="share-icon share-icon--dark"></view>
+				<image class="bottom-bar__icon" src="/static/share.svg" mode="aspectFit"></image>
 				<text class="bottom-bar__text">分享</text>
 			</view>
 		</view>
@@ -87,8 +75,12 @@ export default {
 	data() {
 		return {
 			statusBarHeight: 44,
+			navbarHeight: 44, // 导航栏高度
+			bottomBarHeight: 50, // 底部栏高度
 			title: '查看文档',
 			pdfUrl: '',
+			pdfReady: false, // PDF是否准备好显示
+			pdfWebview: null, // PDF子webview实例
 			fileId: '', // 文件ID，用于获取下载链接
 			docType: '', // record/prescription/diagnosis
 			loading: true,
@@ -107,16 +99,6 @@ export default {
 				diagnosis: '诊断报告'
 			}
 			return labels[this.docType] || ''
-		},
-		viewerUrl() {
-			// 使用在线PDF查看器或直接加载
-			// 微信小程序可以直接使用 web-view 打开PDF
-			// 这里使用 Google Docs Viewer 作为备选
-			if (this.isWechat()) {
-				return this.pdfUrl
-			}
-			// H5环境使用在线查看器
-			return `https://docs.google.com/viewer?url=${encodeURIComponent(this.pdfUrl)}&embedded=true`
 		}
 	},
 	onLoad(options) {
@@ -136,12 +118,16 @@ export default {
 		} else if (options.url) {
 			// 兼容旧的直接传递URL的方式
 			this.pdfUrl = decodeURIComponent(options.url)
-			this.loading = false
+			this.downloadAndOpen()
 		} else {
 			this.loading = false
 			this.loadError = true
 			this.errorMessage = '未提供文件信息'
 		}
+	},
+	onUnload() {
+		// 页面卸载时销毁PDF webview
+		this.destroyPdfWebview()
 	},
 	methods: {
 		getStatusBarHeight() {
@@ -154,17 +140,10 @@ export default {
 				const res = await getFileDownloadUrl(this.fileId)
 				console.log('获取PDF链接响应:', res)
 				if (res.code === 200 && res.data) {
-					// 修复后端返回 localhost 的问题，替换为正确的公网地址
-					this.pdfUrl = res.data.replace('http://localhost:19000', 'http://1.117.233.43:19000')
-
-					// APP-PLUS 环境直接下载并打开
-					console.log('isAppPlus:', this.isAppPlus())
+					this.pdfUrl = res.data
 					console.log('pdfUrl:', this.pdfUrl)
-					if (this.isAppPlus()) {
-						this.downloadAndOpen()
-					} else {
-						this.loading = false
-					}
+					// 下载并使用PDF.js查看器打开
+					this.downloadAndOpen()
 				} else {
 					this.loading = false
 					this.loadError = true
@@ -177,31 +156,28 @@ export default {
 				this.errorMessage = '网络错误，请稍后重试'
 			}
 		},
-		// APP-PLUS 环境下载并打开PDF
+		// 下载PDF并使用PDF.js查看器打开
 		downloadAndOpen() {
 			console.log('开始下载PDF:', this.pdfUrl)
-			uni.showLoading({ title: '正在加载文档...' })
 
 			// #ifdef APP-PLUS
 			// 使用 plus.downloader 进行下载
 			const dtask = plus.downloader.createDownload(
 				this.pdfUrl,
 				{
-					filename: '_doc/pdf_temp.pdf',
+					filename: '_doc/pdf_temp_' + Date.now() + '.pdf',
 					timeout: 60
 				},
 				(d, status) => {
-					uni.hideLoading()
 					console.log('plus下载完成, status:', status)
 					if (status === 200) {
-						this.loading = false
 						const filePath = d.filename
-						console.log('准备打开文档:', filePath)
-						plus.runtime.openFile(filePath, {}, (err) => {
-							console.error('打开文档失败:', err.message)
-							this.loadError = true
-							this.errorMessage = '无法打开文档: ' + err.message
-						})
+						console.log('PDF已下载到:', filePath)
+						// 转换为本地文件URL
+						const localUrl = plus.io.convertLocalFileSystemURL(filePath)
+						console.log('本地文件URL:', localUrl)
+						// 创建子webview显示PDF
+						this.createPdfWebview(localUrl)
 					} else {
 						console.error('下载状态码异常:', status)
 						this.loading = false
@@ -214,7 +190,6 @@ export default {
 				console.log('下载状态:', task.state, '已下载:', task.downloadedSize, '总大小:', task.totalSize)
 				// state: -1失败, 0初始, 1开始, 2连接, 3接收数据, 4完成
 				if (task.state === -1) {
-					uni.hideLoading()
 					console.error('下载失败, 状态-1')
 					this.loading = false
 					this.loadError = true
@@ -223,7 +198,6 @@ export default {
 			})
 			// 监听错误事件
 			dtask.addEventListener('error', (task, err) => {
-				uni.hideLoading()
 				console.error('下载错误:', err)
 				this.loading = false
 				this.loadError = true
@@ -233,37 +207,53 @@ export default {
 			// #endif
 
 			// #ifndef APP-PLUS
-			uni.downloadFile({
-				url: this.pdfUrl,
-				success: (res) => {
-					console.log('下载结果:', res.statusCode, res.tempFilePath)
-					uni.hideLoading()
-					if (res.statusCode === 200) {
-						this.loading = false
-						uni.openDocument({
-							filePath: res.tempFilePath,
-							showMenu: true,
-							success: () => console.log('打开文档成功'),
-							fail: (err) => {
-								console.error('打开文档失败:', err)
-								this.loadError = true
-								this.errorMessage = '无法打开文档'
-							}
-						})
-					} else {
-						this.loading = false
-						this.loadError = true
-						this.errorMessage = '下载失败，请重试'
-					}
-				},
-				fail: (err) => {
-					uni.hideLoading()
-					console.error('下载失败:', err)
-					this.loading = false
-					this.loadError = true
-					this.errorMessage = '下载失败，请检查网络'
-				}
+			// 非APP环境暂不支持内嵌预览，使用外部打开
+			uni.showToast({ title: '请在APP中查看', icon: 'none' })
+			this.loading = false
+			this.loadError = true
+			this.errorMessage = '当前环境不支持PDF预览'
+			// #endif
+		},
+		// 创建PDF子webview
+		createPdfWebview(localPdfUrl) {
+			// #ifdef APP-PLUS
+			const currentWebview = this.$scope.$getAppWebview()
+			const sysInfo = uni.getSystemInfoSync()
+
+			// 计算webview的位置和大小
+			const topOffset = this.statusBarHeight + this.navbarHeight
+			const bottomOffset = this.bottomBarHeight + (sysInfo.safeAreaInsets?.bottom || 0)
+			const height = sysInfo.windowHeight - topOffset - bottomOffset
+
+			console.log('创建PDF webview, top:', topOffset, 'height:', height)
+
+			// 构建viewer URL
+			const viewerUrl = `/static/pdfjs/viewer.html?file=${encodeURIComponent(localPdfUrl)}`
+
+			// 创建子webview
+			this.pdfWebview = plus.webview.create(viewerUrl, 'pdf-child', {
+				top: topOffset + 'px',
+				left: '0px',
+				width: '100%',
+				height: height + 'px',
+				background: 'transparent'
 			})
+
+			// 添加到当前页面
+			currentWebview.append(this.pdfWebview)
+
+			this.loading = false
+			this.pdfReady = true
+			// #endif
+		},
+		// 销毁PDF子webview
+		destroyPdfWebview() {
+			// #ifdef APP-PLUS
+			if (this.pdfWebview) {
+				console.log('销毁PDF webview')
+				this.pdfWebview.close()
+				this.pdfWebview = null
+			}
 			// #endif
 		},
 		isWechat() {
@@ -279,6 +269,7 @@ export default {
 			return false
 		},
 		goBack() {
+			this.destroyPdfWebview()
 			uni.navigateBack()
 		},
 		onWebViewLoad() {
@@ -294,16 +285,15 @@ export default {
 		retryLoad() {
 			this.loading = true
 			this.loadError = false
+			this.pdfReady = false
+			// 销毁旧的webview
+			this.destroyPdfWebview()
 			// 如果有fileId，重新获取下载链接
 			if (this.fileId) {
 				this.fetchPdfUrl()
-			} else {
-				// 重新触发加载
-				const url = this.pdfUrl
-				this.pdfUrl = ''
-				setTimeout(() => {
-					this.pdfUrl = url
-				}, 100)
+			} else if (this.pdfUrl) {
+				// 重新下载并打开
+				this.downloadAndOpen()
 			}
 		},
 		openInBrowser() {
@@ -561,6 +551,11 @@ export default {
 	}
 }
 
+.pdf-container {
+	flex: 1;
+	background: #404040;
+}
+
 .error-container {
 	flex: 1;
 	display: flex;
@@ -666,6 +661,11 @@ export default {
 		align-items: center;
 		justify-content: center;
 		gap: $spacing-sm;
+	}
+
+	&__icon {
+		width: 36rpx;
+		height: 36rpx;
 	}
 
 	&__text {

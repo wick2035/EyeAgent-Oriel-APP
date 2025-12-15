@@ -222,7 +222,7 @@
                   >
                 </view>
               </view>
-              <text class="diagnosis-card__result">{{ item.aiDiagnosis }}</text>
+              <text v-if="item.aiDiagnosis" class="diagnosis-card__result">{{ item.aiDiagnosis }}</text>
             </view>
             <view class="diagnosis-card__footer">
               <template v-if="item.fileId">
@@ -935,8 +935,9 @@ export default {
     font-size: $font-size-sm;
     color: $text-secondary;
     line-height: $line-height-relaxed;
+    margin-top: $spacing-sm;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
