@@ -1321,15 +1321,16 @@ $color-error: #ef4444;
   }
 
   &__body {
-    padding: 16rpx 0;
+    padding: 20rpx 0;
   }
 
   &__option {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    height: 100rpx;
-    padding: 0 32rpx;
+    height: 110rpx;
+    margin: 8rpx 24rpx;
+    padding: 0 28rpx;
+    border-radius: 16rpx;
     transition: background-color 0.2s;
 
     &:active {
@@ -1337,19 +1338,20 @@ $color-error: #ef4444;
     }
 
     &--active {
-      background: rgba(30, 58, 95, 0.05);
+      background: rgba(30, 58, 95, 0.06);
     }
   }
 
   &__option-text {
-    font-size: 30rpx;
+    flex: 1;
+    font-size: 32rpx;
     color: $text-primary;
   }
 
   &__check {
-    font-size: 32rpx;
+    font-size: 40rpx;
     color: $color-primary;
-    font-weight: 600;
+    font-weight: 500;
   }
 }
 
