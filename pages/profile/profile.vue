@@ -48,6 +48,7 @@
 					<view class="menu-item__icon" :style="{ background: item.bgColor }">
 						<image v-if="item.icon === 'medicine'" class="menu-icon menu-icon--medicine" src="@/static/medicine.svg" mode="aspectFit" />
 						<image v-else-if="item.icon === 'telemedicine'" class="menu-icon menu-icon--telemedicine" src="@/static/cloud.svg" mode="aspectFit" />
+						<view v-else-if="item.icon === 'surgery'" class="menu-icon menu-icon--surgery"></view>
 						<view v-else class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
 					</view>
 					<text class="menu-item__text">{{ item.title }}</text>
@@ -111,7 +112,8 @@ export default {
 			serviceMenus: [
 				{ title: '就诊记录', icon: 'record', bgColor: 'rgba(30, 58, 95, 0.1)' },
 				{ title: '远程复诊', icon: 'telemedicine', bgColor: 'rgba(14, 165, 233, 0.1)' },
-				{ title: '用药提醒', icon: 'medicine', bgColor: 'rgba(16, 185, 129, 0.1)' }
+				{ title: '用药提醒', icon: 'medicine', bgColor: 'rgba(16, 185, 129, 0.1)' },
+				{ title: '手术进度', icon: 'surgery', bgColor: 'rgba(255, 107, 91, 0.1)' }
 			],
 			settingMenus: [
 				{ title: '深色模式', icon: 'theme', bgColor: 'rgba(102, 126, 234, 0.1)', type: 'switch' },
@@ -173,6 +175,14 @@ export default {
 			if (item.icon === 'medicine') {
 				uni.navigateTo({
 					url: '/pages/medication/medication-reminder'
+				})
+				return
+			}
+
+			// 手术进度跳转
+			if (item.icon === 'surgery') {
+				uni.navigateTo({
+					url: '/pages/surgery/surgery-progress'
 				})
 				return
 			}
@@ -536,6 +546,40 @@ export default {
 			font-style: italic;
 		}
 	}
+
+	&--surgery {
+		// 眼睛外轮廓
+		width: 36rpx;
+		height: 20rpx;
+		border: 3rpx solid $color-accent;
+		border-radius: 70% 70% 70% 70% / 100% 100% 100% 100%;
+		position: relative;
+
+		// 瞳孔
+		&::before {
+			content: '';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 12rpx;
+			height: 12rpx;
+			background: $color-accent;
+			border-radius: 50%;
+		}
+
+		// 高光点
+		&::after {
+			content: '';
+			position: absolute;
+			top: 35%;
+			left: 58%;
+			width: 4rpx;
+			height: 4rpx;
+			background: #fff;
+			border-radius: 50%;
+		}
+	}
 }
 
 .version {
@@ -575,6 +619,14 @@ export default {
 		border-bottom-color: $dark-border-color;
 		&__text { color: $dark-text-primary; }
 		&__arrow { border-color: $dark-text-muted; }
+	}
+
+	// 手术图标深色模式适配
+	.menu-icon--surgery {
+		border-color: #FF8A7A;
+		&::before {
+			background: #FF8A7A;
+		}
 	}
 
 	.version__text { color: $dark-text-muted; }

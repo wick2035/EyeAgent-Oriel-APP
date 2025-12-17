@@ -170,6 +170,20 @@
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "用药提醒"
 			}
+		},
+		{
+			"path": "pages/surgery/surgery-progress",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "手术进度"
+			}
+		},
+		{
+			"path": "pages/surgery/surgery-detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "手术详情"
+			}
 		}
 	],
 	"globalStyle": {
