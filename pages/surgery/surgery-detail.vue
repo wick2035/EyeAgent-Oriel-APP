@@ -49,6 +49,28 @@
 				</view>
 			</view>
 
+			<!-- 滚动提示 -->
+			<view class="scroll-notice" :style="noticeStyle">
+				<view class="scroll-notice__icon">
+					<image
+						class="notice-icon-img"
+						src="@/static/tips.svg"
+						mode="aspectFit"
+						:style="{ filter: iconColorFilter }"
+					/>
+				</view>
+				<view class="scroll-notice__wrapper">
+					<view class="scroll-notice__content"
+					      :class="{ 'no-transition': noTransition }"
+					      :style="{ transform: `translateY(-${currentNoticeIndex * 40}rpx)` }">
+						<text v-for="(text, idx) in loopNotices" :key="idx"
+						      class="scroll-notice__text" :style="{ color: noticeColor }">
+							{{ text }}
+						</text>
+					</view>
+				</view>
+			</view>
+
 			<!-- 手术阶段时间线 -->
 			<view class="timeline-section">
 				<view class="section-header">
@@ -145,7 +167,10 @@ export default {
 			statusBarHeight: 44,
 			surgeryId: '',
 			preOpExpanded: false,
-			postOpExpanded: false
+			postOpExpanded: false,
+			currentNoticeIndex: 0,
+			noticeTimer: null,
+			noTransition: false
 		}
 	},
 	computed: {
@@ -160,6 +185,73 @@ export default {
 		},
 		surgery() {
 			return this.surgeryState.currentSurgery
+		},
+		currentNotices() {
+			// 特殊阶段的自定义提示
+			const specialNotices = {
+				'术前准备': ['当前阶段：术前准备', '请按医嘱做好准备', '如有问题请联系医护'],
+				'术后恢复(PACU)': ['当前阶段：术后恢复中', '患者正在恢复区', '请耐心等待通知'],
+				'完成': ['手术已完成', '恢复顺利', '祝早日康复']
+			}
+
+			// 获取当前进行中的阶段
+			const currentPhase = this.surgery?.phases?.find(p => p.status === 'IN_PROGRESS')
+			const phaseName = currentPhase?.name
+
+			// 如果是特殊阶段，返回自定义提示
+			if (phaseName && specialNotices[phaseName]) {
+				return specialNotices[phaseName]
+			}
+
+			// 其他阶段统一格式：当前阶段：xxx + 医生正在操作 + 请耐心等待
+			if (phaseName) {
+				return [`当前阶段：${phaseName}`, '医生正在操作', '请耐心等待']
+			}
+
+			// 已完成状态
+			if (this.surgery?.status === 'COMPLETED') {
+				return ['手术已完成', '恢复顺利', '祝早日康复']
+			}
+
+			// 默认（术前准备）
+			return ['当前阶段：术前准备', '请按医嘱做好准备', '如有问题请联系医护']
+		},
+		// 无限循环用：末尾追加第一条，实现无缝衔接
+		loopNotices() {
+			const list = this.currentNotices
+			return [...list, list[0]]
+		},
+		noticeColor() {
+			const colors = {
+				PRE_OP: '#3B82F6',
+				IN_OPERATION: '#3FD2C2',
+				POST_OP: '#14B8A6',
+				COMPLETED: '#10B981'
+			}
+			return colors[this.surgery?.status] || colors.PRE_OP
+		},
+		noticeStyle() {
+			const bgs = {
+				PRE_OP: 'rgba(59, 130, 246, 0.08)',
+				IN_OPERATION: 'rgba(63, 210, 194, 0.08)',
+				POST_OP: 'rgba(20, 184, 166, 0.08)',
+				COMPLETED: 'rgba(16, 185, 129, 0.08)'
+			}
+			return { background: bgs[this.surgery?.status] || bgs.PRE_OP }
+		},
+		// SVG图标颜色滤镜（将黑色转为目标颜色）
+		iconColorFilter() {
+			const filters = {
+				// #3B82F6 蓝色
+				PRE_OP: 'invert(42%) sepia(93%) saturate(1352%) hue-rotate(203deg) brightness(97%) contrast(96%)',
+				// #3FD2C2 青绿色
+				IN_OPERATION: 'invert(73%) sepia(42%) saturate(467%) hue-rotate(123deg) brightness(92%) contrast(89%)',
+				// #14B8A6 薄荷绿
+				POST_OP: 'invert(58%) sepia(65%) saturate(487%) hue-rotate(127deg) brightness(93%) contrast(89%)',
+				// #10B981 医疗绿
+				COMPLETED: 'invert(62%) sepia(43%) saturate(588%) hue-rotate(109deg) brightness(92%) contrast(88%)'
+			}
+			return filters[this.surgery?.status] || filters.PRE_OP
 		}
 	},
 	onLoad(options) {
@@ -167,10 +259,45 @@ export default {
 		this.surgeryId = options.id || uni.getStorageSync('currentSurgeryId')
 		this.loadData()
 	},
+	onShow() {
+		this.startNoticeScroll()
+	},
+	onHide() {
+		this.stopNoticeScroll()
+	},
+	onUnload() {
+		this.stopNoticeScroll()
+	},
 	methods: {
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
+		},
+		startNoticeScroll() {
+			this.stopNoticeScroll()
+			this.noticeTimer = setInterval(() => {
+				const len = this.currentNotices.length
+				this.currentNoticeIndex++
+
+				// 当滚动到末尾的"复制项"（显示第一句）时
+				// 等动画完成后，瞬间重置到真正的第一项
+				if (this.currentNoticeIndex >= len) {
+					setTimeout(() => {
+						this.noTransition = true  // 禁用过渡
+						this.currentNoticeIndex = 0  // 瞬移到开头
+						// 下一帧恢复过渡
+						setTimeout(() => {
+							this.noTransition = false
+						}, 50)
+					}, 500)  // 等待滚动动画完成
+				}
+			}, 3000)
+		},
+		stopNoticeScroll() {
+			if (this.noticeTimer) {
+				clearInterval(this.noticeTimer)
+				this.noticeTimer = null
+			}
 		},
 		async loadData() {
 			if (this.surgeryId) {
@@ -368,10 +495,9 @@ export default {
 }
 
 .info-value {
-	font-size: $font-size-base;
+	font-size: $font-size-sm;
 	font-weight: $font-weight-semibold;
 	color: $text-primary;
-	font-family: $font-family-mono;
 	flex-shrink: 0;
 
 	.page--dark & {
@@ -379,8 +505,6 @@ export default {
 	}
 
 	&--doctor {
-		font-family: inherit;
-		font-size: $font-size-sm;
 		max-width: 60%;
 		text-align: right;
 		overflow: hidden;
@@ -388,6 +512,57 @@ export default {
 		white-space: nowrap;
 		flex-shrink: 1;
 	}
+}
+
+// 滚动提示 - Jobs级设计
+.scroll-notice {
+	margin: 0 $spacing-lg $spacing-md;
+	border-radius: $radius-lg;
+	padding: $spacing-sm $spacing-md;
+	display: flex;
+	align-items: center;
+	height: 56rpx;
+
+	&__icon {
+		width: 40rpx;
+		height: 32rpx;
+		margin-right: $spacing-sm;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	&__wrapper {
+		flex: 1;
+		height: 40rpx;
+		overflow: hidden;
+	}
+
+	&__content {
+		transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+		&.no-transition {
+			transition: none;
+		}
+	}
+
+	&__text {
+		display: block;
+		height: 40rpx;
+		line-height: 40rpx;
+		font-size: $font-size-sm;
+		font-weight: $font-weight-medium;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+}
+
+// 提示图标
+.notice-icon-img {
+	width: 36rpx;
+	height: 28rpx;
 }
 
 // 时间线部分
@@ -535,7 +710,7 @@ export default {
 }
 
 .step-name {
-	font-size: $font-size-sm;
+	font-size: $font-size-base;
 	color: $text-primary;
 
 	.page--dark & {
@@ -544,7 +719,7 @@ export default {
 }
 
 .step-time {
-	font-size: $font-size-xs;
+	font-size: $font-size-sm;
 	color: $text-muted;
 	font-family: $font-family-mono;
 

@@ -93,7 +93,8 @@ const mockSurgeries = [
 			{ id: 5, name: '手术结束', status: 'PENDING', time: null },
 			{ id: 6, name: '麻醉结束', status: 'PENDING', time: null },
 			{ id: 7, name: '患者离开手术室', status: 'PENDING', time: null },
-			{ id: 8, name: '术后恢复(PACU)', status: 'PENDING', time: null }
+			{ id: 8, name: '术后恢复(PACU)', status: 'PENDING', time: null },
+			{ id: 9, name: '完成', status: 'PENDING', time: null }
 		],
 		preOpInstructions: [
 			'术前8小时禁食禁水',
@@ -141,7 +142,8 @@ const mockSurgeries = [
 			{ id: 5, name: '手术结束', status: 'COMPLETED', time: '2024-12-15T10:45:00' },
 			{ id: 6, name: '麻醉结束', status: 'COMPLETED', time: '2024-12-15T10:50:00' },
 			{ id: 7, name: '患者离开手术室', status: 'COMPLETED', time: '2024-12-15T11:00:00' },
-			{ id: 8, name: '术后恢复(PACU)', status: 'IN_PROGRESS', time: '2024-12-15T11:10:00' }
+			{ id: 8, name: '术后恢复(PACU)', status: 'IN_PROGRESS', time: '2024-12-15T11:10:00' },
+			{ id: 9, name: '完成', status: 'PENDING', time: null }
 		],
 		preOpInstructions: [
 			'术前3天停止佩戴隐形眼镜',
@@ -188,7 +190,8 @@ const mockSurgeries = [
 			{ id: 5, name: '手术结束', status: 'COMPLETED', time: '2024-06-10T15:00:00' },
 			{ id: 6, name: '麻醉结束', status: 'COMPLETED', time: '2024-06-10T15:05:00' },
 			{ id: 7, name: '患者离开手术室', status: 'COMPLETED', time: '2024-06-10T15:15:00' },
-			{ id: 8, name: '术后恢复(PACU)', status: 'COMPLETED', time: '2024-06-10T15:30:00' }
+			{ id: 8, name: '术后恢复(PACU)', status: 'COMPLETED', time: '2024-06-10T15:30:00' },
+			{ id: 9, name: '完成', status: 'COMPLETED', time: '2024-06-10T16:00:00' }
 		],
 		preOpInstructions: [],
 		postOpCautions: [],
