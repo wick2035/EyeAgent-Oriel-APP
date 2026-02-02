@@ -8,8 +8,10 @@
       class="navbar"
       :style="{ top: statusBarHeight + 'px' }"
     >
-      <view class="navbar__back" @click="goBack">
-        <view class="navbar__back-icon"></view>
+      <view class="navbar__left">
+        <view class="navbar__back" @click="goBack">
+          <view class="navbar__back-icon"></view>
+        </view>
       </view>
       <text class="navbar__title">资讯详情</text>
       <view class="navbar__actions">
@@ -419,6 +421,14 @@ export default {
   box-shadow: $shadow-sm;
   transition: all 0.3s;
 
+  &__left {
+    width: 120rpx;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-shrink: 0;
+  }
+
   &__back {
     width: 72rpx;
     height: 72rpx;
@@ -456,7 +466,7 @@ export default {
     display: flex;
     justify-content: flex-end;
     gap: $spacing-sm;
-    width: 72rpx;
+    width: 120rpx;
     flex-shrink: 0;
   }
 
