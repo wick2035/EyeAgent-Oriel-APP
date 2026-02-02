@@ -184,6 +184,22 @@
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "手术详情"
 			}
+		},
+		{
+			"path": "pages/news/news-list",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "健康资讯",
+				"enablePullDownRefresh": true,
+				"backgroundTextStyle": "dark"
+			}
+		},
+		{
+			"path": "pages/news/news-detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "资讯详情"
+			}
 		}
 	],
 	"globalStyle": {

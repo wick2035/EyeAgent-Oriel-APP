@@ -238,10 +238,14 @@ export default {
       }
     },
     goToNews() {
-      uni.showToast({ title: "资讯列表开发中", icon: "none" });
+      uni.navigateTo({
+        url: "/pages/news/news-list"
+      });
     },
     goToNewsDetail(item) {
-      uni.showToast({ title: "资讯详情开发中", icon: "none" });
+      uni.navigateTo({
+        url: `/pages/news/news-detail?id=${item.id}`
+      });
     },
   },
 };
