@@ -1,9 +1,12 @@
 <template>
   <view class="page" :class="{ 'page--dark': isDark }">
+    <!-- 状态栏占位 -->
+    <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+
     <!-- 导航栏 -->
     <view
       class="navbar"
-      :style="{ paddingTop: statusBarHeight + 'px' }"
+      :style="{ top: statusBarHeight + 'px' }"
     >
       <view class="navbar__back" @click="goBack">
         <view class="navbar__back-icon"></view>
@@ -11,10 +14,12 @@
       <text class="navbar__title">资讯详情</text>
       <view class="navbar__actions">
         <view class="navbar__action" @click="toggleFavorite">
-          <view
-            class="navbar__favorite-icon"
-            :class="{ 'navbar__favorite-icon--active': isFavorite }"
-          ></view>
+          <image 
+            class="navbar__favorite-icon" 
+            src="/static/shoucang.svg"
+            mode="aspectFit"
+            :style="{ filter: isFavorite ? 'invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg) brightness(101%) contrast(96%)' : 'none' }"
+          />
         </view>
         <view class="navbar__action" @click="handleShare">
           <image 
@@ -26,17 +31,11 @@
       </view>
     </view>
 
-    <!-- 阅读进度条 -->
-    <view v-if="showProgress" class="progress-bar">
-      <view class="progress-bar__fill" :style="{ width: progress + '%' }"></view>
-    </view>
-
     <!-- 内容区域 -->
     <scroll-view
       class="content"
       scroll-y
       @scroll="handleScroll"
-      :scroll-top="scrollTop"
     >
       <view v-if="loading" class="skeleton-detail">
         <view class="skeleton-title"></view>
@@ -98,10 +97,12 @@
             <text class="action-btn__text" :style="{ color: isLiked ? '#FF6B5B' : '' }">{{ formatCount(article.likeCount) }}</text>
           </view>
           <view class="action-btn" @click="toggleFavorite">
-            <view
-              class="action-btn__icon action-btn__icon--favorite"
-              :class="{ 'action-btn__icon--active': isFavorite }"
-            ></view>
+            <image 
+              class="action-btn__icon" 
+              src="/static/shoucang.svg"
+              mode="aspectFit"
+              :style="{ filter: isFavorite ? 'invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg) brightness(101%) contrast(96%)' : 'none' }"
+            />
             <text class="action-btn__text">收藏</text>
           </view>
           <view class="action-btn" @click="handleShare">
@@ -154,15 +155,6 @@
       </view>
     </scroll-view>
 
-    <!-- 返回顶部按钮 -->
-    <view
-      v-if="showBackTop"
-      class="back-top"
-      @click="scrollToTop"
-    >
-      <view class="back-top__icon"></view>
-    </view>
-
     <!-- 图片预览遮罩 -->
     <view v-if="showImagePreview" class="image-preview" @click="closeImagePreview">
       <image
@@ -191,12 +183,6 @@ export default {
       article: null,
       relatedNews: [],
       loading: true,
-      showProgress: false,
-      progress: 0,
-      showBackTop: false,
-      scrollTop: 0,
-      scrollHeight: 0,
-      contentHeight: 0,
       isFavorite: false,
       isLiked: false,
       showImagePreview: false,
@@ -329,33 +315,7 @@ export default {
     },
 
     handleScroll(e) {
-      const scrollTop = e.detail.scrollTop
-      this.scrollTop = scrollTop
-      
-      // 控制进度条（滚动超过200px显示）
-      this.showProgress = scrollTop > 200
-      
-      // 计算阅读进度
-      if (this.contentHeight > 0) {
-        const maxScroll = this.contentHeight - this.scrollHeight
-        this.progress = Math.min((scrollTop / maxScroll) * 100, 100)
-      }
-      
-      // 控制返回顶部按钮
-      this.showBackTop = scrollTop > 500
-    },
-
-    scrollToTop() {
-      // 获取scroll-view的选择器并滚动到顶部
-      const query = uni.createSelectorQuery().in(this)
-      query.select('.content').node().exec((res) => {
-        if (res[0]) {
-          res[0].node.scrollTop = 0
-        }
-      })
-      
-      // 备用方案：直接设置scrollTop（某些平台可能需要）
-      this.scrollTop = 0
+      // 保留方法以便未来扩展
     },
 
     handleRichTextTap(e) {
@@ -434,6 +394,15 @@ export default {
   }
 }
 
+.status-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 998;
+  background: #fff;
+}
+
 .navbar {
   position: fixed;
   top: 0;
@@ -451,7 +420,7 @@ export default {
   transition: all 0.3s;
 
   &__back {
-    width: 64rpx;
+    width: 120rpx;
     height: 64rpx;
     display: flex;
     align-items: center;
@@ -485,7 +454,10 @@ export default {
 
   &__actions {
     display: flex;
+    justify-content: flex-end;
     gap: $spacing-sm;
+    width: 120rpx;
+    flex-shrink: 0;
   }
 
   &__action {
@@ -507,45 +479,6 @@ export default {
   &__favorite-icon {
     width: 32rpx;
     height: 32rpx;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 32rpx;
-      height: 28rpx;
-      border: 3rpx solid #fff;
-      border-radius: 16rpx 16rpx 0 0;
-    }
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 14rpx;
-      left: 50%;
-      transform: translateX(-50%) rotate(45deg);
-      width: 20rpx;
-      height: 20rpx;
-      border-right: 3rpx solid #fff;
-      border-bottom: 3rpx solid #fff;
-    }
-
-    &--active {
-      &::before {
-        background: $color-accent;
-        border-color: $color-accent;
-      }
-
-      &::after {
-        border-color: $color-accent;
-      }
-    }
   }
 
   &__share-icon {
@@ -576,7 +509,7 @@ export default {
 }
 
 .skeleton-detail {
-  padding: 140rpx $spacing-lg $spacing-lg;
+  padding: 180rpx $spacing-lg $spacing-lg;
 
   .skeleton-title {
     width: 90%;
@@ -624,7 +557,7 @@ export default {
 }
 
 .article {
-  padding: 140rpx $spacing-lg $spacing-lg;
+  padding: 180rpx $spacing-lg $spacing-lg;
   animation: fadeIn 0.5s ease;
 }
 
@@ -751,9 +684,10 @@ export default {
 
   :deep(img) {
     width: 100%;
-    border-radius: $radius-lg;
-    margin: $spacing-md 0;
     display: block;
+    margin: $spacing-md 0;
+    border-radius: $radius-lg;
+    object-fit: cover;
   }
 
   :deep(ul),
@@ -823,26 +757,6 @@ export default {
   &__icon {
     width: 48rpx;
     height: 48rpx;
-    position: relative;
-
-    &--favorite {
-      &::before {
-        content: '★';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 48rpx;
-        color: $text-muted;
-      }
-
-      &.action-btn__icon--active {
-        &::before {
-          color: #F59E0B;
-          animation: starPulse 0.5s ease;
-        }
-      }
-    }
   }
 
   &__text {
@@ -978,36 +892,6 @@ export default {
       transform: scale(0.95);
       opacity: 0.8;
     }
-  }
-}
-
-.back-top {
-  position: fixed;
-  right: $spacing-lg;
-  bottom: 120rpx;
-  width: 96rpx;
-  height: 96rpx;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10rpx);
-  border-radius: $radius-full;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: $shadow-lg;
-  z-index: 100;
-  animation: fadeIn 0.3s ease;
-  transition: transform 0.2s;
-
-  &:active {
-    transform: scale(0.9);
-  }
-
-  &__icon {
-    width: 0;
-    height: 0;
-    border-left: 16rpx solid transparent;
-    border-right: 16rpx solid transparent;
-    border-bottom: 24rpx solid #fff;
   }
 }
 
@@ -1189,27 +1073,4 @@ export default {
   }
 }
 
-@keyframes heartbeat {
-  0%, 100% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.3);
-  }
-  50% {
-    transform: scale(0.9);
-  }
-  75% {
-    transform: scale(1.2);
-  }
-}
-
-@keyframes starPulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.3) rotate(180deg);
-  }
-}
 </style>

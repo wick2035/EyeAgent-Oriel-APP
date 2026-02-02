@@ -209,11 +209,8 @@ export default {
     this.initData()
   },
   onShow() {
-    // 刷新数据（返回时可能有收藏状态变化）
+    // 返回列表时，如有需要可在此同步收藏等状态，避免整页重新请求
     this.refreshFavoriteStatus()
-  },
-  onPullDownRefresh() {
-    this.onRefresh()
   },
   methods: {
     getStatusBarHeight() {

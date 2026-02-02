@@ -129,6 +129,7 @@ import TopNotificationBar from "@/components/TopNotificationBar.vue";
 import EyeHealthSection from "@/components/eye-health/EyeHealthSection.vue";
 import { isDarkMode } from "@/store/theme.js";
 import { getUnreadCount } from "@/store/notification.js";
+import { getNewsList } from "@/utils/api/news.js";
 
 export default {
   components: {
@@ -160,24 +161,7 @@ export default {
           path: "/pages/medication/medication-reminder",
         },
       ],
-      newsList: [
-        {
-          id: 1,
-          title: "秋冬季节如何预防流感？专家给你支招",
-          desc: "【999感冒灵】随着气温下降，流感病毒开始活跃，专家建议从以下几个方面做好预防...",
-          source: "健康时报",
-          time: "2小时前",
-          cover: "",
-        },
-        {
-          id: 2,
-          title: "每天喝多少水才健康？这个数字你要记住",
-          desc: "【农夫山泉】正确的饮水习惯对健康至关重要，但喝水也有讲究...",
-          source: "医学科普",
-          time: "5小时前",
-          cover: "",
-        },
-      ],
+      newsList: [],
     };
   },
   computed: {
@@ -200,6 +184,7 @@ export default {
   },
   onLoad() {
     this.getStatusBarHeight();
+    this.loadNews();
   },
   onShow() {
     // #ifdef APP-PLUS
@@ -210,6 +195,49 @@ export default {
     getStatusBarHeight() {
       const sysInfo = uni.getSystemInfoSync();
       this.statusBarHeight = sysInfo.statusBarHeight || 44;
+    },
+    async loadNews() {
+      try {
+        const res = await getNewsList({
+          category: 'all',
+          page: 1,
+          pageSize: 2
+        });
+        if (res.code === 200 && res.data.list) {
+          this.newsList = res.data.list.map(item => ({
+            id: item.id,
+            title: item.title,
+            desc: item.summary,
+            source: item.source,
+            time: this.formatNewsTime(item.publishTime),
+            cover: item.cover
+          }));
+        }
+      } catch (error) {
+        console.error('加载健康资讯失败:', error);
+      }
+    },
+    formatNewsTime(timeStr) {
+      if (!timeStr) return '';
+      const time = new Date(timeStr.replace(/-/g, '/'));
+      const now = new Date();
+      const diff = now - time;
+      const minute = 60 * 1000;
+      const hour = 60 * minute;
+      const day = 24 * hour;
+      
+      if (diff < minute) {
+        return '刚刚';
+      } else if (diff < hour) {
+        return Math.floor(diff / minute) + '分钟前';
+      } else if (diff < day) {
+        return Math.floor(diff / hour) + '小时前';
+      } else if (diff < 7 * day) {
+        return Math.floor(diff / day) + '天前';
+      }
+      const month = time.getMonth() + 1;
+      const date = time.getDate();
+      return `${month}月${date}日`;
     },
     goToMessages() {
       uni.switchTab({
