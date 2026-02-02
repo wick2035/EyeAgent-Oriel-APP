@@ -420,13 +420,13 @@ export default {
   transition: all 0.3s;
 
   &__back {
-    width: 120rpx;
-    height: 64rpx;
+    width: 72rpx;
+    height: 72rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: $radius-full;
-    background: rgba(0, 0, 0, 0.1);
+    background: transparent;
     backdrop-filter: blur(10rpx);
     transition: transform 0.2s;
 
@@ -436,10 +436,10 @@ export default {
   }
 
   &__back-icon {
-    width: 16rpx;
-    height: 16rpx;
-    border-left: 3rpx solid #fff;
-    border-bottom: 3rpx solid #fff;
+    width: 20rpx;
+    height: 20rpx;
+    border-left: 4rpx solid #000;
+    border-bottom: 4rpx solid #000;
     transform: rotate(45deg);
   }
 
@@ -467,7 +467,7 @@ export default {
     align-items: center;
     justify-content: center;
     border-radius: $radius-full;
-    background: rgba(0, 0, 0, 0.1);
+    background: transparent;
     backdrop-filter: blur(10rpx);
     transition: transform 0.2s;
 
