@@ -456,7 +456,7 @@ export default {
     display: flex;
     justify-content: flex-end;
     gap: $spacing-sm;
-    width: 120rpx;
+    width: 72rpx;
     flex-shrink: 0;
   }
 
