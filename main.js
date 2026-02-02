@@ -1,5 +1,9 @@
 import App from './App'
 import toast from './utils/toast.js'
+import { initRouteGuard } from './utils/routeGuard.js'
+
+// 初始化路由守卫
+initRouteGuard()
 
 // #ifndef VUE3
 import Vue from 'vue'

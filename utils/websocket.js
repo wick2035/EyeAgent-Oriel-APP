@@ -5,6 +5,7 @@
 
 import config from './config.js'
 import { addNotification } from '@/store/notification.js'
+import { clearLoginState } from '@/store/user.js'
 
 // WebSocket连接状态
 const WS_STATUS = {
@@ -236,7 +237,22 @@ function handleMessage(data) {
 
 			case 'AUTH_FAIL':
 				console.error('WebSocket认证失败:', message.msg)
+				// 断开WebSocket连接
 				disconnect()
+				// 清除登录状态
+				clearLoginState()
+				// 提示用户
+				uni.showToast({
+					title: 'WebSocket认证失败，请重新登录',
+					icon: 'none',
+					duration: 1500
+				})
+				// 延迟跳转到登录页
+				setTimeout(() => {
+					uni.reLaunch({
+						url: '/pages/login/login'
+					})
+				}, 1500)
 				break
 
 			case 'PONG':
