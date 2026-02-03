@@ -74,6 +74,20 @@
 			}
 		},
 		{
+			"path": "pages/messages/notification-detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "通知详情"
+			}
+		},
+		{
+			"path": "pages/messages/doctor-chat",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "医生对话"
+			}
+		},
+		{
 			"path": "pages/profile/profile",
 			"style": {
 				"navigationStyle": "custom",

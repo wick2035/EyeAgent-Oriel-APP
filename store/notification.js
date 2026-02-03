@@ -52,6 +52,21 @@ export function getAllUnreadNotifications() {
 }
 
 /**
+ * 获取指定类型最新的一条未读通知（用于消息页预览显示）
+ */
+export function getLatestByType(type) {
+	const typeMap = {
+		'SYSTEM': 'system',
+		'RESERVE': 'reserve',
+		'MEDICATION': 'medication'
+	}
+	const key = typeMap[type] || type
+	const list = notificationState.unread[key] || []
+	if (list.length === 0) return null
+	return list[0]
+}
+
+/**
  * 获取指定类型的未读通知
  */
 export function getUnreadByType(type) {
@@ -178,6 +193,7 @@ export default {
 	notificationState,
 	getUnreadCount,
 	getUnreadCountByType,
+	getLatestByType,
 	getAllUnreadNotifications,
 	getUnreadByType,
 	fetchUnreadNotifications,
