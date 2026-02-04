@@ -47,15 +47,11 @@
 					>
 						<!-- 图标 -->
 						<view class="conversation-row__avatar" :class="`conversation-row__avatar--${entry.iconClass}`">
-							<view v-if="entry.type === 'SYSTEM'" class="service-icon service-icon--system">
-								<view class="si-bell"></view>
-							</view>
-							<view v-else-if="entry.type === 'RESERVE'" class="service-icon service-icon--reserve">
-								<view class="si-calendar"></view>
-							</view>
-							<view v-else class="service-icon service-icon--medication">
-								<view class="si-pill"></view>
-							</view>
+							<image
+								:src="entry.icon"
+								class="service-icon-img"
+								mode="aspectFit"
+							/>
 						</view>
 
 						<!-- 内容 -->
@@ -183,6 +179,7 @@ export default {
 				{
 					type: 'SYSTEM',
 					label: '系统通知',
+					icon: '/static/system.svg',
 					iconClass: 'system',
 					latestText: this.getLatestPreview('SYSTEM'),
 					latestTime: this.getLatestTime('SYSTEM'),
@@ -191,6 +188,7 @@ export default {
 				{
 					type: 'RESERVE',
 					label: '预约提醒',
+					icon: '/static/appointment.svg',
 					iconClass: 'reserve',
 					latestText: this.getLatestPreview('RESERVE'),
 					latestTime: this.getLatestTime('RESERVE'),
@@ -199,6 +197,7 @@ export default {
 				{
 					type: 'MEDICATION',
 					label: '用药提醒',
+					icon: '/static/service.svg',
 					iconClass: 'medication',
 					latestText: this.getLatestPreview('MEDICATION'),
 					latestTime: this.getLatestTime('MEDICATION'),
@@ -604,105 +603,10 @@ export default {
 	}
 }
 
-// ==================== 服务通知图标（白色icon on 渐变底色） ====================
-.service-icon {
+// ==================== 服务通知图标 ====================
+.service-icon-img {
 	width: 48rpx;
 	height: 48rpx;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.si-bell {
-	width: 36rpx;
-	height: 38rpx;
-	border: 3rpx solid #FFFFFF;
-	border-radius: 18rpx 18rpx 6rpx 6rpx;
-	position: relative;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: -10rpx;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 8rpx;
-		height: 8rpx;
-		background: #FFFFFF;
-		border-radius: 50%;
-	}
-
-	&::after {
-		content: '';
-		position: absolute;
-		bottom: -8rpx;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 14rpx;
-		height: 7rpx;
-		background: #FFFFFF;
-		border-radius: 0 0 8rpx 8rpx;
-	}
-}
-
-.si-calendar {
-	width: 36rpx;
-	height: 40rpx;
-	border: 3rpx solid #FFFFFF;
-	border-radius: 6rpx;
-	position: relative;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: 10rpx;
-		left: 0;
-		right: 0;
-		height: 3rpx;
-		background: #FFFFFF;
-	}
-
-	&::after {
-		content: '';
-		position: absolute;
-		top: 20rpx;
-		left: 8rpx;
-		width: 10rpx;
-		height: 10rpx;
-		background: #FFFFFF;
-		border-radius: 3rpx;
-	}
-}
-
-.si-pill {
-	width: 30rpx;
-	height: 38rpx;
-	border: 3rpx solid #FFFFFF;
-	border-radius: 8rpx 8rpx 4rpx 4rpx;
-	position: relative;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: -8rpx;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 16rpx;
-		height: 8rpx;
-		background: #FFFFFF;
-		border-radius: 4rpx 4rpx 0 0;
-	}
-
-	&::after {
-		content: '+';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		font-size: 22rpx;
-		color: #FFFFFF;
-		font-weight: bold;
-	}
 }
 
 // ==================== 空状态 ====================
