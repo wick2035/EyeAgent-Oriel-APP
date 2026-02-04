@@ -141,13 +141,17 @@ export default {
 		allNotifications() {
 			const unread = getUnreadByType(this.type).map(n => ({ ...n, isUnread: true }))
 			const read = this.readMessages.map(n => ({ ...n, isUnread: false }))
-			return [...unread, ...read].sort((a, b) => new Date(b.sentTime) - new Date(a.sentTime))
+			return [...unread, ...read].sort((a, b) => {
+				const timeA = new Date(a.sentTime || a.createTime)
+				const timeB = new Date(b.sentTime || b.createTime)
+				return timeB - timeA
+			})
 		},
 		groupedNotifications() {
 			const groups = []
 			let currentDate = ''
 			this.allNotifications.forEach(n => {
-				const date = this.getDateLabel(n.sentTime)
+				const date = this.getDateLabel(n.sentTime || n.createTime)
 				if (date !== currentDate) {
 					groups.push({ type: 'divider', date })
 					currentDate = date
