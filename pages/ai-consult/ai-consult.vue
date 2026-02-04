@@ -75,13 +75,9 @@
       <!-- 对话消息列表 -->
       <view v-else class="messages">
         <template v-for="(msg, index) in messages" :key="index">
-          <!-- 年份分隔符 -->
-          <view v-if="showYearDivider(index)" class="year-divider">
-            <view class="year-divider__line"></view>
-            <text class="year-divider__text"
-              >{{ getMessageYear(index) }}年</text
-            >
-            <view class="year-divider__line"></view>
+          <!-- 日期分隔符 -->
+          <view v-if="showDateDivider(index)" class="time-divider">
+            <text class="time-divider__text">{{ getDateLabel(index) }}</text>
           </view>
           <!-- 消息气泡 -->
           <MessageBubble
@@ -427,14 +423,17 @@ export default {
     extractTime(timeStr) {
       if (!timeStr) return "";
 
-      // 解析日期
-      const date = new Date(timeStr.replace(/-/g, "/"));
+      // 双重解析：先原生（支持ISO 8601），再replace（支持 YYYY-MM-DD HH:mm:ss）
+      let date = new Date(timeStr);
+      if (isNaN(date.getTime())) {
+        date = new Date(timeStr.replace(/-/g, "/"));
+      }
       const now = new Date();
 
       // 提取时间部分
       const time = timeStr.substring(11, 16) || "";
 
-      // 检查 Date 是否有效
+      // 解析失败时回退到时间子串
       if (isNaN(date.getTime())) {
         return time;
       }
@@ -458,29 +457,50 @@ export default {
       // 可以在这里加载更多历史消息
     },
 
-    // 判断是否需要显示年份分隔符
-    showYearDivider(index) {
+    // 获取消息的日期标签
+    getDateLabel(index) {
       const msg = this.messages[index];
-      if (!msg.createTime) return false;
+      const timeStr = msg.createTime;
+      if (!timeStr) return "";
 
-      const msgYear = this.getMessageYear(index);
-      const currentYear = new Date().getFullYear();
-
-      if (index === 0) {
-        // 第一条消息：如果不是今年，显示年份
-        return msgYear !== currentYear;
+      // 双重解析
+      let date = new Date(timeStr);
+      if (isNaN(date.getTime())) {
+        date = new Date(timeStr.replace(/-/g, "/"));
       }
+      if (isNaN(date.getTime())) return "";
 
-      // 当前消息和上一条消息年份不同时显示
-      const prevYear = this.getMessageYear(index - 1);
-      return msgYear !== prevYear;
+      const now = new Date();
+
+      if (date.toDateString() === now.toDateString()) return "今天";
+
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (date.toDateString() === yesterday.toDateString()) return "昨天";
+
+      if (date.getFullYear() === now.getFullYear()) {
+        return `${date.getMonth() + 1}月${date.getDate()}日`;
+      }
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
     },
 
-    // 获取消息的年份
-    getMessageYear(index) {
+    // 判断是否需要显示日期分隔符
+    showDateDivider(index) {
       const msg = this.messages[index];
-      if (!msg.createTime) return new Date().getFullYear();
-      return parseInt(msg.createTime.substring(0, 4));
+      if (!msg.createTime) return false;
+      if (index === 0) return true;
+
+      const prevMsg = this.messages[index - 1];
+      if (!prevMsg.createTime) return true;
+
+      // 双重解析
+      let date = new Date(msg.createTime);
+      if (isNaN(date.getTime())) date = new Date(msg.createTime.replace(/-/g, "/"));
+      let prevDate = new Date(prevMsg.createTime);
+      if (isNaN(prevDate.getTime())) prevDate = new Date(prevMsg.createTime.replace(/-/g, "/"));
+
+      if (isNaN(date.getTime()) || isNaN(prevDate.getTime())) return true;
+      return date.toDateString() !== prevDate.toDateString();
     },
   },
 };
@@ -738,24 +758,18 @@ export default {
   padding: $spacing-md 0;
 }
 
-// 年份分隔符
-.year-divider {
+// 时间分割线
+.time-divider {
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: $spacing-lg $spacing-xl;
-
-  &__line {
-    flex: 1;
-    height: 1rpx;
-    background: $border-color-light;
-    max-width: 120rpx;
-  }
+  padding: $spacing-md 0 $spacing-sm;
 
   &__text {
-    padding: 0 $spacing-md;
     font-size: $font-size-xs;
     color: $text-muted;
+    background: $bg-elevated;
+    padding: 4rpx 24rpx;
+    border-radius: $radius-full;
   }
 }
 
@@ -797,11 +811,9 @@ export default {
     border-right-color: transparent;
   }
 
-  .year-divider__line {
-    background: $dark-border-color;
-  }
-  .year-divider__text {
+  .time-divider__text {
     color: $dark-text-muted;
+    background: $dark-bg-elevated;
   }
 }
 

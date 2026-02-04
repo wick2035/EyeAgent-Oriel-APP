@@ -209,32 +209,36 @@ export default {
 		formatTime(timeStr) {
 			if (!timeStr) return ''
 
-			const date = new Date(timeStr.replace(/-/g, '/'))
-			const time = timeStr.substring(11, 16) || ''
-
-			// 检查 Date 是否有效
+			// 双重解析：先原生（支持ISO 8601），再replace（支持 YYYY-MM-DD HH:mm:ss）
+			let date = new Date(timeStr)
 			if (isNaN(date.getTime())) {
-				return time
+				date = new Date(timeStr.replace(/-/g, '/'))
 			}
+			if (isNaN(date.getTime())) return ''
 
 			const now = new Date()
 
-			// 今天：只显示时间
+			// 今天
 			if (date.toDateString() === now.toDateString()) {
-				return time
+				return '今天'
 			}
 
-			// 昨天：显示 "昨天 HH:mm"
+			// 昨天
 			const yesterday = new Date(now)
 			yesterday.setDate(yesterday.getDate() - 1)
 			if (date.toDateString() === yesterday.toDateString()) {
-				return `昨天 ${time}`
+				return '昨天'
 			}
 
-			// 更早：显示 "M月D日 HH:mm"
+			// 同年：M/D
 			const month = date.getMonth() + 1
 			const day = date.getDate()
-			return `${month}月${day}日 ${time}`
+			if (date.getFullYear() === now.getFullYear()) {
+				return `${month}/${day}`
+			}
+
+			// 跨年：YYYY/M/D
+			return `${date.getFullYear()}/${month}/${day}`
 		}
 	}
 }
