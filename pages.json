@@ -126,6 +126,20 @@
 			"path": "pages/profile/telemedicine",
 			"style": {
 				"navigationStyle": "custom",
+				"navigationBarTitleText": "云上医院"
+			}
+		},
+		{
+			"path": "pages/cloud-hospital/online-consultation",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "在线咨询"
+			}
+		},
+		{
+			"path": "pages/cloud-hospital/remote-followup",
+			"style": {
+				"navigationStyle": "custom",
 				"navigationBarTitleText": "远程复诊"
 			}
 		},

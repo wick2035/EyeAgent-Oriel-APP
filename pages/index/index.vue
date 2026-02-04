@@ -56,9 +56,9 @@
               mode="aspectFit"
             />
             <image
-              v-else-if="service.icon === 'record'"
-              class="service-icon service-icon--record"
-              src="@/static/Heath-file.svg"
+              v-else-if="service.icon === 'cloud'"
+              class="service-icon service-icon--cloud"
+              src="@/static/cloud.svg"
               mode="aspectFit"
             />
             <image
@@ -142,7 +142,7 @@ export default {
       statusBarHeight: 44,
       services: [
         {
-          name: "在线问诊",
+          name: "AI问诊",
           icon: "consult",
           type: "primary",
           path: "/pages/ai-consult/ai-consult",
@@ -153,7 +153,12 @@ export default {
           type: "warning",
           path: "/pages/appointment/appointment",
         },
-        { name: "健康档案", icon: "record", type: "info", path: "" },
+        {
+          name: "云上医院",
+          icon: "cloud",
+          type: "info",
+          path: "/pages/profile/telemedicine",
+        },
         {
           name: "用药提醒",
           icon: "medicine",
@@ -199,41 +204,41 @@ export default {
     async loadNews() {
       try {
         const res = await getNewsList({
-          category: 'all',
+          category: "all",
           page: 1,
-          pageSize: 2
+          pageSize: 2,
         });
         if (res.code === 200 && res.data.list) {
-          this.newsList = res.data.list.map(item => ({
+          this.newsList = res.data.list.map((item) => ({
             id: item.id,
             title: item.title,
             desc: item.summary,
             source: item.source,
             time: this.formatNewsTime(item.publishTime),
-            cover: item.cover
+            cover: item.cover,
           }));
         }
       } catch (error) {
-        console.error('加载健康资讯失败:', error);
+        console.error("加载健康资讯失败:", error);
       }
     },
     formatNewsTime(timeStr) {
-      if (!timeStr) return '';
-      const time = new Date(timeStr.replace(/-/g, '/'));
+      if (!timeStr) return "";
+      const time = new Date(timeStr.replace(/-/g, "/"));
       const now = new Date();
       const diff = now - time;
       const minute = 60 * 1000;
       const hour = 60 * minute;
       const day = 24 * hour;
-      
+
       if (diff < minute) {
-        return '刚刚';
+        return "刚刚";
       } else if (diff < hour) {
-        return Math.floor(diff / minute) + '分钟前';
+        return Math.floor(diff / minute) + "分钟前";
       } else if (diff < day) {
-        return Math.floor(diff / hour) + '小时前';
+        return Math.floor(diff / hour) + "小时前";
       } else if (diff < 7 * day) {
-        return Math.floor(diff / day) + '天前';
+        return Math.floor(diff / day) + "天前";
       }
       const month = time.getMonth() + 1;
       const date = time.getDate();
@@ -267,12 +272,12 @@ export default {
     },
     goToNews() {
       uni.navigateTo({
-        url: "/pages/news/news-list"
+        url: "/pages/news/news-list",
       });
     },
     goToNewsDetail(item) {
       uni.navigateTo({
-        url: `/pages/news/news-detail?id=${item.id}`
+        url: `/pages/news/news-detail?id=${item.id}`,
       });
     },
   },
@@ -503,10 +508,10 @@ export default {
       brightness(101%) contrast(96%);
   }
 
-  &--record {
-    // 使用 filter 将黑色 SVG 转为 $color-info 蓝色
-    filter: invert(44%) sepia(98%) saturate(1561%) hue-rotate(196deg)
-      brightness(101%) contrast(96%);
+  &--cloud {
+    // 使用 filter 将黑色 SVG 转为天空蓝 #0EA5E9
+    filter: invert(52%) sepia(94%) saturate(1095%) hue-rotate(176deg)
+      brightness(98%) contrast(92%);
   }
 
   &--medicine {

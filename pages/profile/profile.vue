@@ -111,7 +111,7 @@ export default {
 			statusBarHeight: 44,
 			serviceMenus: [
 				{ title: '就诊记录', icon: 'record', bgColor: 'rgba(30, 58, 95, 0.1)' },
-				{ title: '远程复诊', icon: 'telemedicine', bgColor: 'rgba(14, 165, 233, 0.1)' },
+				{ title: '云上医院', icon: 'telemedicine', bgColor: 'rgba(14, 165, 233, 0.1)' },
 				{ title: '用药提醒', icon: 'medicine', bgColor: 'rgba(16, 185, 129, 0.1)' },
 				{ title: '手术进度', icon: 'surgery', bgColor: 'rgba(255, 107, 91, 0.1)' }
 			],
