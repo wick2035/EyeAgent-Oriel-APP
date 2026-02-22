@@ -131,10 +131,7 @@ export default {
 			this.$emit('click', this.id)
 		},
 		handleToggleComplete() {
-			if (this.isCompleted) {
-				return
-			}
-			this.$emit('toggle-complete', this.id, true)
+			this.$emit('toggle-complete', this.id, !this.isCompleted)
 		},
 		handleDelete() {
 			this.$emit('delete', this.id)

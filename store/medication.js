@@ -259,25 +259,51 @@ export async function deleteReminder(id) {
 }
 
 /**
- * 标记完成
+ * 切换完成状态（双向toggle）
  */
 export async function markAsCompleted(id) {
 	try {
-		const res = await medicationApi.markAsCompleted(id)
-		if (res.code === 200) {
-			const index = medicationState.reminders.findIndex(r => r.id === id)
-			if (index !== -1) {
-				// 创建新对象触发响应式更新，状态改为READ
-				medicationState.reminders[index] = { ...medicationState.reminders[index], status: 'READ' }
-				updateTodayStats()
-			}
-			return { success: true }
+		// 查找完整提醒对象（含agendaId）
+		const reminder = medicationState.reminders.find(r => r.id === id)
+		if (!reminder) {
+			return { success: false, message: '提醒不存在' }
 		}
-		return { success: false, message: res.msg }
+
+		if (!reminder.agendaId) {
+			// agendaId缺失，先刷新数据
+			console.warn('缺少agendaId，正在刷新数据...')
+			await fetchReminders()
+			const refreshed = medicationState.reminders.find(r => r.id === id)
+			if (!refreshed?.agendaId) {
+				return { success: false, message: '数据异常，请刷新页面' }
+			}
+			return _doToggle(refreshed)
+		}
+
+		return _doToggle(reminder)
 	} catch (err) {
-		console.error('标记完成失败:', err)
+		console.error('切换完成状态失败:', err)
 		return { success: false, error: err }
 	}
+}
+
+/**
+ * 执行toggle操作（内部函数）
+ */
+async function _doToggle(reminder) {
+	const res = await medicationApi.toggleReminderState(reminder.agendaId)
+	if (res.code === 200) {
+		const index = medicationState.reminders.findIndex(r => r.id === reminder.id)
+		if (index !== -1) {
+			// 双向切换状态
+			const currentStatus = medicationState.reminders[index].status
+			const newStatus = currentStatus === 'READ' ? 'SCHEDULED' : 'READ'
+			medicationState.reminders[index] = { ...medicationState.reminders[index], status: newStatus }
+			updateTodayStats()
+		}
+		return { success: true }
+	}
+	return { success: false, message: res.msg }
 }
 
 /**

@@ -222,13 +222,11 @@ export default {
 			}
 		},
 		async handleToggleComplete(id, complete) {
-			if (complete) {
-				const result = await markAsCompleted(id)
-				if (result.success) {
-					uni.showToast({ title: '已完成', icon: 'success' })
-				} else {
-					uni.showToast({ title: result.message || '操作失败', icon: 'none' })
-				}
+			const result = await markAsCompleted(id)
+			if (result.success) {
+				uni.showToast({ title: complete ? '已完成' : '已恢复', icon: 'success' })
+			} else {
+				uni.showToast({ title: result.message || '操作失败', icon: 'none' })
 			}
 		},
 		handleDeleteClick(id) {

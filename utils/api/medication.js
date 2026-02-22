@@ -1,6 +1,6 @@
 /**
  * 用药提醒API模块
- * 对接后端 AppBaseController API
+ * 对接后端 /api/app/extra 专用用药提醒接口
  */
 import { get, post } from './request.js'
 
@@ -27,26 +27,17 @@ const MEDICINE_TYPE_FROM_API = {
 }
 
 /**
- * 状态映射：后端 -> 前端
- */
-const STATUS_FROM_API = {
-	PENDING: 'SCHEDULED',
-	SENT: 'UNREAD',
-	COMPLETED: 'READ',
-	CANCELLED: 'CANCELLED'
-}
-
-/**
  * 将前端表单数据转换为创建API参数
  * @param {Object} formData - 前端表单数据
  * @returns {Object} API参数
  */
 function transformToCreateApi(formData) {
-	// 构建content JSON
+	// 构建content JSON，包含type以便获取时恢复药物类型
 	const contentObj = {
 		spec: formData.medicineSpec || '',
 		dosage: formData.dosage || '',
-		frequency: formData.frequency || ''
+		frequency: formData.frequency || '',
+		type: formData.medicineType || 'pill'
 	}
 
 	// 从scheduledTime提取时间部分 (HH:mm:ss)
@@ -89,41 +80,42 @@ function transformToUpdateApi(reminderId, formData) {
 }
 
 /**
- * 将API返回的Reminder转换为前端格式
+ * 将新API返回的Reminder转换为前端格式
+ * 新API响应: { id(agendaId), reminderId, userId, title, remark, resolved, startTime, endTime }
  * @param {Object} reminder - API返回的Reminder对象
  * @returns {Object} 前端格式数据
  */
 function transformFromApi(reminder) {
-	// 解析content JSON
-	let contentObj = { spec: '', dosage: '', frequency: '' }
+	// 解析remark字段（创建时以JSON格式存入content，返回时为remark）
+	let contentObj = { spec: '', dosage: '', frequency: '', type: '' }
 	try {
-		if (reminder.reminderContent) {
-			const parsed = JSON.parse(reminder.reminderContent)
+		if (reminder.remark) {
+			const parsed = JSON.parse(reminder.remark)
 			contentObj = {
 				spec: parsed.spec || '',
 				dosage: parsed.dosage || '',
-				frequency: parsed.frequency || ''
+				frequency: parsed.frequency || '',
+				type: parsed.type || ''
 			}
 		}
 	} catch (e) {
-		// JSON解析失败，使用默认值
-		console.warn('解析reminderContent失败:', e)
+		// remark不是JSON格式，作为纯文本赋给dosage
+		contentObj.dosage = reminder.remark || ''
 	}
 
 	return {
-		id: reminder.id,
-		reminderType: reminder.reminderType || 'MEDICATION',
-		reminderTitle: reminder.reminderTitle || '',
-		reminderContent: reminder.reminderContent || '',
-		medicineName: reminder.reminderTitle || '',
+		id: reminder.reminderId || '',
+		agendaId: reminder.id || '', // 日程ID，toggle操作需要
+		reminderType: 'MEDICATION',
+		reminderTitle: reminder.title || '',
+		medicineName: reminder.title || '',
 		medicineSpec: contentObj.spec,
 		dosage: contentObj.dosage,
-		medicineType: MEDICINE_TYPE_FROM_API[reminder.medicalType] || 'pill',
+		medicineType: contentObj.type ? (MEDICINE_TYPE_FROM_API[contentObj.type] || contentObj.type) : 'pill',
 		frequency: contentObj.frequency,
-		scheduledTime: reminder.scheduledTime || '',
-		status: STATUS_FROM_API[reminder.status] || 'SCHEDULED',
-		enabled: true, // 后端无此字段，默认为true
-		// 保留原始字段供参考
+		scheduledTime: reminder.startTime || '',
+		status: reminder.resolved ? 'READ' : 'SCHEDULED',
+		enabled: true,
 		_raw: reminder
 	}
 }
@@ -132,47 +124,38 @@ function transformFromApi(reminder) {
 
 /**
  * 获取用药提醒列表
- * 合并未读和已读通知
- * @param {string} date - 日期筛选（可选），格式 YYYY-MM-DD
+ * @param {string} date - 日期筛选（可选），格式 YYYY-MM-DD；不传则取当月
  */
 export async function getReminderList(date = null) {
 	try {
-		// 并行获取未读和已读通知
-		const [unreadRes, readRes] = await Promise.all([
-			get('/api/app/base/get-unread-notification'),
-			get('/api/app/base/get-read-notification', {
-				reminderType: 'MEDICATION',
-				pageNum: 1,
-				pageSize: 100 // 获取足够多的已读记录
-			})
-		])
+		let startTime, endTime
 
-		let list = []
-
-		// 处理未读通知（从medication数组获取）
-		if (unreadRes.code === 200 && unreadRes.data) {
-			const medicationList = unreadRes.data.medication || []
-			list = list.concat(medicationList.map(transformFromApi))
-		}
-
-		// 处理已读通知
-		if (readRes.code === 200 && readRes.data) {
-			const readList = Array.isArray(readRes.data) ? readRes.data : []
-			list = list.concat(readList.map(transformFromApi))
-		}
-
-		// 过滤CANCELLED状态
-		list = list.filter(item => item.status !== 'CANCELLED')
-
-		// 按日期筛选
 		if (date) {
-			list = list.filter(r => r.scheduledTime && r.scheduledTime.startsWith(date))
+			// 指定日期：取该日全天
+			startTime = `${date}T00:00:00`
+			endTime = `${date}T23:59:59`
+		} else {
+			// 默认取当月
+			const now = new Date()
+			const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+			const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+			const pad = (n) => String(n).padStart(2, '0')
+			startTime = `${firstDay.getFullYear()}-${pad(firstDay.getMonth() + 1)}-${pad(firstDay.getDate())}T00:00:00`
+			endTime = `${lastDay.getFullYear()}-${pad(lastDay.getMonth() + 1)}-${pad(lastDay.getDate())}T23:59:59`
 		}
 
-		// 按时间排序
-		list.sort((a, b) => (a.scheduledTime || '').localeCompare(b.scheduledTime || ''))
+		const res = await get('/api/app/extra/get-medical-reminder', {
+			startTime,
+			endTime
+		})
 
-		return { code: 200, msg: 'ok', data: { list, total: list.length } }
+		if (res.code === 200 && res.data) {
+			const list = (Array.isArray(res.data) ? res.data : []).map(transformFromApi)
+			list.sort((a, b) => (a.scheduledTime || '').localeCompare(b.scheduledTime || ''))
+			return { code: 200, msg: 'ok', data: { list, total: list.length } }
+		}
+
+		return { code: res.code || 500, msg: res.msg || '获取失败', data: { list: [], total: 0 } }
 	} catch (error) {
 		console.error('获取用药提醒列表失败:', error)
 		return { code: 500, msg: error.message || '获取失败', data: { list: [], total: 0 } }
@@ -186,10 +169,10 @@ export async function getReminderList(date = null) {
 export async function createReminder(data) {
 	try {
 		const apiData = transformToCreateApi(data)
-		const res = await post('/api/app/base/create-medical-notification', apiData)
+		const res = await post('/api/app/extra/create-medical-reminder', apiData)
 
 		if (res.code === 200) {
-			return { code: 200, msg: 'ok', data: { id: res.data?.id } }
+			return { code: 200, msg: res.msg || 'ok', data: null }
 		}
 		return { code: res.code || 500, msg: res.msg || '创建失败' }
 	} catch (error) {
@@ -219,15 +202,17 @@ export async function updateReminder(id, data) {
 }
 
 /**
- * 删除用药提醒
- * @param {string} id - 提醒ID
+ * 删除用药提醒（支持批量）
+ * @param {string} id - 提醒ID (reminderId)
  */
 export async function deleteReminder(id) {
 	try {
-		const res = await post(`/api/app/base/remove-notification?reminderId=${encodeURIComponent(id)}`)
+		const res = await post('/api/app/extra/remove-medical-reminder', {
+			reminderIds: [id]
+		})
 
 		if (res.code === 200) {
-			return { code: 200, msg: 'ok' }
+			return { code: 200, msg: res.msg || 'ok' }
 		}
 		return { code: res.code || 500, msg: res.msg || '删除失败' }
 	} catch (error) {
@@ -237,21 +222,33 @@ export async function deleteReminder(id) {
 }
 
 /**
- * 标记用药完成（标记为已读）
- * @param {string} id - 提醒ID
+ * 切换用药提醒完成状态（双向toggle）
+ * @param {string} agendaId - 日程ID（get接口返回的id字段）
  */
-export async function markAsCompleted(id) {
+export async function toggleReminderState(agendaId) {
 	try {
-		const res = await post(`/api/app/base/mark-notification-as-read?reminderId=${encodeURIComponent(id)}`)
+		const res = await post(`/api/app/extra/toggle-medical-reminder-state?agendaId=${encodeURIComponent(agendaId)}`)
 
 		if (res.code === 200) {
-			return { code: 200, msg: 'ok' }
+			return { code: 200, msg: res.msg || 'ok' }
 		}
-		return { code: res.code || 500, msg: res.msg || '标记失败' }
+		return { code: res.code || 500, msg: res.msg || '切换状态失败' }
 	} catch (error) {
-		console.error('标记完成失败:', error)
-		return { code: 500, msg: error.message || '标记失败' }
+		console.error('切换用药提醒状态失败:', error)
+		return { code: 500, msg: error.message || '切换状态失败' }
 	}
+}
+
+/**
+ * 标记用药完成（兼容旧调用方式的包装函数）
+ * @param {Object} reminder - 完整的提醒对象（需含agendaId）
+ */
+export async function markAsCompleted(reminder) {
+	if (!reminder || !reminder.agendaId) {
+		console.error('markAsCompleted: 缺少agendaId')
+		return { code: 500, msg: '缺少必要参数' }
+	}
+	return toggleReminderState(reminder.agendaId)
 }
 
 export default {
@@ -259,5 +256,6 @@ export default {
 	createReminder,
 	updateReminder,
 	deleteReminder,
+	toggleReminderState,
 	markAsCompleted
 }
