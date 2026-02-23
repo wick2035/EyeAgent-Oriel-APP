@@ -500,6 +500,7 @@ export default {
 
 // ==================== 标题样式 ====================
 .modal-title {
+	display: block;
 	font-size: $font-size-xl;
 	font-weight: $font-weight-semibold;
 	color: $text-primary;
@@ -553,10 +554,12 @@ export default {
 	margin-bottom: $spacing-lg;
 
 	&__text {
+		display: block;
 		font-size: $font-size-base;
 		color: $text-secondary;
 		line-height: $line-height-relaxed;
 		text-align: justify;
+		word-break: break-word;
 	}
 }
 
