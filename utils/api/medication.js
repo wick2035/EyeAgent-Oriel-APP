@@ -222,6 +222,26 @@ export async function deleteReminder(id) {
 }
 
 /**
+ * 批量删除用药提醒
+ * @param {string[]} ids - 提醒ID数组 (reminderIds)
+ */
+export async function deleteReminderBatch(ids) {
+	try {
+		const res = await post('/api/app/extra/remove-medical-reminder', {
+			reminderIds: ids
+		})
+
+		if (res.code === 200) {
+			return { code: 200, msg: res.msg || 'ok' }
+		}
+		return { code: res.code || 500, msg: res.msg || '删除失败' }
+	} catch (error) {
+		console.error('批量删除用药提醒失败:', error)
+		return { code: 500, msg: error.message || '删除失败' }
+	}
+}
+
+/**
  * 切换用药提醒完成状态（双向toggle）
  * @param {string} agendaId - 日程ID（get接口返回的id字段）
  */
@@ -256,6 +276,7 @@ export default {
 	createReminder,
 	updateReminder,
 	deleteReminder,
+	deleteReminderBatch,
 	toggleReminderState,
 	markAsCompleted
 }

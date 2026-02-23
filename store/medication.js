@@ -259,6 +259,24 @@ export async function deleteReminder(id) {
 }
 
 /**
+ * 批量删除提醒
+ */
+export async function deleteReminderBatch(ids) {
+	try {
+		const res = await medicationApi.deleteReminderBatch(ids)
+		if (res.code === 200) {
+			medicationState.reminders = medicationState.reminders.filter(r => !ids.includes(r.id))
+			updateTodayStats()
+			return { success: true }
+		}
+		return { success: false, message: res.msg }
+	} catch (err) {
+		console.error('批量删除用药提醒失败:', err)
+		return { success: false, error: err }
+	}
+}
+
+/**
  * 切换完成状态（双向toggle）
  */
 export async function markAsCompleted(id) {

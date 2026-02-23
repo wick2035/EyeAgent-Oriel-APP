@@ -550,11 +550,11 @@ export default {
 // ==================== 内容区域 ====================
 .modal-content {
 	max-height: 320rpx;
-	padding: 0 $spacing-xl;
 	margin-bottom: $spacing-lg;
 
 	&__text {
 		display: block;
+		padding: 0 $spacing-xl;
 		font-size: $font-size-base;
 		color: $text-secondary;
 		line-height: $line-height-relaxed;

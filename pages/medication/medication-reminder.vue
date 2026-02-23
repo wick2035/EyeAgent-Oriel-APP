@@ -100,15 +100,37 @@
 			@submit="handleSubmit"
 		/>
 
-		<!-- 删除确认弹窗 -->
-		<ConfirmDialog
-			ref="confirmDialog"
-			title="删除用药提醒"
-			content="确定要删除这条用药提醒吗？删除后无法恢复。"
-			confirmText="删除"
-			icon="warning"
-			@confirm="confirmDelete"
-		/>
+		<!-- 删除底部操作面板 -->
+		<view
+			v-if="showDeleteSheet"
+			class="action-sheet-mask"
+			:class="{ 'action-sheet-mask--show': showDeleteSheetAnim }"
+			@click="closeDeleteSheet"
+		>
+			<view
+				class="action-sheet"
+				:class="[{ 'action-sheet--show': showDeleteSheetAnim }, isDark ? 'action-sheet--dark' : '']"
+				@click.stop
+			>
+				<!-- 操作组 -->
+				<view class="action-sheet__group">
+					<view class="action-sheet__header">
+						<text class="action-sheet__title">删除用药提醒</text>
+						<text class="action-sheet__subtitle">{{ deletingReminder ? deletingReminder.medicineName : '' }}</text>
+					</view>
+					<view class="action-sheet__item action-sheet__item--danger" @click="confirmDeleteSingle">
+						<text class="action-sheet__item-text action-sheet__item-text--danger">删除本次</text>
+					</view>
+					<view class="action-sheet__item action-sheet__item--danger" @click="confirmDeleteAll">
+						<text class="action-sheet__item-text action-sheet__item-text--danger-bold">删除该项所有提醒</text>
+					</view>
+				</view>
+				<!-- 取消按钮 -->
+				<view class="action-sheet__cancel" @click="closeDeleteSheet">
+					<text class="action-sheet__cancel-text">取消</text>
+				</view>
+			</view>
+		</view>
 
 		<!-- 顶部通知栏 -->
 		<TopNotificationBar />
@@ -119,7 +141,6 @@
 import ReminderCard from '@/components/medication/ReminderCard.vue'
 import EmptyState from '@/components/medication/EmptyState.vue'
 import ReminderModal from '@/components/medication/ReminderModal.vue'
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 import { isDarkMode } from '@/store/theme.js'
@@ -130,6 +151,7 @@ import {
 	createReminder,
 	updateReminder,
 	deleteReminder,
+	deleteReminderBatch,
 	markAsCompleted,
 	setEditingReminder,
 	clearEditingReminder
@@ -140,7 +162,6 @@ export default {
 		ReminderCard,
 		EmptyState,
 		ReminderModal,
-		ConfirmDialog,
 		TopNotificationBar
 	},
 	data() {
@@ -149,7 +170,9 @@ export default {
 			scrollHeight: 0,
 			modalVisible: false,
 			isRefreshing: false,
-			deletingId: null,
+			deletingReminder: null,
+			showDeleteSheet: false,
+			showDeleteSheetAnim: false,
 			expandedGroups: {
 				today: true,
 				tomorrow: true,
@@ -230,16 +253,40 @@ export default {
 			}
 		},
 		handleDeleteClick(id) {
-			this.deletingId = id
-			this.$refs.confirmDialog.show()
+			const reminder = this.medicationState.reminders.find(r => r.id === id)
+			if (!reminder) return
+			this.deletingReminder = reminder
+			this.showDeleteSheet = true
+			this.$nextTick(() => {
+				setTimeout(() => { this.showDeleteSheetAnim = true }, 30)
+			})
 		},
-		async confirmDelete() {
-			if (this.deletingId) {
-				const result = await deleteReminder(this.deletingId)
-				if (result.success) {
-					uni.showToast({ title: '已删除', icon: 'success' })
-				}
-				this.deletingId = null
+		closeDeleteSheet() {
+			this.showDeleteSheetAnim = false
+			setTimeout(() => {
+				this.showDeleteSheet = false
+				this.deletingReminder = null
+			}, 300)
+		},
+		async confirmDeleteSingle() {
+			if (!this.deletingReminder) return
+			const id = this.deletingReminder.id
+			this.closeDeleteSheet()
+			const result = await deleteReminder(id)
+			if (result.success) {
+				uni.showToast({ title: '已删除', icon: 'success' })
+			}
+		},
+		async confirmDeleteAll() {
+			if (!this.deletingReminder) return
+			const name = this.deletingReminder.medicineName
+			this.closeDeleteSheet()
+			const allIds = this.medicationState.reminders
+				.filter(r => r.medicineName === name)
+				.map(r => r.id)
+			const result = await deleteReminderBatch(allIds)
+			if (result.success) {
+				uni.showToast({ title: '已删除全部', icon: 'success' })
 			}
 		},
 		async handleSubmit(formData) {
@@ -540,6 +587,199 @@ export default {
 	to {
 		opacity: 1;
 		transform: scale(1);
+	}
+}
+
+// ===== 底部操作面板（iOS Action Sheet 风格） =====
+.action-sheet-mask {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0);
+	z-index: 10000;
+	transition: background 0.35s ease;
+
+	&--show {
+		background: rgba(30, 58, 95, 0.35);
+		backdrop-filter: blur(16px) saturate(180%);
+		-webkit-backdrop-filter: blur(16px) saturate(180%);
+	}
+}
+
+.action-sheet {
+	position: absolute;
+	left: 16rpx;
+	right: 16rpx;
+	bottom: 0;
+	padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+	transform: translateY(100%);
+	transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+	&--show {
+		transform: translateY(0);
+	}
+
+	// 操作组卡片
+	&__group {
+		background: rgba(255, 255, 255, 0.95);
+		backdrop-filter: blur(40px) saturate(200%);
+		-webkit-backdrop-filter: blur(40px) saturate(200%);
+		border-radius: $radius-lg;
+		overflow: hidden;
+		margin-bottom: 16rpx;
+	}
+
+	// 标题区域
+	&__header {
+		padding: $spacing-md $spacing-lg;
+		text-align: center;
+		border-bottom: 1rpx solid rgba(0, 0, 0, 0.06);
+	}
+
+	&__title {
+		display: block;
+		font-size: $font-size-sm;
+		font-weight: $font-weight-semibold;
+		color: $text-secondary;
+		margin-bottom: 4rpx;
+	}
+
+	&__subtitle {
+		display: block;
+		font-size: $font-size-xs;
+		color: $text-muted;
+		line-height: $line-height-normal;
+	}
+
+	// 操作项
+	&__item {
+		height: 112rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+		transition: background 0.15s ease;
+
+		&::after {
+			content: '';
+			position: absolute;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			height: 1rpx;
+			background: rgba(0, 0, 0, 0.06);
+		}
+
+		&:last-child::after {
+			display: none;
+		}
+
+		&:active {
+			background: rgba(0, 0, 0, 0.04);
+		}
+	}
+
+	&__item-text {
+		font-size: $font-size-lg;
+
+		&--danger {
+			color: $color-error;
+			font-weight: $font-weight-semibold;
+		}
+
+		&--danger-bold {
+			color: $color-error;
+			font-weight: $font-weight-semibold;
+		}
+	}
+
+	// 取消按钮 - 独立卡片
+	&__cancel {
+		height: 112rpx;
+		background: rgba(255, 255, 255, 0.98);
+		backdrop-filter: blur(40px) saturate(200%);
+		-webkit-backdrop-filter: blur(40px) saturate(200%);
+		border-radius: $radius-lg;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 0.15s ease;
+
+		&:active {
+			background: rgba(240, 240, 240, 0.98);
+		}
+	}
+
+	&__cancel-text {
+		font-size: $font-size-lg;
+		font-weight: $font-weight-semibold;
+		color: $color-primary;
+	}
+
+	// ===== 深色模式 =====
+	&--dark {
+		.action-sheet__group {
+			background: rgba(30, 35, 42, 0.92);
+			backdrop-filter: blur(40px) saturate(160%);
+			-webkit-backdrop-filter: blur(40px) saturate(160%);
+		}
+
+		.action-sheet__header {
+			border-bottom-color: rgba(255, 255, 255, 0.06);
+		}
+
+		.action-sheet__title {
+			color: $dark-text-secondary;
+		}
+
+		.action-sheet__subtitle {
+			color: $dark-text-muted;
+		}
+
+		.action-sheet__item {
+			&::after {
+				background: rgba(255, 255, 255, 0.06);
+			}
+
+			&:active {
+				background: rgba(255, 255, 255, 0.04);
+			}
+		}
+
+		.action-sheet__item-text {
+			&--danger {
+				color: $dark-color-accent;
+			}
+
+			&--danger-bold {
+				color: $dark-color-accent;
+			}
+		}
+
+		.action-sheet__cancel {
+			background: rgba(30, 35, 42, 0.95);
+			backdrop-filter: blur(40px) saturate(160%);
+			-webkit-backdrop-filter: blur(40px) saturate(160%);
+
+			&:active {
+				background: rgba(40, 45, 52, 0.95);
+			}
+		}
+
+		.action-sheet__cancel-text {
+			color: $dark-color-primary;
+		}
+	}
+}
+
+// 深色模式蒙层
+.action-sheet-mask--show {
+	.page--dark & {
+		background: rgba(0, 0, 0, 0.5);
+		backdrop-filter: blur(20px) saturate(150%);
+		-webkit-backdrop-filter: blur(20px) saturate(150%);
 	}
 }
 </style>

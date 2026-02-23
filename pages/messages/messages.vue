@@ -271,8 +271,12 @@ export default {
 
 		getLatestPreview(type) {
 			const latest = getLatestByType(type)
-			if (latest) return this.formatMedicationContent(latest.reminderContent, latest.reminderType)
-			return '暂无新消息'
+			if (!latest) return '暂无新消息'
+			const content = this.formatMedicationContent(latest.reminderContent, latest.reminderType)
+			if (latest.reminderType === 'MEDICATION' && latest.reminderTitle) {
+				return latest.reminderTitle + '：' + content
+			}
+			return content
 		},
 
 		formatMedicationContent(content, type) {

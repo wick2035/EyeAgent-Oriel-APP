@@ -103,7 +103,7 @@
           :class="{ 'card--visible': pageReady }"
           style="--delay: 0.35s"
         >
-          <text class="footer__copyright">© 2025 EyeAgent</text>
+          <text class="footer__copyright">© 2026 EyeAgent</text>
           <text class="footer__slogan">用心守护每一双眼睛</text>
         </view>
 

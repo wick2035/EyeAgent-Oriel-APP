@@ -302,10 +302,25 @@ function showSystemNotification(notification) {
 		'MEDICATION': 'medication'
 	}
 
+	// 格式化通知内容（用药提醒的 reminderContent 是 JSON）
+	let content = notification.reminderContent || ''
+	if (notification.reminderType === 'MEDICATION' && content) {
+		try {
+			const obj = JSON.parse(content)
+			const parts = []
+			if (obj.dosage) parts.push(obj.dosage)
+			if (obj.spec) parts.push(obj.spec)
+			if (obj.frequency) parts.push(obj.frequency)
+			if (parts.length > 0) content = parts.join(' · ')
+		} catch (e) {
+			// 非 JSON 格式，保持原文
+		}
+	}
+
 	const eventData = {
 		type: typeMap[notification.reminderType] || 'system',
 		title: notification.reminderTitle || '新消息',
-		content: notification.reminderContent || '',
+		content: content,
 		duration: 5000,
 		data: notification
 	}
