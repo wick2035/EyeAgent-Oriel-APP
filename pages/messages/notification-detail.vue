@@ -22,8 +22,11 @@
 			:title="modalTitle"
 			:content="modalContent"
 			:time="modalTime"
-			primaryText="知道了"
+			:primaryText="currentNotification && currentNotification.reminderType === 'MEDICATION' ? '标记完成' : '知道了'"
+			:showSecondaryAction="currentNotification && currentNotification.reminderType === 'MEDICATION'"
+			secondaryText="知道了"
 			@confirm="onModalConfirm"
+			@secondary="onModalSecondary"
 		/>
 
 		<!-- 自定义 Toast -->
@@ -101,6 +104,7 @@ import {
 	getUnreadCountByType
 } from '@/store/notification.js'
 import { getReadNotifications } from '@/utils/api/notification.js'
+import { getReminderList, toggleReminderState } from '@/utils/api/medication.js'
 
 export default {
 	components: {
@@ -123,7 +127,8 @@ export default {
 			// 弹窗数据
 			modalTitle: '',
 			modalContent: '',
-			modalTime: ''
+			modalTime: '',
+			currentNotification: null
 		}
 	},
 	computed: {
@@ -265,6 +270,7 @@ export default {
 					url: `/pages/profile/medical-records?prescriptionId=${notification.prescriptionId}`
 				})
 			} else {
+				this.currentNotification = notification
 				this.modalTitle = notification.reminderTitle
 				this.modalContent = this.formatMedicationContent(notification.reminderContent, notification.reminderType)
 				this.modalTime = this.formatTime(notification.sentTime)
@@ -290,7 +296,46 @@ export default {
 			}
 		},
 
-		onModalConfirm() {},
+		onModalConfirm() {
+			if (this.currentNotification && this.currentNotification.reminderType === 'MEDICATION') {
+				this.handleMarkComplete()
+			}
+		},
+
+		onModalSecondary() {
+			this.$refs.messageModal.close()
+		},
+
+		async handleMarkComplete() {
+			const notification = this.currentNotification
+			if (!notification) return
+
+			// 从 sentTime 提取日期
+			const date = (notification.sentTime || '').split('T')[0]
+			if (!date) {
+				uni.showToast({ title: '标记失败', icon: 'none' })
+				return
+			}
+
+			try {
+				// 获取该日的用药提醒，查找对应的 agendaId
+				const res = await getReminderList(date)
+				if (res.code === 200 && res.data) {
+					const match = res.data.list.find(r => r.id === notification.id)
+					if (match && match.agendaId) {
+						const toggleRes = await toggleReminderState(match.agendaId)
+						if (toggleRes.code === 200) {
+							uni.showToast({ title: '已标记完成', icon: 'success' })
+							return
+						}
+					}
+				}
+				uni.showToast({ title: '标记失败，请在用药提醒页操作', icon: 'none' })
+			} catch (err) {
+				console.error('标记用药完成失败:', err)
+				uni.showToast({ title: '标记失败，请在用药提醒页操作', icon: 'none' })
+			}
+		},
 
 		getDateLabel(timeStr) {
 			if (!timeStr) return ''
