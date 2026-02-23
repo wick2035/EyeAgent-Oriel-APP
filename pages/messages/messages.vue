@@ -271,8 +271,22 @@ export default {
 
 		getLatestPreview(type) {
 			const latest = getLatestByType(type)
-			if (latest) return latest.reminderContent
+			if (latest) return this.formatMedicationContent(latest.reminderContent, latest.reminderType)
 			return '暂无新消息'
+		},
+
+		formatMedicationContent(content, type) {
+			if (type !== 'MEDICATION' || !content) return content
+			try {
+				const obj = JSON.parse(content)
+				const parts = []
+				if (obj.dosage) parts.push(obj.dosage)
+				if (obj.spec) parts.push(obj.spec)
+				if (obj.frequency) parts.push(obj.frequency)
+				return parts.length > 0 ? parts.join(' · ') : content
+			} catch (e) {
+				return content
+			}
 		},
 
 		getLatestTime(type) {

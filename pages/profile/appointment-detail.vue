@@ -143,6 +143,7 @@
 <script>
 import { isDarkMode } from '@/store/theme.js'
 import { cancelAppointment } from '@/utils/api/appointment.js'
+import { getAppointmentList } from '@/utils/api/medical.js'
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import uQRCode from '@/uni_modules/cc-defineNewQRCode/components/cc-defineNewQRCode/common/uqrcode.js'
 
@@ -153,6 +154,7 @@ export default {
 	data() {
 		return {
 			statusBarHeight: 44,
+			appointmentId: '',  // 从URL参数获取的预约ID
 			appointment: {},
 			showCancelDialog: false,
 			canceling: false,
@@ -228,6 +230,9 @@ export default {
 	},
 	onLoad(options) {
 		this.getStatusBarHeight()
+		if (options.id) {
+			this.appointmentId = options.id
+		}
 		this.loadAppointmentData()
 	},
 	methods: {
@@ -236,16 +241,34 @@ export default {
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
 		},
 		// 加载预约数据
-		loadAppointmentData() {
+		async loadAppointmentData() {
 			try {
+				// 优先从缓存加载（从就诊记录列表进入时）
 				const cached = uni.getStorageSync('tempAppointmentDetail')
 				if (cached) {
 					this.appointment = JSON.parse(cached)
 					uni.removeStorageSync('tempAppointmentDetail')
-					// 加载数据后生成二维码
 					this.$nextTick(() => {
 						this.generateQRCode()
 					})
+					return
+				}
+
+				// 缓存不存在时，通过API按ID加载（从通知跳转时）
+				if (this.appointmentId) {
+					const res = await getAppointmentList()
+					if (res.code === 200) {
+						const list = res.data.list || []
+						const found = list.find(item => item.id === this.appointmentId || item.reserveId === this.appointmentId)
+						if (found) {
+							this.appointment = found
+							this.$nextTick(() => {
+								this.generateQRCode()
+							})
+							return
+						}
+					}
+					uni.showToast({ title: '未找到预约记录', icon: 'none' })
 				}
 			} catch (e) {
 				console.error('加载预约数据失败:', e)

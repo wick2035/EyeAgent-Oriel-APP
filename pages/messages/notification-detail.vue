@@ -64,7 +64,7 @@
 						:key="'n-' + item.data.id"
 						:typeClass="typeClass"
 						:title="item.data.reminderTitle"
-						:content="item.data.reminderContent"
+						:content="formatMedicationContent(item.data.reminderContent, item.data.reminderType)"
 						:time="formatTime(item.data.sentTime)"
 						:isUnread="item.data.isUnread"
 						:hasAction="hasActionLink(item.data)"
@@ -258,7 +258,7 @@ export default {
 			// 根据类型跳转或显示弹窗
 			if (notification.reminderType === 'RESERVE' && notification.appointmentId) {
 				uni.navigateTo({
-					url: `/pages/profile/medical-records?appointmentId=${notification.appointmentId}`
+					url: `/pages/profile/appointment-detail?id=${notification.appointmentId}`
 				})
 			} else if (notification.reminderType === 'MEDICATION' && notification.prescriptionId) {
 				uni.navigateTo({
@@ -266,7 +266,7 @@ export default {
 				})
 			} else {
 				this.modalTitle = notification.reminderTitle
-				this.modalContent = notification.reminderContent
+				this.modalContent = this.formatMedicationContent(notification.reminderContent, notification.reminderType)
 				this.modalTime = this.formatTime(notification.sentTime)
 				this.$refs.messageModal.show()
 			}
@@ -278,7 +278,7 @@ export default {
 					markAsRead(notification.id)
 				}
 				uni.navigateTo({
-					url: `/pages/profile/medical-records?appointmentId=${notification.appointmentId}`
+					url: `/pages/profile/appointment-detail?id=${notification.appointmentId}`
 				})
 			} else if (notification.reminderType === 'MEDICATION' && notification.prescriptionId) {
 				if (notification.isUnread) {
@@ -339,6 +339,20 @@ export default {
 
 		padZero(num) {
 			return num < 10 ? '0' + num : num
+		},
+
+		formatMedicationContent(content, type) {
+			if (type !== 'MEDICATION' || !content) return content
+			try {
+				const obj = JSON.parse(content)
+				const parts = []
+				if (obj.dosage) parts.push(obj.dosage)
+				if (obj.spec) parts.push(obj.spec)
+				if (obj.frequency) parts.push(obj.frequency)
+				return parts.length > 0 ? parts.join(' · ') : content
+			} catch (e) {
+				return content
+			}
 		}
 	}
 }
