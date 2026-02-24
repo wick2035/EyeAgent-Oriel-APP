@@ -153,3 +153,163 @@ export function getHealthDataByGroup(ageGroup) {
 			return getAdultHealthData()
 	}
 }
+
+// ==================== 眼部检查数据 ====================
+
+/**
+ * 近视等级枚举
+ */
+export const MYOPIA_LEVEL = {
+	MILD: 'mild',           // 轻度近视 < 3.00D
+	MODERATE: 'moderate',   // 中度近视 3.00-6.00D
+	HIGH: 'high',           // 高度近视 6.00-9.00D
+	SEVERE: 'severe'        // 超高度近视 >= 9.00D
+}
+
+/**
+ * 近视等级配置
+ */
+export const MYOPIA_CONFIG = {
+	[MYOPIA_LEVEL.MILD]: {
+		color: '#10B981',
+		bgColor: 'rgba(16, 185, 129, 0.1)',
+		label: '轻度近视',
+		range: '< 3.00D'
+	},
+	[MYOPIA_LEVEL.MODERATE]: {
+		color: '#3B82F6',
+		bgColor: 'rgba(59, 130, 246, 0.1)',
+		label: '中度近视',
+		range: '3.00-6.00D'
+	},
+	[MYOPIA_LEVEL.HIGH]: {
+		color: '#F59E0B',
+		bgColor: 'rgba(245, 158, 11, 0.1)',
+		label: '高度近视',
+		range: '6.00-9.00D'
+	},
+	[MYOPIA_LEVEL.SEVERE]: {
+		color: '#EF4444',
+		bgColor: 'rgba(239, 68, 68, 0.1)',
+		label: '超高度近视',
+		range: '>= 9.00D'
+	}
+}
+
+/**
+ * 根据球镜度数评估近视等级
+ * @param {number} sph - 球镜度数 (负值)
+ * @returns {object} { level, config }
+ */
+export function getMyopiaRisk(sph) {
+	const abs = Math.abs(sph || 0)
+	let level
+	if (abs < 3.00) {
+		level = MYOPIA_LEVEL.MILD
+	} else if (abs < 6.00) {
+		level = MYOPIA_LEVEL.MODERATE
+	} else if (abs < 9.00) {
+		level = MYOPIA_LEVEL.HIGH
+	} else {
+		level = MYOPIA_LEVEL.SEVERE
+	}
+	return {
+		level,
+		...MYOPIA_CONFIG[level]
+	}
+}
+
+/**
+ * 将近视度数映射到仪表盘百分比 (0-100)
+ * 范围：0D ~ -12D → 0% ~ 100%
+ * @param {number} sph - 球镜度数 (负值)
+ * @returns {number} 百分比
+ */
+export function getMyopiaGaugeProgress(sph) {
+	const abs = Math.abs(sph || 0)
+	const max = 12
+	const progress = (abs / max) * 100
+	return Math.max(0, Math.min(100, progress))
+}
+
+/**
+ * Mock 眼部检查数据
+ */
+export function getMockEyeExamData() {
+	return {
+		examDate: '2026-02-20',
+		od: {
+			sph: -3.50,
+			cyl: -0.75,
+			axis: 180,
+			va: 5.0,
+			al: 25.12,
+			k: 43.25,
+			iop: 15,
+			nakedVision: 4.5
+		},
+		os: {
+			sph: -4.25,
+			cyl: -1.00,
+			axis: 175,
+			va: 4.9,
+			al: 25.68,
+			k: 43.50,
+			iop: 16,
+			nakedVision: 4.3
+		},
+		pd: 63
+	}
+}
+
+/**
+ * Mock 历史趋势数据 (近6次检查 + 2次预测)
+ */
+export function getMockTrendData() {
+	return {
+		history: [
+			{ date: '2024-03', od: -2.50, os: -3.00 },
+			{ date: '2024-06', od: -2.75, os: -3.25 },
+			{ date: '2024-09', od: -3.00, os: -3.50 },
+			{ date: '2025-01', od: -3.00, os: -3.75 },
+			{ date: '2025-06', od: -3.25, os: -4.00 },
+			{ date: '2026-02', od: -3.50, os: -4.25 }
+		],
+		prediction: [
+			{ date: '2026-08', od: -3.75, os: -4.50 },
+			{ date: '2027-02', od: -4.00, os: -4.75 }
+		]
+	}
+}
+
+/**
+ * 眼部数据字段配置
+ */
+export const EYE_DATA_GROUPS = [
+	{
+		key: 'refraction',
+		title: '屈光数据',
+		fields: [
+			{ key: 'sph', label: '球镜(SPH)', unit: 'D', format: v => v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2) },
+			{ key: 'cyl', label: '柱镜(CYL)', unit: 'D', format: v => v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2) },
+			{ key: 'axis', label: '轴位(AXIS)', unit: '°', format: v => `${v}` },
+			{ key: 'va', label: '矫正视力', unit: '', format: v => v.toFixed(1) }
+		]
+	},
+	{
+		key: 'cornea',
+		title: '角膜与眼轴',
+		fields: [
+			{ key: 'al', label: '眼轴(AL)', unit: 'mm', format: v => v.toFixed(2) },
+			{ key: 'k', label: '角膜曲率(K)', unit: 'D', format: v => v.toFixed(2) },
+			{ key: 'iop', label: '眼压(IOP)', unit: 'mmHg', format: v => `${v}` }
+		]
+	},
+	{
+		key: 'vision',
+		title: '裸眼视力',
+		fields: [
+			{ key: 'nakedVision', label: '裸眼视力', unit: '', format: v => v.toFixed(1) }
+		]
+	}
+]

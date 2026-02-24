@@ -120,6 +120,9 @@
 
     <!-- 顶部通知栏 -->
     <TopNotificationBar />
+
+    <!-- 版本更新弹窗 -->
+    <UpdateDialog ref="updateDialog" @cancel="onUpdateDismiss" />
   </view>
 </template>
 
@@ -127,15 +130,18 @@
 import TabBar from "@/components/TabBar.vue";
 import TopNotificationBar from "@/components/TopNotificationBar.vue";
 import EyeHealthSection from "@/components/eye-health/EyeHealthSection.vue";
+import UpdateDialog from "@/components/UpdateDialog.vue";
 import { isDarkMode } from "@/store/theme.js";
 import { getUnreadCount } from "@/store/notification.js";
 import { getNewsList } from "@/utils/api/news.js";
+import { dismissUpdate } from "@/utils/version.js";
 
 export default {
   components: {
     TabBar,
     TopNotificationBar,
     EyeHealthSection,
+    UpdateDialog,
   },
   data() {
     return {
@@ -190,6 +196,12 @@ export default {
   onLoad() {
     this.getStatusBarHeight();
     this.loadNews();
+
+    // 监听全局更新弹窗事件
+    uni.$on("show-update-dialog", this.showUpdateDialog);
+  },
+  onUnload() {
+    uni.$off("show-update-dialog", this.showUpdateDialog);
   },
   onShow() {
     // #ifdef APP-PLUS
@@ -279,6 +291,17 @@ export default {
       uni.navigateTo({
         url: `/pages/news/news-detail?id=${item.id}`,
       });
+    },
+    showUpdateDialog(data) {
+      if (this.$refs.updateDialog) {
+        this.$refs.updateDialog.show(data);
+      }
+    },
+    onUpdateDismiss(version) {
+      // 用户跳过可选更新，记住该版本
+      if (version) {
+        dismissUpdate(version);
+      }
     },
   },
 };

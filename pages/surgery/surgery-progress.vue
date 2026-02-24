@@ -61,7 +61,7 @@
 						<!-- 医院和医生信息 -->
 						<view class="card-meta">
 							<text class="hospital-name">{{ surgery.hospitalName }}</text>
-							<text class="doctor-name">{{ surgery.surgeon.name }} {{ surgery.surgeon.title }}</text>
+							<text class="doctor-name">{{ surgery.doctorName }}</text>
 						</view>
 
 						<!-- 当前阶段 -->
@@ -161,8 +161,11 @@ export default {
 			return ['PRE_OP', 'IN_OPERATION', 'POST_OP'].includes(status)
 		},
 		getCurrentPhaseName(surgery) {
-			const currentPhase = surgery.phases.find(p => p.status === 'IN_PROGRESS')
-			return currentPhase ? currentPhase.name : getStatusText(surgery.status)
+			if (surgery.phases && surgery.phases.length > 0) {
+				const currentPhase = surgery.phases.find(p => p.status === 'IN_PROGRESS')
+				if (currentPhase) return currentPhase.name
+			}
+			return getStatusText(surgery.status)
 		},
 		formatSurgeryDate(dateStr) {
 			const daysInfo = getDaysUntilSurgery(dateStr)

@@ -1,8 +1,9 @@
 /**
  * 手术进度状态管理
- * 采用模拟数据，后续可对接真实API
+ * 对接真实 API（/api/app/extra）
  */
 import { reactive } from 'vue'
+import { getSurgeryList, getSurgeryProcess, STATUS_PROGRESS_MAP } from '@/utils/api/surgery.js'
 
 // 手术状态枚举
 export const SURGERY_STATUS = {
@@ -60,146 +61,6 @@ export const STATUS_COLORS = {
 	}
 }
 
-// 模拟手术数据
-const mockSurgeries = [
-	{
-		id: 'surgery_001',
-		patientId: 'patient_001',
-		surgeryName: '白内障超声乳化术',
-		surgeryType: 'CATARACT',
-		hospitalName: '北京协和医院',
-		hospitalId: 'hospital_001',
-		departmentName: '眼科',
-		surgeon: {
-			id: 'doctor_001',
-			name: '张明',
-			title: '主任医师',
-			avatar: ''
-		},
-		scheduledDate: '2025-01-20T09:00:00',
-		actualStartTime: null,
-		actualEndTime: null,
-		estimatedRecoveryDate: '2025-02-20',
-		operatingRoom: '05号室 3台',
-		estimatedDuration: '约30分钟',
-		status: 'PRE_OP',
-		currentPhase: 1,
-		overallProgress: 18,
-		phases: [
-			{ id: 1, name: '术前准备', status: 'COMPLETED', time: '2025-01-20T08:30:00' },
-			{ id: 2, name: '患者进入手术室', status: 'COMPLETED', time: '2025-01-20T08:45:00' },
-			{ id: 3, name: '麻醉开始', status: 'IN_PROGRESS', time: '2025-01-20T09:00:00' },
-			{ id: 4, name: '手术开始', status: 'PENDING', time: null },
-			{ id: 5, name: '手术结束', status: 'PENDING', time: null },
-			{ id: 6, name: '麻醉结束', status: 'PENDING', time: null },
-			{ id: 7, name: '患者离开手术室', status: 'PENDING', time: null },
-			{ id: 8, name: '术后恢复(PACU)', status: 'PENDING', time: null },
-			{ id: 9, name: '完成', status: 'PENDING', time: null }
-		],
-		preOpInstructions: [
-			'术前8小时禁食禁水',
-			'术前不要化妆，不要佩戴隐形眼镜',
-			'穿宽松舒适的衣服，方便穿脱',
-			'请安排家属陪同，术后当天不能独自离院'
-		],
-		postOpCautions: [
-			'术后当天避免用力揉眼',
-			'术后1周内洗澡时避免水流入眼睛',
-			'按时使用眼药水，不要擅自停药',
-			'如有异常（剧烈疼痛、视力骤降）请及时就医'
-		],
-		createdAt: '2025-01-08T14:30:00',
-		updatedAt: '2025-01-11T09:00:00'
-	},
-	{
-		id: 'surgery_002',
-		patientId: 'patient_001',
-		surgeryName: '飞秒激光近视矫正术',
-		surgeryType: 'LASIK',
-		hospitalName: '北京同仁医院',
-		hospitalId: 'hospital_002',
-		departmentName: '屈光手术中心',
-		surgeon: {
-			id: 'doctor_002',
-			name: '李华',
-			title: '副主任医师',
-			avatar: ''
-		},
-		scheduledDate: '2024-12-15T10:00:00',
-		actualStartTime: '2024-12-15T10:15:00',
-		actualEndTime: '2024-12-15T10:45:00',
-		estimatedRecoveryDate: '2025-01-15',
-		operatingRoom: '03号室 2台',
-		estimatedDuration: '约30分钟',
-		status: 'POST_OP',
-		currentPhase: 3,
-		overallProgress: 70,
-		phases: [
-			{ id: 1, name: '术前准备', status: 'COMPLETED', time: '2024-12-15T09:30:00' },
-			{ id: 2, name: '患者进入手术室', status: 'COMPLETED', time: '2024-12-15T09:50:00' },
-			{ id: 3, name: '麻醉开始', status: 'COMPLETED', time: '2024-12-15T10:00:00' },
-			{ id: 4, name: '手术开始', status: 'COMPLETED', time: '2024-12-15T10:15:00' },
-			{ id: 5, name: '手术结束', status: 'COMPLETED', time: '2024-12-15T10:45:00' },
-			{ id: 6, name: '麻醉结束', status: 'COMPLETED', time: '2024-12-15T10:50:00' },
-			{ id: 7, name: '患者离开手术室', status: 'COMPLETED', time: '2024-12-15T11:00:00' },
-			{ id: 8, name: '术后恢复(PACU)', status: 'IN_PROGRESS', time: '2024-12-15T11:10:00' },
-			{ id: 9, name: '完成', status: 'PENDING', time: null }
-		],
-		preOpInstructions: [
-			'术前3天停止佩戴隐形眼镜',
-			'术前24小时不要饮酒',
-			'手术当天不要化妆'
-		],
-		postOpCautions: [
-			'术后1周内避免洗头水进入眼睛',
-			'术后1月内避免剧烈运动',
-			'术后3月内避免游泳',
-			'外出佩戴防护眼镜'
-		],
-		createdAt: '2024-11-20T10:00:00',
-		updatedAt: '2024-12-22T10:00:00'
-	},
-	{
-		id: 'surgery_003',
-		patientId: 'patient_001',
-		surgeryName: '翼状胬肉切除术',
-		surgeryType: 'OTHER',
-		hospitalName: '北京眼科医院',
-		hospitalId: 'hospital_003',
-		departmentName: '眼表疾病科',
-		surgeon: {
-			id: 'doctor_003',
-			name: '王芳',
-			title: '主任医师',
-			avatar: ''
-		},
-		scheduledDate: '2024-06-10T14:00:00',
-		actualStartTime: '2024-06-10T14:10:00',
-		actualEndTime: '2024-06-10T15:00:00',
-		estimatedRecoveryDate: '2024-07-10',
-		operatingRoom: '01号室 5台',
-		estimatedDuration: '约50分钟',
-		status: 'COMPLETED',
-		currentPhase: 4,
-		overallProgress: 100,
-		phases: [
-			{ id: 1, name: '术前准备', status: 'COMPLETED', time: '2024-06-10T13:30:00' },
-			{ id: 2, name: '患者进入手术室', status: 'COMPLETED', time: '2024-06-10T13:50:00' },
-			{ id: 3, name: '麻醉开始', status: 'COMPLETED', time: '2024-06-10T14:00:00' },
-			{ id: 4, name: '手术开始', status: 'COMPLETED', time: '2024-06-10T14:10:00' },
-			{ id: 5, name: '手术结束', status: 'COMPLETED', time: '2024-06-10T15:00:00' },
-			{ id: 6, name: '麻醉结束', status: 'COMPLETED', time: '2024-06-10T15:05:00' },
-			{ id: 7, name: '患者离开手术室', status: 'COMPLETED', time: '2024-06-10T15:15:00' },
-			{ id: 8, name: '术后恢复(PACU)', status: 'COMPLETED', time: '2024-06-10T15:30:00' },
-			{ id: 9, name: '完成', status: 'COMPLETED', time: '2024-06-10T16:00:00' }
-		],
-		preOpInstructions: [],
-		postOpCautions: [],
-		createdAt: '2024-05-20T10:00:00',
-		updatedAt: '2024-07-10T10:00:00'
-	}
-]
-
 // 手术状态
 const surgeryState = reactive({
 	surgeries: [],
@@ -216,39 +77,72 @@ export function getSurgeryState() {
 }
 
 /**
- * 获取手术列表
+ * 获取手术列表（调用真实 API）
  */
 export async function fetchSurgeryList() {
 	if (surgeryState.loading) return
 
 	surgeryState.loading = true
 	try {
-		// 模拟API延迟
-		await new Promise(resolve => setTimeout(resolve, 300))
-		surgeryState.surgeries = [...mockSurgeries]
+		const res = await getSurgeryList()
+		if (res.code === 200) {
+			surgeryState.surgeries = res.data || []
+		} else {
+			console.error('获取手术列表失败:', res.msg)
+			uni.showToast({ title: res.msg || '获取手术信息失败', icon: 'none' })
+		}
 		surgeryState.initialized = true
 	} catch (err) {
 		console.error('获取手术列表失败:', err)
+		uni.showToast({ title: '获取手术信息失败', icon: 'none' })
 	} finally {
 		surgeryState.loading = false
 	}
 }
 
 /**
- * 获取手术详情
+ * 获取手术详情（列表 + 阶段进度）
  */
 export async function fetchSurgeryDetail(id) {
 	surgeryState.loading = true
 	try {
-		await new Promise(resolve => setTimeout(resolve, 200))
-		const surgery = mockSurgeries.find(s => s.id === id)
-		if (surgery) {
-			surgeryState.currentSurgery = { ...surgery }
-			return surgery
+		// 如果列表未加载，先加载列表
+		if (!surgeryState.initialized || surgeryState.surgeries.length === 0) {
+			const listRes = await getSurgeryList()
+			if (listRes.code === 200) {
+				surgeryState.surgeries = listRes.data || []
+				surgeryState.initialized = true
+			}
 		}
-		return null
+
+		// 从列表中找到对应手术
+		let surgery = surgeryState.surgeries.find(s => s.id === id)
+		if (!surgery) {
+			uni.showToast({ title: '手术信息不存在', icon: 'none' })
+			surgeryState.currentSurgery = null
+			return null
+		}
+
+		// 获取手术阶段进度
+		const processRes = await getSurgeryProcess(id)
+		if (processRes.code === 200 && processRes.data.length > 0) {
+			surgery = {
+				...surgery,
+				phases: processRes.data,
+				overallProgress: calculateOverallProgress({ phases: processRes.data })
+			}
+			// 同步更新列表中的数据
+			const idx = surgeryState.surgeries.findIndex(s => s.id === id)
+			if (idx !== -1) {
+				surgeryState.surgeries[idx] = surgery
+			}
+		}
+
+		surgeryState.currentSurgery = { ...surgery }
+		return surgery
 	} catch (err) {
 		console.error('获取手术详情失败:', err)
+		uni.showToast({ title: '获取手术详情失败', icon: 'none' })
 		return null
 	} finally {
 		surgeryState.loading = false
@@ -295,65 +189,25 @@ export function getGroupedSurgeries() {
 }
 
 /**
- * 更新任务状态
+ * 计算总体进度（基于实际阶段数据）
  */
-export async function updateTaskStatus(surgeryId, phaseId, taskId, completed) {
-	try {
-		await new Promise(resolve => setTimeout(resolve, 150))
+export function calculateOverallProgress(surgery) {
+	if (!surgery || !surgery.phases || surgery.phases.length === 0) return 0
 
-		const surgery = surgeryState.surgeries.find(s => s.id === surgeryId)
-		if (!surgery) return { success: false }
+	const phases = surgery.phases
+	const total = phases.length
+	const completed = phases.filter(p => p.status === 'COMPLETED').length
+	const inProgress = phases.filter(p => p.status === 'IN_PROGRESS').length
 
-		const phase = surgery.phases.find(p => p.id === phaseId)
-		if (!phase || !phase.tasks) return { success: false }
-
-		const task = phase.tasks.find(t => t.id === taskId)
-		if (!task) return { success: false }
-
-		task.completed = completed
-		task.completedAt = completed ? new Date().toISOString() : null
-
-		// 更新阶段进度
-		const completedTasks = phase.tasks.filter(t => t.completed).length
-		phase.progress = Math.round((completedTasks / phase.tasks.length) * 100)
-
-		// 更新总体进度
-		surgery.overallProgress = calculateOverallProgress(surgery)
-
-		// 同步到currentSurgery
-		if (surgeryState.currentSurgery?.id === surgeryId) {
-			surgeryState.currentSurgery = { ...surgery }
-		}
-
-		return { success: true }
-	} catch (err) {
-		console.error('更新任务状态失败:', err)
-		return { success: false, error: err }
-	}
+	// 已完成的阶段 + 进行中的算半个
+	return Math.round(((completed + inProgress * 0.5) / total) * 100)
 }
 
 /**
- * 计算总体进度
+ * 根据状态估算进度（列表页用）
  */
-export function calculateOverallProgress(surgery) {
-	if (!surgery || !surgery.phases) return 0
-
-	const phases = surgery.phases
-	let totalWeight = 0
-	let completedWeight = 0
-
-	phases.forEach((phase, index) => {
-		const weight = 25 // 每阶段25%
-		totalWeight += weight
-
-		if (phase.status === 'COMPLETED') {
-			completedWeight += weight
-		} else if (phase.status === 'IN_PROGRESS') {
-			completedWeight += (weight * phase.progress / 100)
-		}
-	})
-
-	return Math.round((completedWeight / totalWeight) * 100)
+export function estimateProgressFromStatus(status) {
+	return STATUS_PROGRESS_MAP[status] || 0
 }
 
 /**
@@ -433,23 +287,19 @@ export function getDaysUntilSurgery(scheduledDate) {
 export function getNextEvent(surgery) {
 	if (!surgery) return null
 
-	const currentPhase = surgery.phases.find(p => p.status === 'IN_PROGRESS')
-	if (!currentPhase) return null
-
-	// 如果有未完成的任务
-	if (currentPhase.tasks) {
-		const nextTask = currentPhase.tasks.find(t => !t.completed)
-		if (nextTask) {
+	// 如果有 phases 数据，查找当前进行中的阶段
+	if (surgery.phases && surgery.phases.length > 0) {
+		const currentPhase = surgery.phases.find(p => p.status === 'IN_PROGRESS')
+		if (currentPhase) {
 			return {
-				type: 'task',
-				name: nextTask.name,
-				date: nextTask.scheduledDate
+				type: 'phase',
+				name: currentPhase.name
 			}
 		}
 	}
 
-	// 如果是术前准备阶段，下一个事件是手术
-	if (currentPhase.nameEn === 'PRE_OPERATION') {
+	// 术前准备状态，下一个事件是手术
+	if (surgery.status === 'PRE_OP') {
 		return {
 			type: 'surgery',
 			name: '手术',
@@ -466,8 +316,8 @@ export default {
 	fetchSurgeryList,
 	fetchSurgeryDetail,
 	getGroupedSurgeries,
-	updateTaskStatus,
 	calculateOverallProgress,
+	estimateProgressFromStatus,
 	getStatusText,
 	getPhaseStatusText,
 	formatDate,

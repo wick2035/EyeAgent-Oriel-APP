@@ -7,6 +7,7 @@ import {
 } from "@/utils/websocket.js";
 import { fetchUnreadNotifications } from "@/store/notification.js";
 import { checkTokenValid } from "@/utils/api/user.js";
+import { checkForUpdate, isUpdateDismissed } from "@/utils/version.js";
 
 export default {
   onLaunch: function () {
@@ -57,9 +58,10 @@ export default {
         if (isValid) {
           console.log("Token验证成功，进入应用");
 
-          // 第二步：异步连接WebSocket（不阻塞页面进入）
+          // 第二步：异步连接WebSocket + 检查更新（不阻塞页面进入）
           setTimeout(() => {
             this.initNotificationService();
+            this.checkAppUpdate();
           }, 1000);
 
           // 立即进入首页
@@ -130,6 +132,32 @@ export default {
       connectWebSocket();
       // 获取未读通知
       fetchUnreadNotifications();
+    },
+
+    /**
+     * 检查App更新
+     */
+    async checkAppUpdate() {
+      try {
+        const result = await checkForUpdate();
+
+        if (result.type === "none") {
+          return;
+        }
+
+        if (result.type === "force") {
+          // 强制更新，直接通知页面显示弹窗
+          uni.$emit("show-update-dialog", result);
+        } else if (result.type === "optional") {
+          // 可选更新，检查用户是否已跳过该版本
+          if (!isUpdateDismissed(result.version)) {
+            uni.$emit("show-update-dialog", result);
+          }
+        }
+      } catch (error) {
+        // 自动检查更新失败，静默处理
+        console.log("自动检查更新失败:", error);
+      }
     },
   },
 };

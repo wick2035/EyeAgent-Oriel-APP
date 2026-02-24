@@ -407,6 +407,22 @@ export async function register(data) {
 }
 
 /**
+ * 获取App版本信息（无需登录）
+ * @returns {Promise<object>} { latestVersion, minVersion, updateUrl, updateDescription, forceUpdate }
+ */
+export async function getAppVersion() {
+	try {
+		const response = await get('/api/app/base/get-app-version')
+		if (response.code === 200 && response.data) {
+			return response.data
+		}
+		throw new Error(response.msg || '获取版本信息失败')
+	} catch (error) {
+		throw error
+	}
+}
+
+/**
  * 上传头像
  * @param {string} filePath - 本地文件路径
  * @returns {Promise<object>}

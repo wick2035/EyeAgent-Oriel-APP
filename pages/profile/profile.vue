@@ -46,7 +46,8 @@
 					@click="handleMenu(item)"
 				>
 					<view class="menu-item__icon" :style="{ background: item.bgColor }">
-						<image v-if="item.icon === 'medicine'" class="menu-icon menu-icon--medicine" src="@/static/medicine.svg" mode="aspectFit" />
+						<image v-if="item.icon === 'orders'" class="menu-icon menu-icon--orders" src="@/static/shop.svg" mode="aspectFit" />
+						<image v-else-if="item.icon === 'medicine'" class="menu-icon menu-icon--medicine" src="@/static/medicine.svg" mode="aspectFit" />
 						<image v-else-if="item.icon === 'telemedicine'" class="menu-icon menu-icon--telemedicine" src="@/static/cloud.svg" mode="aspectFit" />
 						<view v-else-if="item.icon === 'surgery'" class="menu-icon menu-icon--surgery"></view>
 						<view v-else class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
@@ -110,6 +111,7 @@ export default {
 		return {
 			statusBarHeight: 44,
 			serviceMenus: [
+				{ title: '我的订单', icon: 'orders', bgColor: 'rgba(249, 115, 22, 0.1)' },
 				{ title: '就诊记录', icon: 'record', bgColor: 'rgba(30, 58, 95, 0.1)' },
 				{ title: '云上医院', icon: 'telemedicine', bgColor: 'rgba(14, 165, 233, 0.1)' },
 				{ title: '用药提醒', icon: 'medicine', bgColor: 'rgba(16, 185, 129, 0.1)' },
@@ -162,6 +164,14 @@ export default {
 		},
 		handleMenu(item) {
 			if (item.type === 'switch') return
+
+			// 我的订单跳转
+			if (item.icon === 'orders') {
+				uni.navigateTo({
+					url: '/pages/orders/my-orders'
+				})
+				return
+			}
 
 			// 就诊记录跳转
 			if (item.icon === 'record') {
@@ -498,6 +508,15 @@ export default {
 		border-radius: 0;
 		// 将黑色 SVG 转为绿色 #10B981
 		filter: invert(56%) sepia(52%) saturate(552%) hue-rotate(118deg) brightness(92%) contrast(94%);
+	}
+
+	&--orders {
+		width: 36rpx;
+		height: 36rpx;
+		border: none;
+		border-radius: 0;
+		// 将黑色SVG转为橙色 #FF6A00
+		filter: invert(51%) sepia(100%) saturate(1000%) hue-rotate(1deg) brightness(104%) contrast(106%);
 	}
 
 	&--telemedicine {

@@ -33,6 +33,7 @@ export default {
 		userInfo: 'user_info',
 		patientId: 'patient_id',
 		sessionId: 'session_id',
-		theme: 'app_theme'
+		theme: 'app_theme',
+		dismissedUpdateVersion: 'dismissed_update_version'
 	}
 }

@@ -114,16 +114,22 @@
 
     <!-- 顶部通知栏 -->
     <TopNotificationBar />
+
+    <!-- 版本更新弹窗 -->
+    <UpdateDialog ref="updateDialog" />
   </view>
 </template>
 
 <script>
 import { isDarkMode } from "@/store/theme.js";
 import TopNotificationBar from "@/components/TopNotificationBar.vue";
+import UpdateDialog from "@/components/UpdateDialog.vue";
+import { checkForUpdate } from "@/utils/version.js";
 
 export default {
   components: {
     TopNotificationBar,
+    UpdateDialog,
   },
   data() {
     return {
@@ -167,15 +173,30 @@ export default {
       uni.navigateBack();
     },
 
-    checkUpdate() {
+    async checkUpdate() {
       uni.showLoading({ title: "检查中..." });
-      setTimeout(() => {
+      try {
+        const result = await checkForUpdate();
+        uni.hideLoading();
+
+        if (result.type === "none") {
+          uni.showToast({
+            title: "已是最新版本",
+            icon: "success",
+          });
+        } else {
+          // 手动检查时，无论是否已跳过，都显示更新弹窗
+          if (this.$refs.updateDialog) {
+            this.$refs.updateDialog.show(result);
+          }
+        }
+      } catch (error) {
         uni.hideLoading();
         uni.showToast({
-          title: "已是最新版本",
-          icon: "success",
+          title: "检查更新失败",
+          icon: "none",
         });
-      }, 1000);
+      }
     },
 
     openWebsite() {

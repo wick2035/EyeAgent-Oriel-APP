@@ -39,7 +39,7 @@
 				<!-- 主刀医生 -->
 				<view class="info-row">
 					<text class="info-label">主刀医生</text>
-					<text class="info-value info-value--doctor">{{ surgery.surgeon.name }} {{ surgery.surgeon.title }} · {{ surgery.hospitalName }}</text>
+					<text class="info-value info-value--doctor">{{ surgery.doctorName || '--' }}{{ surgery.hospitalName ? ' · ' + surgery.hospitalName : '' }}</text>
 				</view>
 
 				<!-- 手术总用时 -->
@@ -94,7 +94,7 @@
 						<!-- 内容 -->
 						<view class="step-content">
 							<text class="step-name">{{ phase.name }}</text>
-							<text v-if="phase.time" class="step-time">{{ formatPhaseTime(phase.time) }}</text>
+							<text v-if="phase.startTime" class="step-time">{{ formatPhaseTime(phase.startTime) }}</text>
 						</view>
 					</view>
 				</view>
@@ -329,16 +329,17 @@ export default {
 			if (surgery.status !== 'COMPLETED') {
 				return '暂未完成'
 			}
-			// 从phases中找首尾有时间的阶段计算
+			// 从phases中找首阶段的startTime和末阶段的endTime计算
 			const phases = surgery.phases || []
-			const firstPhase = phases.find(p => p.time)
-			const lastPhase = [...phases].reverse().find(p => p.time)
-			if (!firstPhase || !lastPhase || firstPhase === lastPhase) {
+			const firstPhase = phases.find(p => p.startTime)
+			const lastPhase = [...phases].reverse().find(p => p.endTime)
+			if (!firstPhase || !lastPhase) {
 				return '--'
 			}
-			const start = new Date(firstPhase.time)
-			const end = new Date(lastPhase.time)
+			const start = new Date(firstPhase.startTime)
+			const end = new Date(lastPhase.endTime)
 			const diffMs = end - start
+			if (diffMs <= 0) return '--'
 			const diffMins = Math.round(diffMs / 60000)
 			if (diffMins < 60) {
 				return `${diffMins}分钟`

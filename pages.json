@@ -200,6 +200,13 @@
 			}
 		},
 		{
+			"path": "pages/orders/my-orders",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "我的订单"
+			}
+		},
+		{
 			"path": "pages/surgery/surgery-progress",
 			"style": {
 				"navigationStyle": "custom",

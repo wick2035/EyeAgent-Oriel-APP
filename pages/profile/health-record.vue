@@ -98,13 +98,22 @@
 					</view>
 				</view>
 
+				<!-- 眼部数据 -->
+				<view class="section" :class="{ 'section--visible': pageReady }" style="--index: 2">
+					<view class="section-header">
+						<view class="section-indicator"></view>
+						<text class="section-title">眼部数据</text>
+					</view>
+					<EyeDataSection />
+				</view>
+
 				<!-- 其他分组 -->
 				<view
 					v-for="(group, gIndex) in displayGroups"
 					:key="group.key"
 					class="section"
 					:class="{ 'section--visible': pageReady }"
-					:style="{ '--index': gIndex + 2 }"
+					:style="{ '--index': gIndex + 3 }"
 				>
 					<view class="section-header">
 						<view class="section-indicator"></view>
@@ -205,6 +214,7 @@
 
 <script>
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
+import EyeDataSection from '@/components/eye-data/EyeDataSection.vue'
 import { isDarkMode } from '@/store/theme.js'
 import {
 	getPatientState,
@@ -223,7 +233,8 @@ import {
 
 export default {
 	components: {
-		TopNotificationBar
+		TopNotificationBar,
+		EyeDataSection
 	},
 	data() {
 		return {
