@@ -18,7 +18,7 @@
 			<view class="status-section" :class="statusSectionClass">
 				<!-- 状态图标 -->
 				<view class="status-icon" :class="statusIconClass">
-					<view v-if="isPending" class="check-icon"></view>
+					<view v-if="isPending || isInProgress" class="check-icon"></view>
 					<view v-else class="inactive-icon"></view>
 				</view>
 
@@ -101,6 +101,12 @@
 					<text>导航到医院</text>
 				</view>
 			</template>
+			<template v-else-if="isInProgress">
+				<view class="btn-primary btn-primary--full" @click="handleNavigate">
+					<view class="nav-icon"></view>
+					<text>导航到医院</text>
+				</view>
+			</template>
 			<template v-else>
 				<view class="btn-primary btn-primary--full" @click="handleRebook">
 					<text>{{ isCompleted ? '再次预约' : '重新预约' }}</text>
@@ -170,23 +176,31 @@ export default {
 		isPending() {
 			return this.appointment.status === 'PENDING' || this.appointment.status === 'pending'
 		},
+		isInProgress() {
+			return this.appointment.status === 'IN_PROGRESS' || this.appointment.status === 'in_progress'
+		},
 		isCompleted() {
 			return this.appointment.status === 'COMPLETED' || this.appointment.status === 'completed'
 		},
+		isExpired() {
+			return this.appointment.status === 'EXPIRED' || this.appointment.status === 'expired'
+		},
 		isCancelled() {
-			return this.appointment.status === 'cancelled' || this.appointment.status === 'CANCELLED'
+			return this.appointment.status === 'cancelled' || this.appointment.status === 'CANCELLED' || this.appointment.status === 'canceled' || this.appointment.status === 'CANCELED'
 		},
 		// 状态区域样式
 		statusSectionClass() {
-			return this.isPending ? 'status-section--pending' : 'status-section--inactive'
+			return (this.isPending || this.isInProgress) ? 'status-section--pending' : 'status-section--inactive'
 		},
 		statusIconClass() {
-			return this.isPending ? 'status-icon--success' : 'status-icon--inactive'
+			return (this.isPending || this.isInProgress) ? 'status-icon--success' : 'status-icon--inactive'
 		},
 		// 状态文字
 		statusText() {
 			if (this.isPending) return '预约成功'
-			if (this.isCompleted) return '已完成'
+			if (this.isInProgress) return '正在诊断'
+			if (this.isCompleted) return '完成诊断'
+			if (this.isExpired) return '已过期'
 			return '已取消'
 		},
 		// 格式化日期

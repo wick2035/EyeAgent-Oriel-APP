@@ -65,8 +65,8 @@ export async function getAppointmentList(params = {}) {
 			list = list.filter(a => a.status === params.status)
 		}
 
-		// 状态优先级：待就诊 > 已完成 > 已取消
-		const statusPriority = { pending: 1, completed: 2, cancelled: 3, canceled: 3 }
+		// 状态优先级：诊断中 > 待诊断 > 完成诊断 > 已过期 > 已取消
+		const statusPriority = { in_progress: 1, pending: 2, completed: 3, expired: 4, cancelled: 5, canceled: 5 }
 
 		// 先按状态优先级排序，同状态内按时间倒序
 		list.sort((a, b) => {

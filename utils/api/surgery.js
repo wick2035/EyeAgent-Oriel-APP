@@ -68,6 +68,7 @@ function transformSurgeryFromApi(item) {
 		hospitalName: item.hospitalName || '',
 		doctorId: item.doctorId || '',
 		doctorName: item.doctorName || '',
+		doctorTitle: item.doctorTitle || '',
 		scheduledDate: item.scheduledDate || '',
 		operatingRoom: operatingRoomDisplay || '--',
 		status: item.status || 'PRE_OP',

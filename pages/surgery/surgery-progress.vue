@@ -61,7 +61,7 @@
 						<!-- 医院和医生信息 -->
 						<view class="card-meta">
 							<text class="hospital-name">{{ surgery.hospitalName }}</text>
-							<text class="doctor-name">{{ surgery.doctorName }}</text>
+							<text class="doctor-name">{{ surgery.doctorName }}{{ surgery.doctorTitle ? ' ' + surgery.doctorTitle : '' }}</text>
 						</view>
 
 						<!-- 当前阶段 -->

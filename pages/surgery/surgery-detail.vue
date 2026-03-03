@@ -39,7 +39,7 @@
 				<!-- 主刀医生 -->
 				<view class="info-row">
 					<text class="info-label">主刀医生</text>
-					<text class="info-value info-value--doctor">{{ surgery.doctorName || '--' }}{{ surgery.hospitalName ? ' · ' + surgery.hospitalName : '' }}</text>
+					<text class="info-value info-value--doctor">{{ surgery.doctorName || '--' }}{{ surgery.doctorTitle ? ' ' + surgery.doctorTitle : '' }}{{ surgery.hospitalName ? ' · ' + surgery.hospitalName : '' }}</text>
 				</view>
 
 				<!-- 手术总用时 -->
@@ -94,7 +94,7 @@
 						<!-- 内容 -->
 						<view class="step-content">
 							<text class="step-name">{{ phase.name }}</text>
-							<text v-if="phase.startTime" class="step-time">{{ formatPhaseTime(phase.startTime) }}</text>
+							<text v-if="phase.startTime && phase.status !== 'PENDING'" class="step-time">{{ formatPhaseTime(phase.startTime) }}</text>
 						</view>
 					</view>
 				</view>

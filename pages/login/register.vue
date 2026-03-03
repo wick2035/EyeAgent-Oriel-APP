@@ -56,7 +56,7 @@
             />
           </view>
 
-          <!-- 手机号输入 + 验证码按钮 -->
+          <!-- 手机号输入 -->
           <view
             class="input-group"
             :class="{ 'input-group--focus': phoneFocus }"
@@ -78,6 +78,29 @@
               @focus="phoneFocus = true"
               @blur="phoneFocus = false"
             />
+          </view>
+
+          <!-- 邮箱输入 + 验证码按钮 -->
+          <view
+            class="input-group"
+            :class="{ 'input-group--focus': emailFocus }"
+          >
+            <view class="input-icon">
+              <image
+                class="input-icon-img"
+                src="/static/email.svg"
+                mode="aspectFit"
+              />
+            </view>
+            <input
+              class="input-field"
+              type="text"
+              v-model="formData.email"
+              placeholder="请输入邮箱地址"
+              placeholder-class="input-placeholder"
+              @focus="emailFocus = true"
+              @blur="emailFocus = false"
+            />
             <view
               class="sms-btn"
               :class="{ 'sms-btn--disabled': !canSendCode }"
@@ -87,7 +110,7 @@
             </view>
           </view>
 
-          <!-- 验证码输入 -->
+          <!-- 邮箱验证码输入 -->
           <view
             class="input-group"
             :class="{ 'input-group--focus': codeFocus }"
@@ -102,8 +125,8 @@
             <input
               class="input-field"
               type="number"
-              v-model="formData.smsCode"
-              placeholder="请输入验证码"
+              v-model="formData.emailCode"
+              placeholder="请输入邮箱验证码"
               placeholder-class="input-placeholder"
               maxlength="6"
               @focus="codeFocus = true"
@@ -162,29 +185,6 @@
             <view class="picker-arrow">
               <text class="arrow-icon">▼</text>
             </view>
-          </view>
-
-          <!-- 邮箱输入（可选） -->
-          <view
-            class="input-group"
-            :class="{ 'input-group--focus': emailFocus }"
-          >
-            <view class="input-icon">
-              <image
-                class="input-icon-img"
-                src="/static/email.svg"
-                mode="aspectFit"
-              />
-            </view>
-            <input
-              class="input-field"
-              type="text"
-              v-model="formData.email"
-              placeholder="邮箱地址（可选）"
-              placeholder-class="input-placeholder"
-              @focus="emailFocus = true"
-              @blur="emailFocus = false"
-            />
           </view>
 
           <!-- 密码输入 -->
@@ -354,21 +354,21 @@
         <view class="picker-popup__body">
           <view
             class="picker-popup__option"
-            :class="{ 'picker-popup__option--active': tempGender === 'MALE' }"
-            @click="tempGender = 'MALE'"
+            :class="{ 'picker-popup__option--active': tempGender === 'male' }"
+            @click="tempGender = 'male'"
           >
             <text class="picker-popup__option-text">男</text>
-            <text v-if="tempGender === 'MALE'" class="picker-popup__check"
+            <text v-if="tempGender === 'male'" class="picker-popup__check"
               >✓</text
             >
           </view>
           <view
             class="picker-popup__option"
-            :class="{ 'picker-popup__option--active': tempGender === 'FEMALE' }"
-            @click="tempGender = 'FEMALE'"
+            :class="{ 'picker-popup__option--active': tempGender === 'female' }"
+            @click="tempGender = 'female'"
           >
             <text class="picker-popup__option-text">女</text>
-            <text v-if="tempGender === 'FEMALE'" class="picker-popup__check"
+            <text v-if="tempGender === 'female'" class="picker-popup__check"
               >✓</text
             >
           </view>
@@ -382,7 +382,7 @@
 </template>
 
 <script>
-import { sendSms, register } from "@/utils/api/user.js";
+import { sendEmailCode, register } from "@/utils/api/user.js";
 import CustomToast from "@/components/CustomToast.vue";
 import { setToastInstance } from "@/utils/toast.js";
 
@@ -397,7 +397,7 @@ export default {
       formData: {
         patientName: "",
         phone: "",
-        smsCode: "",
+        emailCode: "",
         idNumber: "",
         gender: "",
         email: "",
@@ -431,8 +431,8 @@ export default {
       },
       // 性别选项
       genderOptions: [
-        { label: "男", value: "MALE" },
-        { label: "女", value: "FEMALE" },
+        { label: "男", value: "male" },
+        { label: "女", value: "female" },
       ],
       // 性别选择弹窗
       showGenderPicker: false,
@@ -446,7 +446,7 @@ export default {
     },
     // 是否可以发送验证码
     canSendCode() {
-      return this.countdown === 0 && this.isValidPhone;
+      return this.countdown === 0 && this.formData.email && this.isValidEmail;
     },
     // 发送按钮文本
     sendCodeText() {
@@ -479,7 +479,6 @@ export default {
     },
     // 邮箱格式验证
     isValidEmail() {
-      if (!this.formData.email) return true; // 可选字段
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.formData.email);
     },
     // 性别显示文本
@@ -494,7 +493,7 @@ export default {
       return (
         this.formData.patientName.trim().length >= 2 &&
         this.isValidPhone &&
-        this.formData.smsCode.length === 6 &&
+        this.formData.emailCode.length === 6 &&
         this.validateIdCard(this.formData.idNumber) &&
         this.formData.gender &&
         this.isValidEmail &&
@@ -598,7 +597,7 @@ export default {
 
       // 性别：第17位奇数为男，偶数为女
       const genderCode = parseInt(idNumber.charAt(16));
-      const gender = genderCode % 2 === 1 ? "MALE" : "FEMALE";
+      const gender = genderCode % 2 === 1 ? "male" : "female";
 
       return { birthday, age, gender };
     },
@@ -632,16 +631,15 @@ export default {
       return idNumber.charAt(17).toUpperCase() === checkCode;
     },
 
-    // 发送验证码
+    // 发送邮箱验证码
     async handleSendCode() {
       if (!this.canSendCode) return;
 
-      // 暂时不检查验证码是否发送成功，直接开始倒计时
-      this.$refs.customToast.success("验证码已发送");
+      this.$refs.customToast.success("验证码已发送，请查收邮箱");
       this.startCountdown();
 
-      // 后台调用发送接口（不阻塞）
-      sendSms(this.formData.phone).catch(() => {});
+      // 后台调用发送接口
+      sendEmailCode(this.formData.email).catch(() => {});
     },
 
     // 开始倒计时
@@ -666,12 +664,6 @@ export default {
 
       if (!this.canRegister || this.isLoading) return;
 
-      // 验证码校验（暂时固定值）
-      if (this.formData.smsCode !== "888888") {
-        this.$refs.customToast.error("验证码错误");
-        return;
-      }
-
       // 触发按钮涟漪动画
       this.rippleActive = true;
       setTimeout(() => {
@@ -688,7 +680,8 @@ export default {
           phone: this.formData.phone,
           idNumber: this.formData.idNumber,
           password: this.formData.password,
-          email: this.formData.email || undefined,
+          email: this.formData.email,
+          emailCode: this.formData.emailCode,
         });
 
         if (result.success) {

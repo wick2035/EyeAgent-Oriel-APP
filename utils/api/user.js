@@ -330,15 +330,47 @@ export async function sendSms(phone) {
 }
 
 /**
+ * 发送邮箱验证码
+ * @param {string} email - 邮箱地址
+ * @returns {Promise<object>}
+ */
+export async function sendEmailCode(email) {
+	if (MOCK_MODE) {
+		return new Promise((resolve) => {
+			setTimeout(() => {
+				resolve({ success: true })
+			}, 500)
+		})
+	}
+
+	try {
+		const response = await post('/api/app/base/send-email-code', { email })
+		if (response.code === 200) {
+			return { success: true }
+		}
+		return {
+			success: false,
+			message: response.msg || '发送失败'
+		}
+	} catch (error) {
+		return {
+			success: false,
+			message: error.message || '发送失败'
+		}
+	}
+}
+
+/**
  * 患者注册
  * @param {object} data - 注册信息
  * @param {string} data.patientName - 患者姓名
- * @param {string} data.gender - 性别 MALE/FEMALE
+ * @param {string} data.gender - 性别 male/female
  * @param {number} data.age - 年龄
  * @param {string} data.phone - 手机号
  * @param {string} data.idNumber - 身份证号
  * @param {string} data.password - 密码
- * @param {string} [data.email] - 邮箱（可选）
+ * @param {string} data.email - 邮箱
+ * @param {string} data.emailCode - 邮箱验证码
  * @returns {Promise<object>}
  */
 export async function register(data) {
@@ -368,15 +400,12 @@ export async function register(data) {
 			age: data.age,
 			phone: data.phone,
 			idNumber: data.idNumber,
-			password: data.password
+			password: data.password,
+			email: data.email,
+			emailCode: data.emailCode
 		}
 
-		// 邮箱为可选字段
-		if (data.email) {
-			requestData.email = data.email
-		}
-
-		const response = await post('/patient/register', requestData)
+		const response = await post('/api/app/base/register', requestData)
 
 		if (response.code === 200 && response.data) {
 			// 注册成功，自动登录

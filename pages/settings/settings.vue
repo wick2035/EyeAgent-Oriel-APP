@@ -98,6 +98,26 @@
                 </view>
               </view>
             </view>
+            <view class="menu-item">
+              <view class="menu-item__icon menu-item__icon--palette"></view>
+              <text class="menu-item__text">主题设置</text>
+              <view class="theme-seg">
+                <view
+                  class="theme-seg__opt"
+                  :class="{ 'theme-seg__opt--active': bubbleTheme === 'colorful' }"
+                  @click="changeBubbleTheme('colorful')"
+                >
+                  <text>炫彩</text>
+                </view>
+                <view
+                  class="theme-seg__opt"
+                  :class="{ 'theme-seg__opt--active': bubbleTheme === 'simple' }"
+                  @click="changeBubbleTheme('simple')"
+                >
+                  <text>简明</text>
+                </view>
+              </view>
+            </view>
             <view class="menu-item menu-item--no-border" @click="clearCache">
               <view class="menu-item__icon menu-item__icon--trash"></view>
               <text class="menu-item__text">清除缓存</text>
@@ -173,7 +193,7 @@
 
 <script>
 import { getUserInfo, clearLoginState } from "@/store/user.js";
-import { isDarkMode } from "@/store/theme.js";
+import { isDarkMode, getBubbleTheme, setBubbleTheme } from "@/store/theme.js";
 import { logout } from "@/utils/api/user.js";
 import { setMuted, getMuted } from "@/utils/websocket.js";
 import TopNotificationBar from "@/components/TopNotificationBar.vue";
@@ -202,6 +222,9 @@ export default {
     },
     isDark() {
       return isDarkMode();
+    },
+    bubbleTheme() {
+      return getBubbleTheme();
     },
   },
   onLoad() {
@@ -247,6 +270,10 @@ export default {
       }
     },
 
+    changeBubbleTheme(theme) {
+      setBubbleTheme(theme);
+    },
+
     loadNotifySetting() {
       // getMuted=true 表示静音，notifyEnabled=true 表示开启，逻辑相反
       this.notifyEnabled = !getMuted();
@@ -290,6 +317,7 @@ export default {
               const token = uni.getStorageSync("auth_token");
               const userInfo = uni.getStorageSync("user_info");
               const theme = uni.getStorageSync("app_theme");
+              const bubbleTheme = uni.getStorageSync("chat_bubble_theme");
               const notificationMuted =
                 uni.getStorageSync("notification_muted");
 
@@ -299,6 +327,7 @@ export default {
               if (token) uni.setStorageSync("auth_token", token);
               if (userInfo) uni.setStorageSync("user_info", userInfo);
               if (theme) uni.setStorageSync("app_theme", theme);
+              if (bubbleTheme) uni.setStorageSync("chat_bubble_theme", bubbleTheme);
               if (notificationMuted !== undefined && notificationMuted !== "") {
                 uni.setStorageSync("notification_muted", notificationMuted);
               }
@@ -838,6 +867,35 @@ $accent-coral-light: #ff8a7a;
       border-radius: 50%;
     }
 
+    // 调色盘图标
+    &--palette {
+      border: 2rpx solid #667eea;
+      border-radius: 50%;
+      width: 32rpx;
+      height: 32rpx;
+    }
+    &--palette::before {
+      content: "";
+      width: 12rpx;
+      height: 12rpx;
+      border-radius: 50%;
+      background: #667eea;
+      position: absolute;
+      top: 5rpx;
+      left: 7rpx;
+    }
+    &--palette::after {
+      content: "";
+      width: 18rpx;
+      height: 8rpx;
+      border: 2rpx solid #667eea;
+      border-radius: 0 0 10rpx 10rpx;
+      border-top: none;
+      position: absolute;
+      bottom: 4rpx;
+      left: 5rpx;
+    }
+
     // 版本图标
     &--version {
       border: 2rpx solid $light-text-muted;
@@ -912,6 +970,29 @@ $accent-coral-light: #ff8a7a;
       left: 44rpx;
       background: #fff;
       box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+// ==================== 主题分段控件 ====================
+.theme-seg {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 14rpx;
+  padding: 4rpx;
+
+  &__opt {
+    padding: 8rpx 24rpx;
+    border-radius: 10rpx;
+    font-size: 26rpx;
+    color: $light-text-muted;
+    transition: all 0.2s ease;
+
+    &--active {
+      background: $light-accent;
+      color: #fff;
+      box-shadow: 0 2rpx 8rpx rgba(30, 58, 95, 0.25);
     }
   }
 }
@@ -1097,6 +1178,20 @@ $accent-coral-light: #ff8a7a;
       .custom-switch__thumb {
         background: $accent-coral;
         box-shadow: 0 0 16rpx rgba(255, 107, 91, 0.5);
+      }
+    }
+  }
+
+  .theme-seg {
+    background: rgba(255, 255, 255, 0.08);
+
+    &__opt {
+      color: $dark-text-muted;
+
+      &--active {
+        background: $accent-coral;
+        color: #fff;
+        box-shadow: 0 2rpx 8rpx rgba(255, 107, 91, 0.3);
       }
     }
   }

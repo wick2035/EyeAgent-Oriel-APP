@@ -903,11 +903,7 @@ export default {
 
   &__btn {
     padding: $spacing-sm $spacing-lg;
-    background: linear-gradient(
-      135deg,
-      $color-primary 0%,
-      $color-primary-light 100%
-    );
+    background: #4b86f7;
     color: #fff;
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;

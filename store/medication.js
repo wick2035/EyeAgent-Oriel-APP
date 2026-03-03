@@ -241,6 +241,27 @@ export async function updateReminder(id, data) {
 }
 
 /**
+ * 批量更新提醒（同名药物全部更新）
+ * @param {Array} entries - [{id, data}] 每条提醒各自的更新数据
+ */
+export async function updateReminderBatch(entries) {
+	try {
+		const results = await Promise.all(
+			entries.map(e => medicationApi.updateReminder(e.id, e.data))
+		)
+		const failed = results.filter(r => r.code !== 200)
+		if (failed.length === 0) {
+			await fetchReminders()
+			return { success: true }
+		}
+		return { success: false, message: failed[0].msg || '部分修改失败' }
+	} catch (err) {
+		console.error('批量更新用药提醒失败:', err)
+		return { success: false, error: err }
+	}
+}
+
+/**
  * 删除提醒
  */
 export async function deleteReminder(id) {
@@ -389,6 +410,7 @@ export default {
 	fetchReminders,
 	createReminder,
 	updateReminder,
+	updateReminderBatch,
 	deleteReminder,
 	markAsCompleted,
 	setEditingReminder,

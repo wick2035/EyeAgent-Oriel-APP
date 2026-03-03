@@ -85,6 +85,12 @@
             :content="msg.content"
             :time="msg.time"
             :loading="msg.loading"
+            :streaming="msg.streaming"
+            :statusText="msg.statusText"
+            :uiElements="msg.uiElements"
+            :uiPending="msg.uiPending"
+            @optionClick="handleOptionClick"
+            @productAction="handleProductAction"
           />
         </template>
       </view>
@@ -92,6 +98,13 @@
       <!-- 底部占位 -->
       <view class="content__bottom-space"></view>
     </scroll-view>
+
+    <!-- SSE 流式请求渲染层 -->
+    <view
+      :prop="sseParams"
+      :change:prop="sse.onParamsChange"
+      style="position:absolute;width:0;height:0;overflow:hidden"
+    />
 
     <!-- 底部输入框 -->
     <ChatInput
@@ -133,8 +146,9 @@ import QuickPrompt from "@/components/QuickPrompt.vue";
 import MessageBubble from "@/components/MessageBubble.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import { isDarkMode } from "@/store/theme.js";
+import config from "@/utils/config.js";
+import { clearLoginState } from "@/store/user.js";
 import {
-  sendMessage,
   getQuickPrompts,
   refreshQuickPrompts,
   getMessages,
@@ -155,7 +169,11 @@ export default {
       scrollTop: 0,
       messages: [],
       conversationId: null,
+      sessionId: null,
       isSending: false,
+      sseParams: null,
+      sseBuffer: '',
+      currentAiMsgIndex: -1,
       quickActions: [
         { icon: "🩺", text: "症状自查", type: "symptom" },
         { icon: "💊", text: "用药咨询", type: "medicine" },
@@ -197,6 +215,7 @@ export default {
     if (this.typingTimer) {
       clearTimeout(this.typingTimer);
     }
+    this.sseParams = { action: 'abort', _ts: Date.now() };
   },
   onShow() {
     // #ifdef APP-PLUS
@@ -245,9 +264,11 @@ export default {
     },
 
     handleExitConfirm() {
-      // 清空对话
+      this.sseParams = { action: 'abort', _ts: Date.now() };
       this.messages = [];
       this.conversationId = null;
+      this.sessionId = null;
+      this.isSending = false;
       this.scrollTop = 0;
     },
 
@@ -260,21 +281,23 @@ export default {
     async loadHistoryMessages(conversationId) {
       try {
         uni.showLoading({ title: "加载中..." });
-        const { messages, conversation } = await getMessages(conversationId);
+        const { messages } = await getMessages(conversationId);
 
-        // 保存会话ID
         this.conversationId = conversationId;
+        this.sessionId = null; // 历史续聊时始终传null，让服务端新建Python运行时会话
 
         // 转换消息格式并加载到界面
         this.messages = messages.map((msg) => ({
           type: msg.messageType === "user" ? "user" : "ai",
           content: msg.messageContent,
           time: this.extractTime(msg.createTime),
-          createTime: msg.createTime, // 保存原始时间用于年份分隔符
+          createTime: msg.createTime,
           loading: false,
+          streaming: false,
+          statusText: "",
+          uiElements: msg.uiElements || null,
         }));
 
-        // 滚动到底部
         this.$nextTick(() => {
           this.scrollToBottom();
         });
@@ -318,7 +341,7 @@ export default {
       this.handleSend(prompt.text);
     },
 
-    async handleSend(message) {
+    handleSend(message) {
       if (!message || this.isSending) return;
 
       const now = new Date();
@@ -332,58 +355,42 @@ export default {
         createTime: createTime,
       });
 
-      // 滚动到底部
       this.$nextTick(() => {
         this.scrollToBottom();
       });
 
-      // 添加AI思考中状态
+      // 添加AI等待消息
+      this.currentAiMsgIndex = this.messages.length;
       this.messages.push({
         type: "ai",
         content: "",
         loading: true,
+        streaming: false,
+        statusText: "",
+        uiElements: null,
+        uiPending: false,
       });
 
       this.isSending = true;
+      this.sseBuffer = '';
 
-      try {
-        const response = await sendMessage({
+      // 通过 sseParams 触发 renderjs 发起 SSE 请求
+      const token = uni.getStorageSync(config.storageKeys.token);
+      this.sseParams = {
+        action: 'start',
+        url: config.baseUrl + '/api/app/extra/ai-chat-query',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+          'satoken': token || ''
+        },
+        body: {
           message,
-          conversationId: this.conversationId,
-        });
-
-        // 更新AI消息
-        const lastIndex = this.messages.length - 1;
-        const aiNow = new Date();
-        this.messages[lastIndex] = {
-          type: "ai",
-          content: response.response,
-          time: this.formatTime(aiNow),
-          createTime: this.formatDateTime(aiNow),
-          loading: false,
-        };
-
-        // 保存会话ID
-        if (response.conversationId) {
-          this.conversationId = response.conversationId;
-        }
-      } catch (error) {
-        // 显示错误消息
-        const lastIndex = this.messages.length - 1;
-        const errNow = new Date();
-        this.messages[lastIndex] = {
-          type: "ai",
-          content: "抱歉，网络出现问题，请稍后再试。",
-          time: this.formatTime(errNow),
-          createTime: this.formatDateTime(errNow),
-          loading: false,
-        };
-      } finally {
-        this.isSending = false;
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-      }
+          conversationId: this.conversationId || null,
+          sessionId: this.sessionId || null
+        },
+        _ts: Date.now()
+      };
     },
 
     handleVoice() {
@@ -391,16 +398,400 @@ export default {
     },
 
     handleStop() {
-      // 中断当前请求
+      // 通过 sseParams 触发 renderjs 中断请求
+      this.sseParams = { action: 'abort', _ts: Date.now() };
       this.isSending = false;
-      // 移除最后一条 loading 状态的 AI 消息
+
+      // 处理最后一条AI消息
       if (this.messages.length > 0) {
         const lastMsg = this.messages[this.messages.length - 1];
-        if (lastMsg.type === "ai" && lastMsg.loading) {
-          this.messages.pop();
+        if (lastMsg.type === "ai") {
+          if (lastMsg.loading && !lastMsg.content) {
+            this.messages.pop();
+          } else {
+            lastMsg.loading = false;
+            lastMsg.streaming = false;
+            lastMsg.statusText = "";
+            if (!lastMsg.time) {
+              const now = new Date();
+              lastMsg.time = this.formatTime(now);
+              lastMsg.createTime = this.formatDateTime(now);
+            }
+          }
         }
       }
+
       uni.showToast({ title: "已停止", icon: "none", duration: 1000 });
+    },
+
+    cleanAIContent(text) {
+      if (!text) return "";
+      // ── agent 路由 JSON 被 ```json 代码块包裹的情形 ──
+      // 极早期：仅有 ```json 标记，{ 还未到达
+      text = text.replace(/^\s*```json\s*\n?$/, "");
+      // 完整代码块 + 完整 JSON + 闭合 ```
+      text = text.replace(/^\s*```(?:json)?\s*\n?\{[^}]*"agent"\s*:\s*"[^"]*"[^}]*\}\s*\n?```\s*\n?/g, "");
+      // 完整 JSON，闭合 ``` 还未到达
+      text = text.replace(/^\s*```(?:json)?\s*\n?\{[^}]*"agent"\s*:\s*"[^"]*"[^}]*\}\s*\n?/g, "");
+      // JSON 流式中（} 还未到达）
+      text = text.replace(/^\s*```(?:json)?\s*\n?\{[^}]*"agent"[^}]*/g, "");
+      // ── agent 路由 JSON 裸格式（原有逻辑） ──
+      // 过滤完整 agent 路由 JSON（有闭合 }）
+      text = text.replace(/^\s*\{[^}]*"agent"\s*:\s*"[^"]*"[^}]*\}/g, "");
+      // 过滤不完整 agent 路由 JSON（防止流式中途残留）
+      text = text.replace(/^\s*\{[^}]*"agent"[^}]*/g, "");
+      // 过滤完整 <tool_call> 块（含块内 JSON）
+      text = text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, "");
+      // 过滤不完整 <tool_call> 块（防止流式中途残留）
+      text = text.replace(/<tool_call>[\s\S]*/g, "");
+      // 孤立标签兜底
+      text = text.replace(/<\/?tool_call>/g, "");
+      // 过滤 UI 标记及其后的 JSON 数据
+      text = text.replace(/\[OPTIONS\][\s\S]*/g, "");
+      text = text.replace(/\[PRODUCTS\][\s\S]*/g, "");
+      text = text.replace(/\[PRODUCT_CARDS\][\s\S]*/g, "");
+      // 清理多余换行
+      text = text.replace(/\n{3,}/g, "\n\n").trim();
+      return text;
+    },
+
+    parseUIMarkers(text) {
+      if (!text) return { cleanText: text, uiElements: null };
+
+      const markers = [
+        { tag: '[OPTIONS]', type: 'options' },
+        { tag: '[PRODUCTS]', type: 'product_cards' },
+        { tag: '[PRODUCT_CARDS]', type: 'product_cards' }
+      ];
+
+      for (const marker of markers) {
+        const idx = text.indexOf(marker.tag);
+        if (idx === -1) continue;
+
+        const cleanText = text.substring(0, idx).trim();
+        const afterMarker = text.substring(idx + marker.tag.length).trim();
+
+        // 用括号匹配法提取 JSON（支持 [...] 或 {...}，忽略尾部多余文本）
+        const jsonStr = this._extractJSON(afterMarker);
+        if (!jsonStr) {
+          return { cleanText, uiElements: null };
+        }
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+
+          if (marker.type === 'options') {
+            let options;
+            if (Array.isArray(parsed)) {
+              options = parsed;
+            } else if (parsed && parsed.options && Array.isArray(parsed.options)) {
+              options = parsed.options;
+            } else {
+              return { cleanText, uiElements: null };
+            }
+            return {
+              cleanText,
+              uiElements: { ui_type: 'options', options, product_cards: null }
+            };
+          } else {
+            let products;
+            if (Array.isArray(parsed)) {
+              products = parsed;
+            } else if (parsed && parsed.product_cards && Array.isArray(parsed.product_cards)) {
+              products = parsed.product_cards;
+            } else {
+              return { cleanText, uiElements: null };
+            }
+            return {
+              cleanText,
+              uiElements: { ui_type: 'product_cards', product_cards: products, options: null }
+            };
+          }
+        } catch (e) {
+          return { cleanText, uiElements: null };
+        }
+      }
+
+      return { cleanText: text, uiElements: null };
+    },
+
+    /** 括号计数法提取第一个完整 JSON（[...] 或 {...}），忽略尾部多余文本 */
+    _extractJSON(text) {
+      if (!text) return null;
+
+      // 找到第一个 [ 或 {
+      let startIdx = -1;
+      let openChar = '';
+      let closeChar = '';
+
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] === '[') {
+          startIdx = i; openChar = '['; closeChar = ']'; break;
+        }
+        if (text[i] === '{') {
+          startIdx = i; openChar = '{'; closeChar = '}'; break;
+        }
+      }
+
+      if (startIdx === -1) return null;
+
+      let depth = 0;
+      let inString = false;
+      let escape = false;
+
+      for (let i = startIdx; i < text.length; i++) {
+        const ch = text[i];
+        if (escape) { escape = false; continue; }
+        if (ch === '\\' && inString) { escape = true; continue; }
+        if (ch === '"') { inString = !inString; continue; }
+        if (inString) continue;
+
+        if (ch === openChar) depth++;
+        else if (ch === closeChar) {
+          depth--;
+          if (depth === 0) return text.substring(startIdx, i + 1);
+        }
+      }
+
+      // 未匹配到闭合括号，降级返回整段文本
+      console.warn('[UI] 未找到匹配的闭合括号，尝试整段解析');
+      return text;
+    },
+
+    /** 从流式传输中的不完整 JSON 数组里提取已完整的 {} 对象列表，实现逐个显示 */
+    _extractPartialItems(content, markerTag) {
+      const markerIdx = content.indexOf(markerTag);
+      if (markerIdx === -1) return null;
+
+      const afterMarker = content.substring(markerIdx + markerTag.length).trim();
+      const arrStart = afterMarker.indexOf('[');
+      if (arrStart === -1) return null;
+
+      const inside = afterMarker.substring(arrStart + 1);
+      const items = [];
+      let i = 0;
+
+      while (i < inside.length) {
+        // 跳过空白和逗号
+        while (i < inside.length && /[\s,]/.test(inside[i])) i++;
+        if (i >= inside.length || inside[i] === ']') break;
+        if (inside[i] !== '{') break;
+
+        // 括号计数提取单个完整对象
+        let depth = 0, inStr = false, esc = false, start = i, found = false;
+        for (let j = i; j < inside.length; j++) {
+          const ch = inside[j];
+          if (esc) { esc = false; continue; }
+          if (ch === '\\' && inStr) { esc = true; continue; }
+          if (ch === '"') { inStr = !inStr; continue; }
+          if (inStr) continue;
+          if (ch === '{') depth++;
+          else if (ch === '}') {
+            depth--;
+            if (depth === 0) {
+              try { items.push(JSON.parse(inside.substring(start, j + 1))); } catch(e) {}
+              i = j + 1;
+              found = true;
+              break;
+            }
+          }
+        }
+        if (!found) break;
+      }
+
+      return items.length > 0 ? items : null;
+    },
+
+    getToolCallLabel(toolName) {
+      const labels = {
+        get_doctor_free_time: "正在查询医生排班...",
+        get_prescription: "正在查询处方信息...",
+        book_appointment: "正在预约挂号...",
+        search_products: "正在查询药品...",
+      };
+      return labels[toolName] || "正在查询中...";
+    },
+
+    handleOptionClick(selectedOptions) {
+      if (!selectedOptions || selectedOptions.length === 0) return;
+      const message = selectedOptions.map(opt => opt.label).join('、');
+      this.handleSend(message);
+    },
+
+    handleProductAction(product) {
+      const actionType = product._actionType || product.action_type
+      switch (actionType) {
+        case 'ADD_TO_CART':
+          uni.showToast({ title: '已加入购物车', icon: 'success' });
+          break;
+        case 'VIEW_DETAIL':
+          uni.navigateTo({ url: `/pages/orders/product-detail?id=${product.product_id}` });
+          break;
+        case 'PRESCRIBE':
+          uni.showToast({ title: '请联系医生开具处方', icon: 'none' });
+          break;
+        default:
+          uni.navigateTo({ url: `/pages/orders/product-detail?id=${product.product_id}` });
+      }
+    },
+
+    // ===== renderjs 回调方法 =====
+
+    onSSEChunk(text) {
+      this.sseBuffer += text;
+      this.processSSEBuffer();
+    },
+
+    onSSEComplete() {
+      this.isSending = false;
+      this.$nextTick(() => this.scrollToBottom());
+    },
+
+    onSSEError(errorMsg) {
+      const msg = this.messages[this.currentAiMsgIndex];
+      if (msg) {
+        const now = new Date();
+        msg.loading = false;
+        msg.streaming = false;
+        msg.statusText = "";
+        msg.content = msg.content || "抱歉，网络出现问题，请稍后再试。";
+        msg.time = this.formatTime(now);
+        msg.createTime = this.formatDateTime(now);
+      }
+      this.isSending = false;
+    },
+
+    onSSEStatus(status) {
+      if (status === 401) {
+        clearLoginState();
+        uni.showToast({ title: "登录已过期，请重新登录", icon: "none" });
+        setTimeout(() => uni.reLaunch({ url: "/pages/login/login" }), 1500);
+      }
+    },
+
+    processSSEBuffer() {
+      const lines = this.sseBuffer.split('\n');
+      this.sseBuffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const jsonStr = line.slice(5).trim();
+        if (!jsonStr) continue;
+
+        try {
+          const chunk = JSON.parse(jsonStr);
+          this.handleSSEEvent(chunk);
+        } catch (e) {
+          console.error('[SSE] JSON 解析错误:', e);
+        }
+      }
+    },
+
+    handleSSEEvent(chunk) {
+      const msg = this.messages[this.currentAiMsgIndex];
+      if (!msg) return;
+
+      switch (chunk.event) {
+        case 'start':
+          this.sessionId = chunk.session_id;
+          this.conversationId = chunk.conversation_id;
+          break;
+        case 'token':
+          if (msg.loading) {
+            msg.loading = false;
+            msg.streaming = true;
+          }
+          msg.content += chunk.content;
+          // 检测 UI 标记：支持完整解析和渐进（逐个）解析
+          const c = msg.content;
+          const markerMap = {
+            '[OPTIONS]':       { type: 'options' },
+            '[PRODUCTS]':      { type: 'product_cards' },
+            '[PRODUCT_CARDS]': { type: 'product_cards' },
+          };
+          const markerTag = Object.keys(markerMap).find(k => c.includes(k));
+          if (markerTag && (!msg.uiElements || msg.uiElements._partial)) {
+            // 优先尝试完整解析
+            const parsed = this.parseUIMarkers(c);
+            if (parsed && parsed.uiElements) {
+              this.$set(msg, 'uiElements', parsed.uiElements); // 完整，无 _partial
+              if (msg.uiPending) this.$set(msg, 'uiPending', false);
+            } else {
+              // 渐进解析：提取已完整的 {} 对象，逐个显示
+              const uiType = markerMap[markerTag].type;
+              const partialItems = this._extractPartialItems(c, markerTag);
+              const currentCount = uiType === 'options'
+                ? (msg.uiElements?.options?.length || 0)
+                : (msg.uiElements?.product_cards?.length || 0);
+              if (partialItems && partialItems.length > currentCount) {
+                const uiEl = uiType === 'options'
+                  ? { ui_type: 'options', options: partialItems, product_cards: null, _partial: true }
+                  : { ui_type: 'product_cards', product_cards: partialItems, options: null, _partial: true };
+                this.$set(msg, 'uiElements', uiEl);
+                if (msg.uiPending) this.$set(msg, 'uiPending', false);
+              } else if (!msg.uiPending && !msg.uiElements) {
+                // 连第一个对象都没到，用跳动点占位
+                this.$set(msg, 'uiPending', true);
+              }
+            }
+          }
+          this.$nextTick(() => this.scrollToBottom());
+          break;
+        case 'tool_call':
+          if (chunk.metadata?.status === 'start') {
+            msg.statusText = this.getToolCallLabel(chunk.metadata.tool || '');
+          } else {
+            msg.statusText = '';
+          }
+          break;
+        case 'ui_elements': {
+          // Java 后端透传的 ui_elements 事件可能全部字段为 null，需验证
+          const { event: _evt, ...uiData } = chunk;
+          if (uiData.ui_type && uiData.ui_type !== 'none') {
+            this.$set(msg, 'uiElements', uiData);
+          }
+          break;
+        }
+        case 'done': {
+          const doneNow = new Date();
+          const idx = this.currentAiMsgIndex;
+
+          // 从 token 累积内容解析 UI 标记（唯一数据源）
+          let uiElements = msg.uiElements || null;
+          if (!uiElements && msg.content) {
+            const parsed = this.parseUIMarkers(msg.content);
+            if (parsed && parsed.uiElements) {
+              uiElements = parsed.uiElements;
+            }
+          }
+
+          const updatedMsg = {
+            ...msg,
+            streaming: false,
+            loading: false,
+            statusText: '',
+            uiPending: false,
+            time: this.formatTime(doneNow),
+            createTime: this.formatDateTime(doneNow),
+            // chunk.response 是服务端清洁文本；回退用 cleanAIContent
+            content: chunk.response || this.cleanAIContent(msg.content),
+            uiElements: uiElements,
+          };
+
+          this.$set(this.messages, idx, updatedMsg);
+
+          if (chunk.session_id) this.sessionId = chunk.session_id;
+          if (chunk.conversation_id) this.conversationId = chunk.conversation_id;
+          break;
+        }
+        case 'error':
+          msg.loading = false;
+          msg.streaming = false;
+          msg.statusText = '';
+          msg.uiPending = false;
+          msg.content = msg.content || (chunk.message || 'AI 服务异常');
+          break;
+      }
     },
 
     formatTime(date) {
@@ -504,6 +895,72 @@ export default {
     },
   },
 };
+</script>
+
+<script module="sse" lang="renderjs">
+let abortController = null
+
+export default {
+  methods: {
+    onParamsChange(newVal) {
+      if (!newVal) return
+
+      if (newVal.action === 'abort') {
+        if (abortController) {
+          abortController.abort()
+          abortController = null
+        }
+        return
+      }
+
+      if (newVal.action === 'start') {
+        this.startSSE(newVal)
+      }
+    },
+
+    async startSSE(params) {
+      if (abortController) {
+        abortController.abort()
+      }
+      abortController = new AbortController()
+
+      try {
+        const response = await fetch(params.url, {
+          method: 'POST',
+          headers: params.headers,
+          body: JSON.stringify(params.body),
+          signal: abortController.signal
+        })
+
+        if (response.status === 401) {
+          this.$ownerInstance.callMethod('onSSEStatus', 401)
+          return
+        }
+        if (!response.ok) {
+          this.$ownerInstance.callMethod('onSSEError', '请求失败 (' + response.status + ')')
+          return
+        }
+
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const text = decoder.decode(value, { stream: true })
+          this.$ownerInstance.callMethod('onSSEChunk', text)
+        }
+
+        this.$ownerInstance.callMethod('onSSEComplete')
+      } catch (e) {
+        if (e.name === 'AbortError') return
+        this.$ownerInstance.callMethod('onSSEError', e.message || '网络连接失败')
+      } finally {
+        abortController = null
+      }
+    }
+  }
+}
 </script>
 
 <style lang="scss" scoped>

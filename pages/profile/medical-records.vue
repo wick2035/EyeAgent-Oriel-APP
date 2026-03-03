@@ -368,8 +368,10 @@ export default {
 
     getStatusText(status) {
       const map = {
-        pending: "待就诊",
-        completed: "已完成",
+        pending: "待诊断",
+        in_progress: "正在诊断",
+        completed: "完成诊断",
+        expired: "已过期",
         cancelled: "已取消",
         canceled: "已取消",
       };
@@ -568,6 +570,16 @@ export default {
     &--completed {
       background: rgba(16, 185, 129, 0.1);
       color: $color-success;
+    }
+
+    &--in_progress {
+      background: rgba(59, 130, 246, 0.1);
+      color: $color-info;
+    }
+
+    &--expired {
+      background: rgba(156, 163, 175, 0.1);
+      color: $text-muted;
     }
 
     &--cancelled,

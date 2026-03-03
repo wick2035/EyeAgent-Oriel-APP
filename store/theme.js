@@ -15,7 +15,9 @@ export const themeState = reactive({
 	// 用户设置的主题（light/dark/system）
 	setting: THEME_LIGHT,
 	// 实际应用的主题（light/dark）
-	current: THEME_LIGHT
+	current: THEME_LIGHT,
+	// 气泡主题（colorful/simple）
+	bubbleTheme: 'colorful'
 })
 
 /**
@@ -31,6 +33,32 @@ export function getSystemTheme() {
 }
 
 /**
+ * 初始化气泡主题
+ */
+export function initBubbleTheme() {
+	const saved = uni.getStorageSync(config.storageKeys.bubbleTheme)
+	if (saved === 'simple' || saved === 'colorful') {
+		themeState.bubbleTheme = saved
+	}
+}
+
+/**
+ * 设置气泡主题
+ * @param {string} theme - 'colorful' | 'simple'
+ */
+export function setBubbleTheme(theme) {
+	themeState.bubbleTheme = theme
+	uni.setStorageSync(config.storageKeys.bubbleTheme, theme)
+}
+
+/**
+ * 获取当前气泡主题
+ */
+export function getBubbleTheme() {
+	return themeState.bubbleTheme
+}
+
+/**
  * 初始化主题
  */
 export function initTheme() {
@@ -42,6 +70,9 @@ export function initTheme() {
 
 	// 应用主题
 	applyTheme()
+
+	// 初始化气泡主题
+	initBubbleTheme()
 
 	// 监听系统主题变化
 	uni.onThemeChange && uni.onThemeChange((res) => {
@@ -104,5 +135,8 @@ export default {
 	initTheme,
 	setTheme,
 	isDarkMode,
-	getSystemTheme
+	getSystemTheme,
+	initBubbleTheme,
+	setBubbleTheme,
+	getBubbleTheme
 }

@@ -34,6 +34,7 @@ export default {
 		patientId: 'patient_id',
 		sessionId: 'session_id',
 		theme: 'app_theme',
+		bubbleTheme: 'chat_bubble_theme',
 		dismissedUpdateVersion: 'dismissed_update_version'
 	}
 }

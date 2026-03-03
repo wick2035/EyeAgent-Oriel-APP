@@ -132,6 +132,36 @@
 			</view>
 		</view>
 
+		<!-- 编辑底部操作面板 -->
+		<view
+			v-if="showEditSheet"
+			class="action-sheet-mask"
+			:class="{ 'action-sheet-mask--show': showEditSheetAnim }"
+			@click="closeEditSheet"
+		>
+			<view
+				class="action-sheet"
+				:class="[{ 'action-sheet--show': showEditSheetAnim }, isDark ? 'action-sheet--dark' : '']"
+				@click.stop
+			>
+				<view class="action-sheet__group">
+					<view class="action-sheet__header">
+						<text class="action-sheet__title">修改用药提醒</text>
+						<text class="action-sheet__subtitle">{{ editingTarget ? editingTarget.medicineName : '' }}</text>
+					</view>
+					<view class="action-sheet__item" @click="confirmEditSingle">
+						<text class="action-sheet__item-text action-sheet__item-text--primary">修改本次</text>
+					</view>
+					<view class="action-sheet__item" @click="confirmEditAll">
+						<text class="action-sheet__item-text action-sheet__item-text--primary">修改该项所有提醒</text>
+					</view>
+				</view>
+				<view class="action-sheet__cancel" @click="closeEditSheet">
+					<text class="action-sheet__cancel-text">取消</text>
+				</view>
+			</view>
+		</view>
+
 		<!-- 顶部通知栏 -->
 		<TopNotificationBar />
 	</view>
@@ -150,6 +180,7 @@ import {
 	fetchReminders,
 	createReminder,
 	updateReminder,
+	updateReminderBatch,
 	deleteReminder,
 	deleteReminderBatch,
 	markAsCompleted,
@@ -173,6 +204,10 @@ export default {
 			deletingReminder: null,
 			showDeleteSheet: false,
 			showDeleteSheetAnim: false,
+			showEditSheet: false,
+			showEditSheetAnim: false,
+			editingTarget: null,
+			editMode: 'single',
 			expandedGroups: {
 				today: true,
 				tomorrow: true,
@@ -239,10 +274,37 @@ export default {
 		},
 		handleCardClick(id) {
 			const reminder = this.medicationState.reminders.find(r => r.id === id)
-			if (reminder) {
+			if (!reminder) return
+			this.editingTarget = reminder
+			this.showEditSheet = true
+			this.$nextTick(() => {
+				setTimeout(() => { this.showEditSheetAnim = true }, 30)
+			})
+		},
+		closeEditSheet() {
+			this.showEditSheetAnim = false
+			setTimeout(() => {
+				this.showEditSheet = false
+				this.editingTarget = null
+			}, 300)
+		},
+		confirmEditSingle() {
+			this.editMode = 'single'
+			const reminder = this.editingTarget
+			this.closeEditSheet()
+			setTimeout(() => {
 				setEditingReminder(reminder)
 				this.modalVisible = true
-			}
+			}, 350)
+		},
+		confirmEditAll() {
+			this.editMode = 'all'
+			const reminder = this.editingTarget
+			this.closeEditSheet()
+			setTimeout(() => {
+				setEditingReminder(reminder)
+				this.modalVisible = true
+			}, 350)
 		},
 		async handleToggleComplete(id, complete) {
 			const result = await markAsCompleted(id)
@@ -291,10 +353,35 @@ export default {
 		},
 		async handleSubmit(formData) {
 			if (this.editingReminder) {
-				const result = await updateReminder(this.editingReminder.id, formData)
-				if (result.success) {
-					uni.showToast({ title: '保存成功', icon: 'success' })
+				if (this.editMode === 'all') {
+					// 批量修改同名药物的所有提醒，保留各自原始日期只替换时间
+					const name = this.editingReminder.medicineName
+					const newTime = formData.scheduledTime ? formData.scheduledTime.split('T')[1] : null
+					const entries = this.medicationState.reminders
+						.filter(r => r.medicineName === name)
+						.map(r => {
+							const perData = { ...formData }
+							if (newTime && r.scheduledTime) {
+								const originalDate = r.scheduledTime.split('T')[0]
+								perData.scheduledTime = `${originalDate}T${newTime}`
+							}
+							return { id: r.agendaId, data: perData }
+						})
+					const result = await updateReminderBatch(entries)
+					if (result.success) {
+						uni.showToast({ title: '已修改全部', icon: 'success' })
+					} else {
+						uni.showToast({ title: result.message || '修改失败', icon: 'none' })
+					}
+				} else {
+					const result = await updateReminder(this.editingReminder.agendaId, formData)
+					if (result.success) {
+						uni.showToast({ title: '保存成功', icon: 'success' })
+					} else {
+						uni.showToast({ title: result.message || '修改失败', icon: 'none' })
+					}
 				}
+				this.editMode = 'single'
 			} else {
 				const result = await createReminder(formData)
 				if (result.success) {
@@ -693,6 +780,11 @@ export default {
 			color: $color-error;
 			font-weight: $font-weight-semibold;
 		}
+
+		&--primary {
+			color: $color-primary;
+			font-weight: $font-weight-semibold;
+		}
 	}
 
 	// 取消按钮 - 独立卡片
@@ -755,6 +847,10 @@ export default {
 
 			&--danger-bold {
 				color: $dark-color-accent;
+			}
+
+			&--primary {
+				color: $dark-color-primary;
 			}
 		}
 

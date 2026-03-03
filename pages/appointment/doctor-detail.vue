@@ -1069,15 +1069,19 @@ export default {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   &--selected {
-    background: $color-primary;
-    border-color: $color-primary;
+    background: #5f9ef8;
+    border-color: #5f9ef8;
     transform: scale(1.05);
-    box-shadow: 0 8rpx 20rpx rgba(30, 58, 95, 0.25);
+    box-shadow: 0 8rpx 20rpx rgba(95, 158, 248, 0.25);
 
     .date-item__month,
     .date-item__day,
     .date-item__week {
       color: #fff;
+    }
+
+    .date-item__dot--available {
+      display: none;
     }
   }
 
@@ -1086,7 +1090,7 @@ export default {
   }
 
   &--today:not(.date-item--selected) {
-    border-color: $color-primary;
+    border-color: #5f9ef8;
   }
 
   &__month {
@@ -1149,8 +1153,8 @@ export default {
   transition: all 0.25s ease;
 
   &--selected {
-    border-color: $color-primary;
-    background: rgba(30, 58, 95, 0.03);
+    border-color: #5f9ef8;
+    background: rgba(95, 158, 248, 0.03);
   }
 
   &--disabled {
@@ -1235,7 +1239,7 @@ export default {
   &__check {
     width: 40rpx;
     height: 40rpx;
-    background: $color-primary;
+    background: #4b86f7;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1437,11 +1441,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(
-      135deg,
-      $color-primary 0%,
-      $color-primary-light 100%
-    );
+    background: #4b86f7;
     color: #fff;
     font-size: $font-size-lg;
     font-weight: $font-weight-semibold;

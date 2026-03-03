@@ -33,6 +33,7 @@
 		<scroll-view
 			class="content"
 			scroll-y
+			:lower-threshold="100"
 			@scrolltolower="loadMore"
 			refresher-enabled
 			:refresher-triggered="isRefreshing"
@@ -191,9 +192,11 @@ export default {
 		},
 
 		onRefresh() {
+			this.loading = false
 			this.isRefreshing = true
 			this.pageNum = 1
 			this.hasMore = true
+			this.conversations = []
 			this.loadConversations()
 		},
 
@@ -246,7 +249,8 @@ export default {
 
 <style lang="scss" scoped>
 .page {
-	min-height: 100vh;
+	height: 100vh;
+	overflow: hidden;
 	background: $bg-base;
 	display: flex;
 	flex-direction: column;

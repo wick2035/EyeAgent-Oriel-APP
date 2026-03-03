@@ -389,11 +389,7 @@ export default {
     left: 6rpx;
     width: calc(33.333% - 4rpx);
     height: 64rpx;
-    background: linear-gradient(
-      135deg,
-      $color-primary 0%,
-      $color-primary-light 100%
-    );
+    background: #5f9ef8;
     border-radius: $radius-full;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 0;
@@ -591,11 +587,7 @@ export default {
     }
 
     &--primary {
-      background: linear-gradient(
-        135deg,
-        $color-primary 0%,
-        $color-primary-light 100%
-      );
+      background: #4b86f7;
       color: #fff;
 
       &:active {

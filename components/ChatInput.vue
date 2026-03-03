@@ -1,5 +1,5 @@
 <template>
-	<view class="chat-input" :class="{ 'chat-input--dark': isDark }">
+	<view class="chat-input" :class="{ 'chat-input--dark': isDark, 'chat-input--simple': !isDark && bubbleTheme === 'simple' }">
 		<!-- 功能按钮区域 -->
 		<scroll-view
 			v-if="showQuickActions && quickActions.length"
@@ -72,7 +72,7 @@
 </template>
 
 <script>
-import { isDarkMode } from '@/store/theme.js'
+import { isDarkMode, themeState } from '@/store/theme.js'
 
 export default {
 	name: 'ChatInput',
@@ -111,6 +111,9 @@ export default {
 	computed: {
 		isDark() {
 			return isDarkMode()
+		},
+		bubbleTheme() {
+			return themeState.bubbleTheme
 		},
 		canSend() {
 			return this.inputValue.trim().length > 0 && !this.disabled
@@ -260,6 +263,23 @@ export default {
 		}
 	}
 
+
+	// 简明主题（仅浅色模式）
+	&--simple {
+		.chat-input__btn--send.chat-input__btn--active {
+			background: #4A90E2;
+		}
+
+		.ai-sparkle {
+			&::before {
+				background: #4A90E2;
+			}
+
+			&::after {
+				background: #4A90E2;
+			}
+		}
+	}
 
 	// 深色模式
 	&--dark {

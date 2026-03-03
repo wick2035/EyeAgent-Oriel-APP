@@ -268,8 +268,12 @@ export default {
 		},
 		onTimeChange(e) {
 			const time = e.detail.value
-			const today = new Date().toISOString().split('T')[0]
-			this.formData.scheduledTime = `${today}T${time}:00`
+			// 编辑时保留原提醒日期，新建时用今天
+			const existingDate = this.formData.scheduledTime
+				? this.formData.scheduledTime.split('T')[0]
+				: null
+			const date = existingDate || new Date().toISOString().split('T')[0]
+			this.formData.scheduledTime = `${date}T${time}:00`
 		},
 		handleSubmit() {
 			// 验证

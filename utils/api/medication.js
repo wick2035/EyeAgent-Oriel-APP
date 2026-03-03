@@ -63,18 +63,18 @@ function transformToCreateApi(formData) {
  * @returns {Object} API参数
  */
 function transformToUpdateApi(reminderId, formData) {
-	// 构建content JSON
-	const contentObj = {
+	// 构建remark JSON，与创建时content格式一致
+	const remarkObj = {
 		spec: formData.medicineSpec || '',
 		dosage: formData.dosage || '',
-		frequency: formData.frequency || ''
+		frequency: formData.frequency || '',
+		type: formData.medicineType || 'pill'
 	}
 
 	return {
-		reminderId: reminderId,
+		id: reminderId,
 		title: formData.medicineName || '',
-		content: JSON.stringify(contentObj),
-		medicalType: MEDICINE_TYPE_TO_API[formData.medicineType] || 'PILL',
+		remark: JSON.stringify(remarkObj),
 		scheduledTime: formData.scheduledTime || ''
 	}
 }
@@ -135,10 +135,10 @@ export async function getReminderList(date = null) {
 			startTime = `${date}T00:00:00`
 			endTime = `${date}T23:59:59`
 		} else {
-			// 默认取当月
+			// 默认取今天到未来一年
 			const now = new Date()
-			const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-			const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+			const firstDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+			const lastDay = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
 			const pad = (n) => String(n).padStart(2, '0')
 			startTime = `${firstDay.getFullYear()}-${pad(firstDay.getMonth() + 1)}-${pad(firstDay.getDate())}T00:00:00`
 			endTime = `${lastDay.getFullYear()}-${pad(lastDay.getMonth() + 1)}-${pad(lastDay.getDate())}T23:59:59`
@@ -189,7 +189,7 @@ export async function createReminder(data) {
 export async function updateReminder(id, data) {
 	try {
 		const apiData = transformToUpdateApi(id, data)
-		const res = await post('/api/app/base/modify-medical-notification', apiData)
+		const res = await post('/api/app/extra/modify-medical-reminder', apiData)
 
 		if (res.code === 200) {
 			return { code: 200, msg: 'ok' }
