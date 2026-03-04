@@ -20,51 +20,53 @@
 			</view>
 		</scroll-view>
 
-		<view class="chat-input__wrapper">
-			<!-- AI标识图标 -->
-			<view class="chat-input__ai-icon">
-				<view class="ai-sparkle"></view>
-			</view>
-
-			<!-- 输入框 -->
-			<input
-				class="chat-input__field"
-				type="text"
-				v-model="inputValue"
-				:placeholder="placeholder"
-				:disabled="disabled"
-				:cursor-spacing="20"
-				@input="handleInput"
-				@confirm="handleSend"
-				@focus="handleFocus"
-				@blur="handleBlur"
-				confirm-type="send"
-			/>
-
-			<!-- 右侧按钮组 -->
-			<view class="chat-input__actions">
-				<!-- 语音按钮 -->
-				<view class="chat-input__btn chat-input__btn--voice" @click="handleVoice">
-					<image class="voice-icon" src="@/static/radio.svg" mode="aspectFit" />
+		<view class="glow-border">
+			<view class="chat-input__wrapper">
+				<!-- AI标识图标 -->
+				<view class="chat-input__ai-icon">
+					<view class="ai-sparkle"></view>
 				</view>
 
-				<!-- 停止按钮（仅在AI回复中显示） -->
-				<view
-					v-if="isSending"
-					class="chat-input__btn chat-input__btn--stop"
-					@click="handleStop"
-				>
-					<view class="stop-icon"></view>
-				</view>
+				<!-- 输入框 -->
+				<input
+					class="chat-input__field"
+					type="text"
+					v-model="inputValue"
+					:placeholder="placeholder"
+					:disabled="disabled"
+					:cursor-spacing="20"
+					@input="handleInput"
+					@confirm="handleSend"
+					@focus="handleFocus"
+					@blur="handleBlur"
+					confirm-type="send"
+				/>
 
-				<!-- 发送按钮（AI回复中隐藏） -->
-				<view
-					v-else
-					class="chat-input__btn chat-input__btn--send"
-					:class="{ 'chat-input__btn--active': canSend }"
-					@click="handleSend"
-				>
-					<image class="send-icon" src="@/static/send.svg" mode="aspectFit" />
+				<!-- 右侧按钮组 -->
+				<view class="chat-input__actions">
+					<!-- 语音按钮 -->
+					<view class="chat-input__btn chat-input__btn--voice" @click="handleVoice">
+						<image class="voice-icon" src="@/static/radio.svg" mode="aspectFit" />
+					</view>
+
+					<!-- 停止按钮（仅在AI回复中显示） -->
+					<view
+						v-if="isSending"
+						class="chat-input__btn chat-input__btn--stop"
+						@click="handleStop"
+					>
+						<view class="stop-icon"></view>
+					</view>
+
+					<!-- 发送按钮（AI回复中隐藏） -->
+					<view
+						v-else
+						class="chat-input__btn chat-input__btn--send"
+						:class="{ 'chat-input__btn--active': canSend }"
+						@click="handleSend"
+					>
+						<image class="send-icon" src="@/static/send.svg" mode="aspectFit" />
+					</view>
 				</view>
 			</view>
 		</view>
@@ -191,10 +193,9 @@ export default {
 		align-items: center;
 		padding: $spacing-md $spacing-lg;
 		background: $bg-card;
-		margin: $spacing-md;
-		margin-top: 0;
 		border-radius: $radius-xl;
-		box-shadow: $shadow-md;
+		position: relative;
+		z-index: 1;
 	}
 
 	&__ai-icon {
@@ -266,6 +267,14 @@ export default {
 
 	// 简明主题（仅浅色模式）
 	&--simple {
+		.glow-border {
+			padding: 0;
+
+			&::before {
+				display: none;
+			}
+		}
+
 		.chat-input__btn--send.chat-input__btn--active {
 			background: #4A90E2;
 		}
@@ -287,6 +296,10 @@ export default {
 
 		.chat-input__wrapper {
 			background: $dark-bg-card;
+		}
+
+		.glow-border {
+			box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3);
 		}
 
 		.chat-input__field {
@@ -362,6 +375,42 @@ export default {
 		font-size: 26rpx;
 		color: #1A1A1A;
 		font-weight: 500;
+	}
+}
+
+// 流光边框容器
+.glow-border {
+	position: relative;
+	overflow: hidden;
+	border-radius: $radius-xl;
+	padding: 2rpx;
+	margin: $spacing-md;
+	margin-top: 0;
+	box-shadow: $shadow-md;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 150vw;
+		height: 150vw;
+		transform: translate(-50%, -50%);
+		background: conic-gradient(
+			from 0deg,
+			#E2CBFF 0%,
+			#393BB2 25%,
+			#E2CBFF 50%,
+			#393BB2 75%,
+			#E2CBFF 100%
+		);
+		animation: glow-spin 4s linear infinite;
+	}
+}
+
+@keyframes glow-spin {
+	to {
+		transform: translate(-50%, -50%) rotate(360deg);
 	}
 }
 
