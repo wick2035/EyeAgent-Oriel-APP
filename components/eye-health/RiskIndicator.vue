@@ -83,9 +83,11 @@ export default {
 				width: 100%;
 				height: 100%;
 				border-radius: 50%;
-				transform: translate(-50%, -50%);
-				animation: pulse-ring 2s ease-out infinite;
 				background: inherit;
+				transform: translate(-50%, -50%) scale(1);
+				opacity: 0.6;
+				will-change: transform, opacity;
+				animation: pulse-ring 2s ease-out infinite;
 			}
 		}
 	}
@@ -115,11 +117,11 @@ export default {
 
 @keyframes pulse-ring {
 	0% {
-		box-shadow: 0 0 0 0 currentColor;
-		opacity: 0.6;
+		transform: translate(-50%, -50%) scale(1);
+		opacity: 0.5;
 	}
 	100% {
-		box-shadow: 0 0 0 12rpx currentColor;
+		transform: translate(-50%, -50%) scale(3.5);
 		opacity: 0;
 	}
 }

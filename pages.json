@@ -242,7 +242,10 @@
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "AI医问通",
 		"navigationBarBackgroundColor": "#FAFBFD",
-		"backgroundColor": "#FAFBFD"
+		"backgroundColor": "#FAFBFD",
+		"app-plus": {
+			"scrollIndicator": "none"
+		}
 	},
 	"tabBar": {
 		"custom": true,

@@ -1,8 +1,5 @@
 <template>
 	<view class="tabbar-wrapper">
-		<!-- 顶部通知栏 -->
-		<TopNotificationBar />
-
 		<!-- 底部导航 -->
 		<view class="tabbar" :class="{ 'tabbar--dark': isDark }">
 			<view class="tabbar__bg"></view>
@@ -51,13 +48,9 @@
 <script>
 import { isDarkMode } from '@/store/theme.js'
 import { getUnreadCount } from '@/store/notification.js'
-import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 export default {
 	name: 'TabBar',
-	components: {
-		TopNotificationBar
-	},
 	data() {
 		return {
 			currentIndex: 0,
@@ -121,16 +114,16 @@ export default {
 	right: 0;
 	bottom: 0;
 	z-index: 999;
+	background: rgba(255, 255, 255, 0.85);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
 
 	&__bg {
 		position: absolute;
 		left: 0;
 		right: 0;
 		top: 0;
-		bottom: 0;
-		background: rgba(255, 255, 255, 0.85);
-		backdrop-filter: blur(20px);
-		-webkit-backdrop-filter: blur(20px);
+		height: 0;
 		border-top: 1rpx solid rgba(229, 233, 239, 0.6);
 	}
 
@@ -238,13 +231,14 @@ export default {
 	&__safe-area {
 		height: constant(safe-area-inset-bottom);
 		height: env(safe-area-inset-bottom);
-		background: rgba(255, 255, 255, 0.85);
+		background: inherit;
 	}
 
 	// 深色模式
 	&--dark {
+		background: rgba(22, 27, 34, 0.9);
+
 		.tabbar__bg {
-			background: rgba(22, 27, 34, 0.9);
 			border-top-color: rgba(48, 54, 61, 0.6);
 		}
 
@@ -263,10 +257,6 @@ export default {
 
 		.tabbar__indicator {
 			background: linear-gradient(90deg, #4A90D9, #667EEA);
-		}
-
-		.tabbar__safe-area {
-			background: rgba(22, 27, 34, 0.9);
 		}
 
 		.icon {

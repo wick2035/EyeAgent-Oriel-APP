@@ -1,15 +1,17 @@
 <template>
 	<view class="page" :class="{ 'page--dark': isDark }">
-		<!-- 状态栏占位 -->
-		<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-
-		<!-- 顶部导航栏 -->
-		<view class="navbar">
-			<text class="navbar__title">消息</text>
-			<view v-if="hasUnread" class="navbar__action" @click="handleMarkAllRead">
-				<text class="navbar__action-text">全部已读</text>
+		<!-- 固定顶部栏 -->
+		<view class="fixed-top" :style="{ paddingTop: statusBarHeight + 'px' }">
+			<view class="navbar">
+				<text class="navbar__title">消息</text>
+				<view v-if="hasUnread" class="navbar__action" @click="handleMarkAllRead">
+					<text class="navbar__action-text">全部已读</text>
+				</view>
 			</view>
 		</view>
+
+		<!-- 顶部占位 -->
+		<view class="fixed-top-placeholder" :style="{ height: topBarHeight + 'px' }"></view>
 
 		<!-- 搜索栏 -->
 		<SearchBar
@@ -165,6 +167,7 @@ export default {
 	data() {
 		return {
 			statusBarHeight: 44,
+			topBarHeight: 0,
 			loading: false,
 			isRefreshing: false,
 			searchKeyword: '',
@@ -232,6 +235,9 @@ export default {
 		this.loadData()
 		uni.$on('notification-received', this.onNotificationReceived)
 	},
+	onReady() {
+		this.measureTopBar()
+	},
 	onUnload() {
 		uni.$off('notification-received', this.onNotificationReceived)
 	},
@@ -249,6 +255,14 @@ export default {
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
+		},
+		measureTopBar() {
+			const query = uni.createSelectorQuery().in(this)
+			query.select('.fixed-top').boundingClientRect((rect) => {
+				if (rect) {
+					this.topBarHeight = rect.height
+				}
+			}).exec()
 		},
 
 		async loadData() {
@@ -379,7 +393,16 @@ export default {
 	}
 }
 
-.status-bar {
+.fixed-top {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 10;
+	background: $bg-base;
+}
+
+.fixed-top-placeholder {
 	flex-shrink: 0;
 }
 
@@ -695,6 +718,7 @@ export default {
 
 // ==================== 深色模式 ====================
 .page--dark {
+	.fixed-top { background: $dark-bg-base; }
 	.navbar__title { color: $dark-text-primary; }
 	.navbar__action-text { color: $dark-color-primary; }
 

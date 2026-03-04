@@ -10,7 +10,10 @@
 
       <!-- 顶部导航栏 -->
       <view class="navbar">
-        <view class="navbar__left"></view>
+        <view class="navbar__left" @click="goBack" v-if="hasMessages">
+          <view class="back-icon"></view>
+        </view>
+        <view class="navbar__left" v-else></view>
         <text class="navbar__title">AI问诊</text>
         <view class="navbar__right" @click="showHistory">
           <view class="history-icon"></view>

@@ -515,8 +515,8 @@ export default {
 		height: 36rpx;
 		border: none;
 		border-radius: 0;
-		// 将黑色SVG转为橙色 #FF6A00
-		filter: invert(51%) sepia(100%) saturate(1000%) hue-rotate(1deg) brightness(104%) contrast(106%);
+		// 将黑色SVG转为橙色（降低饱和度和亮度，避免iOS端过亮）
+		filter: invert(48%) sepia(90%) saturate(800%) hue-rotate(2deg) brightness(98%) contrast(96%);
 	}
 
 	&--telemedicine {

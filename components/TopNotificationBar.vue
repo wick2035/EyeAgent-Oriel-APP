@@ -1,8 +1,8 @@
 <template>
 	<view
-		v-if="visible"
+		v-show="visible"
 		class="notification-bar"
-		:class="[`notification-bar--${type}`, { 'notification-bar--dark': isDark }]"
+		:class="[`notification-bar--${type}`, { 'notification-bar--dark': isDark, 'notification-bar--active': active }]"
 		:style="{ top: statusBarHeight + 'px' }"
 		@click="handleClick"
 	>
@@ -24,7 +24,7 @@
 			</view>
 		</view>
 		<!-- 进度条 -->
-		<view class="notification-bar__progress" :style="{ animationDuration: duration + 'ms' }"></view>
+		<view class="notification-bar__progress" :class="{ 'notification-bar__progress--active': active }" :style="{ animationDuration: duration + 'ms' }"></view>
 	</view>
 </template>
 
@@ -37,6 +37,7 @@ export default {
 	data() {
 		return {
 			visible: false,
+			active: false,
 			type: 'system', // system, reserve, medication
 			title: '',
 			content: '',
@@ -81,16 +82,28 @@ export default {
 			this.content = options.content || ''
 			this.duration = options.duration || 5000
 			this.notificationData = options.data || null
+			this.active = false
 			this.visible = true
 
-			// 自动关闭
-			this.timer = setTimeout(() => {
-				this.close()
-			}, this.duration)
+			// 使用 nextTick 确保 iOS 上 DOM 更新完成后再触发动画
+			this.$nextTick(() => {
+				setTimeout(() => {
+					this.active = true
+				}, 50)
+
+				// 自动关闭
+				this.timer = setTimeout(() => {
+					this.close()
+				}, this.duration)
+			})
 		},
 
 		close() {
-			this.visible = false
+			this.active = false
+			// 等待退出动画完成后隐藏
+			setTimeout(() => {
+				this.visible = false
+			}, 300)
 			this.clearTimer()
 		},
 
@@ -121,7 +134,17 @@ export default {
 	border-radius: 24rpx;
 	overflow: hidden;
 	box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
-	animation: slideDown 0.3s ease-out;
+	-webkit-transform: translateY(-100%);
+	transform: translateY(-100%);
+	opacity: 0;
+	-webkit-transition: -webkit-transform 0.3s ease-out, opacity 0.3s ease-out;
+	transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+
+	&--active {
+		-webkit-transform: translateY(0);
+		transform: translateY(0);
+		opacity: 1;
+	}
 
 	&--system {
 		background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
@@ -194,6 +217,10 @@ export default {
 	&__progress {
 		height: 4rpx;
 		background: rgba(255, 255, 255, 0.3);
+		width: 100%;
+	}
+
+	&__progress--active {
 		animation: progress linear forwards;
 	}
 
@@ -216,6 +243,7 @@ export default {
 		position: absolute;
 		top: 50%;
 		left: 50%;
+		-webkit-transform: translate(-50%, -60%);
 		transform: translate(-50%, -60%);
 		width: 4rpx;
 		height: 14rpx;
@@ -227,6 +255,7 @@ export default {
 		position: absolute;
 		bottom: 6rpx;
 		left: 50%;
+		-webkit-transform: translateX(-50%);
 		transform: translateX(-50%);
 		width: 4rpx;
 		height: 4rpx;
@@ -276,6 +305,7 @@ export default {
 		position: absolute;
 		top: -6rpx;
 		left: 50%;
+		-webkit-transform: translateX(-50%);
 		transform: translateX(-50%);
 		width: 14rpx;
 		height: 6rpx;
@@ -288,6 +318,7 @@ export default {
 		position: absolute;
 		top: 50%;
 		left: 50%;
+		-webkit-transform: translate(-50%, -50%);
 		transform: translate(-50%, -50%);
 		font-size: 20rpx;
 		color: #fff;
@@ -295,18 +326,7 @@ export default {
 	}
 }
 
-// 动画
-@keyframes slideDown {
-	from {
-		transform: translateY(-100%);
-		opacity: 0;
-	}
-	to {
-		transform: translateY(0);
-		opacity: 1;
-	}
-}
-
+// 进度条动画
 @keyframes progress {
 	from {
 		width: 100%;

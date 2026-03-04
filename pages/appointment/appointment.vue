@@ -1,46 +1,49 @@
 <template>
   <view class="page" :class="{ 'page--dark': isDark }">
-    <!-- 顶部渐变背景 -->
-    <view class="page-bg"></view>
+    <!-- 顶部固定区域 -->
+    <view class="fixed-header">
+      <!-- 状态栏占位 -->
+      <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
 
-    <!-- 状态栏占位 -->
-    <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+      <!-- 顶部导航栏 -->
+      <view class="navbar">
+        <text class="navbar__title">预约挂号</text>
+      </view>
 
-    <!-- 顶部导航栏 -->
-    <view class="navbar">
-      <text class="navbar__title">预约挂号</text>
-    </view>
+      <!-- 搜索栏 -->
+      <view class="search-section">
+        <view class="search-bar">
+          <view class="search-bar__icon"></view>
+          <input
+            class="search-bar__input"
+            placeholder="搜索医院、科室、医生"
+            placeholder-class="search-bar__placeholder"
+            v-model="searchKeyword"
+            @confirm="handleSearch"
+          />
+          <view
+            v-if="searchKeyword"
+            class="search-bar__clear"
+            @click="clearSearch"
+          ></view>
+        </view>
+      </view>
 
-    <!-- 搜索栏 -->
-    <view class="search-section">
-      <view class="search-bar">
-        <view class="search-bar__icon"></view>
-        <input
-          class="search-bar__input"
-          placeholder="搜索医院、科室、医生"
-          placeholder-class="search-bar__placeholder"
-          v-model="searchKeyword"
-          @confirm="handleSearch"
-        />
-        <view
-          v-if="searchKeyword"
-          class="search-bar__clear"
-          @click="clearSearch"
-        ></view>
+      <!-- 城市定位 -->
+      <view class="location-bar">
+        <view class="location-bar__left">
+          <image class="location-bar__icon" src="@/static/location.svg" mode="aspectFit" />
+          <text class="location-bar__city">{{ currentCity }}</text>
+        </view>
+        <view class="location-bar__action" @click="switchCity">
+          <text>切换</text>
+          <view class="location-bar__arrow"></view>
+        </view>
       </view>
     </view>
 
-    <!-- 城市定位 -->
-    <view class="location-bar">
-      <view class="location-bar__left">
-        <image class="location-bar__icon" src="@/static/location.svg" mode="aspectFit" />
-        <text class="location-bar__city">{{ currentCity }}</text>
-      </view>
-      <view class="location-bar__action" @click="switchCity">
-        <text>切换</text>
-        <view class="location-bar__arrow"></view>
-      </view>
-    </view>
+    <!-- 头部占位（防止内容被固定头部遮挡） -->
+    <view class="header-placeholder" :style="{ height: headerHeight + 'px' }"></view>
 
     <!-- 内容区域 -->
     <scroll-view class="content" scroll-y @scrolltolower="loadMore">
@@ -240,6 +243,7 @@ export default {
   data() {
     return {
       statusBarHeight: 44,
+      headerHeight: 0,
       searchKeyword: "",
       currentCity: "深圳市",
       loading: true,
@@ -413,6 +417,15 @@ export default {
     uni.hideTabBar({ animation: false });
     // #endif
   },
+  onReady() {
+    this.$nextTick(() => {
+      uni.createSelectorQuery().in(this).select('.fixed-header').boundingClientRect((rect) => {
+        if (rect) {
+          this.headerHeight = rect.height;
+        }
+      }).exec();
+    });
+  },
   methods: {
     getStatusBarHeight() {
       const sysInfo = uni.getSystemInfoSync();
@@ -531,14 +544,19 @@ export default {
   position: relative;
 }
 
-.page-bg {
-  position: absolute;
+// 固定头部容器
+.fixed-header {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 400rpx;
+  z-index: 100;
   background: linear-gradient(180deg, #e8f4fd 0%, $bg-base 100%);
-  pointer-events: none;
+}
+
+// 头部占位
+.header-placeholder {
+  flex-shrink: 0;
 }
 
 .status-bar {
@@ -996,7 +1014,7 @@ export default {
 .page--dark {
   background: $dark-bg-base;
 
-  .page-bg {
+  .fixed-header {
     background: linear-gradient(
       180deg,
       rgba(74, 144, 217, 0.1) 0%,

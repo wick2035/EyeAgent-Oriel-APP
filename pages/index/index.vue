@@ -3,24 +3,26 @@
     <!-- 顶部渐变背景 -->
     <view class="page__bg"></view>
 
-    <!-- 状态栏占位 -->
-    <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-
-    <!-- 头部区域 -->
-    <view class="header">
-      <view class="header__left">
-        <text class="header__greeting">{{ greeting }}</text>
-        <text class="header__name">欢迎使用AI医问通</text>
-      </view>
-      <view class="header__right">
-        <view class="header__notify" @click="goToMessages">
-          <image class="notify-icon" src="@/static/roll.svg" mode="aspectFit" />
-          <view v-if="unreadCount > 0" class="notify-badge">{{
-            unreadCount > 99 ? "99+" : unreadCount
-          }}</view>
+    <!-- 固定顶部栏 -->
+    <view class="fixed-top" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <view class="header">
+        <view class="header__left">
+          <text class="header__greeting">{{ greeting }}</text>
+          <text class="header__name">欢迎使用AI医问通</text>
+        </view>
+        <view class="header__right">
+          <view class="header__notify" @click="goToMessages">
+            <image class="notify-icon" src="@/static/roll.svg" mode="aspectFit" />
+            <view v-if="unreadCount > 0" class="notify-badge">{{
+              unreadCount > 99 ? "99+" : unreadCount
+            }}</view>
+          </view>
         </view>
       </view>
     </view>
+
+    <!-- 顶部占位 -->
+    <view class="fixed-top-placeholder" :style="{ height: topBarHeight + 'px' }"></view>
 
     <!-- 搜索栏 -->
     <view class="search-bar" @click="goToSearch">
@@ -146,6 +148,7 @@ export default {
   data() {
     return {
       statusBarHeight: 44,
+      topBarHeight: 0,
       services: [
         {
           name: "AI问诊",
@@ -200,6 +203,9 @@ export default {
     // 监听全局更新弹窗事件
     uni.$on("show-update-dialog", this.showUpdateDialog);
   },
+  onReady() {
+    this.measureTopBar();
+  },
   onUnload() {
     uni.$off("show-update-dialog", this.showUpdateDialog);
   },
@@ -212,6 +218,14 @@ export default {
     getStatusBarHeight() {
       const sysInfo = uni.getSystemInfoSync();
       this.statusBarHeight = sysInfo.statusBarHeight || 44;
+    },
+    measureTopBar() {
+      const query = uni.createSelectorQuery().in(this);
+      query.select('.fixed-top').boundingClientRect((rect) => {
+        if (rect) {
+          this.topBarHeight = rect.height;
+        }
+      }).exec();
     },
     async loadNews() {
       try {
@@ -336,9 +350,29 @@ export default {
   }
 }
 
-.status-bar {
-  position: relative;
-  z-index: 1;
+.fixed-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: #e8f4fd;
+  padding-bottom: 20rpx;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -24rpx;
+    left: 0;
+    right: 0;
+    height: 24rpx;
+    background: linear-gradient(180deg, rgba(232, 244, 253, 0.6) 0%, transparent 100%);
+    pointer-events: none;
+  }
+}
+
+.fixed-top-placeholder {
+  width: 100%;
 }
 
 .header {
@@ -526,9 +560,9 @@ export default {
   }
 
   &--appointment {
-    // 使用 filter 将黑色 SVG 转为 $color-warning 橙色
-    filter: invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg)
-      brightness(101%) contrast(96%);
+    // 使用 filter 将黑色 SVG 转为 $color-warning 橙色（降低饱和度和亮度，避免iOS端过亮）
+    filter: invert(63%) sepia(52%) saturate(1600%) hue-rotate(2deg)
+      brightness(96%) contrast(93%);
   }
 
   &--cloud {
@@ -637,6 +671,13 @@ export default {
 
 // 深色模式适配
 .page--dark {
+  .fixed-top {
+    background: $dark-bg-base;
+
+    &::after {
+      background: linear-gradient(180deg, rgba($dark-bg-base, 0.6) 0%, transparent 100%);
+    }
+  }
   .header__greeting {
     color: $dark-text-secondary;
   }
