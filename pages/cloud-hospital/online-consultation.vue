@@ -32,7 +32,11 @@
 				>
 					<!-- 头像 -->
 					<view class="doctor-card__avatar">
-						<text class="doctor-card__avatar-text">{{ doctor.name.charAt(0) }}</text>
+						<image
+							:src="doctor.avatar || '/static/temporary/women.jpg'"
+							class="doctor-card__avatar-img"
+							mode="aspectFill"
+						/>
 						<view v-if="doctor.online" class="doctor-card__online"></view>
 					</view>
 
@@ -221,10 +225,10 @@ export default {
 		flex-shrink: 0;
 	}
 
-	&__avatar-text {
-		font-size: $font-size-xl;
-		color: #fff;
-		font-weight: $font-weight-bold;
+	&__avatar-img {
+		width: 100%;
+		height: 100%;
+		border-radius: inherit;
 	}
 
 	&__online {

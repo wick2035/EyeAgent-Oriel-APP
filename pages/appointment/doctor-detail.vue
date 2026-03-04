@@ -18,9 +18,11 @@
       <view class="doctor-info">
         <view class="doctor-info__main">
           <view class="doctor-info__avatar">
-            <text class="doctor-info__avatar-text">{{
-              doctor?.name?.charAt(0) || "医"
-            }}</text>
+            <image
+              :src="doctor?.avatar || '/static/temporary/male.jpg'"
+              class="doctor-info__avatar-img"
+              mode="aspectFill"
+            />
           </view>
           <view class="doctor-info__detail">
             <view class="doctor-info__header">
@@ -525,9 +527,9 @@ export default {
     async loadSchedule(dateStr) {
       // 如果已有缓存数据，直接使用
       if (this.scheduleData[dateStr]) {
-        // 自动选中第一个可约时段
+        // 自动选中第一个可约时段（跳过已过和已满）
         const firstAvailable = this.scheduleData[dateStr].find(
-          (p) => p.status !== "full"
+          (p) => p.status !== "full" && p.status !== "passed"
         );
         if (firstAvailable) {
           this.selectedPeriod = firstAvailable.id;
@@ -541,9 +543,9 @@ export default {
         if (res.code === 200 && res.data?.schedule) {
           this.scheduleData = { ...this.scheduleData, ...res.data.schedule };
 
-          // 自动选中第一个可约时段
+          // 自动选中第一个可约时段（跳过已过和已满）
           const periods = this.scheduleData[dateStr] || [];
-          const firstAvailable = periods.find((p) => p.status !== "full");
+          const firstAvailable = periods.find((p) => p.status !== "full" && p.status !== "passed");
           if (firstAvailable) {
             this.selectedPeriod = firstAvailable.id;
           }
@@ -627,6 +629,13 @@ export default {
     cancelBooking(period) {
       if (!period.agendaId) {
         uni.showToast({ title: "未找到预约记录", icon: "none" });
+        return;
+      }
+      // 距就诊时间不足3小时则禁止取消
+      const appointmentTime = new Date(`${this.selectedDate}T${period.startTime}:00`);
+      const hoursLeft = (appointmentTime.getTime() - Date.now()) / (1000 * 60 * 60);
+      if (hoursLeft < 3) {
+        uni.showToast({ title: "距就诊时间不足3小时，无法取消预约", icon: "none" });
         return;
       }
       this.cancelingAppointment = {
@@ -867,10 +876,10 @@ export default {
     box-shadow: 0 8rpx 24rpx rgba(30, 58, 95, 0.2);
   }
 
-  &__avatar-text {
-    font-size: 64rpx;
-    color: #fff;
-    font-weight: $font-weight-bold;
+  &__avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
   }
 
   &__detail {
@@ -1069,10 +1078,10 @@ export default {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   &--selected {
-    background: #5f9ef8;
-    border-color: #5f9ef8;
+    background: #3388ff;
+    border-color: #3388ff;
     transform: scale(1.05);
-    box-shadow: 0 8rpx 20rpx rgba(95, 158, 248, 0.25);
+    box-shadow: 0 8rpx 20rpx rgba(51, 136, 255, 0.25);
 
     .date-item__month,
     .date-item__day,
@@ -1090,7 +1099,7 @@ export default {
   }
 
   &--today:not(.date-item--selected) {
-    border-color: #5f9ef8;
+    border-color: #3388ff;
   }
 
   &__month {
@@ -1153,8 +1162,8 @@ export default {
   transition: all 0.25s ease;
 
   &--selected {
-    border-color: #5f9ef8;
-    background: rgba(95, 158, 248, 0.03);
+    border-color: #3388ff;
+    background: rgba(51, 136, 255, 0.03);
   }
 
   &--disabled {
@@ -1239,7 +1248,7 @@ export default {
   &__check {
     width: 40rpx;
     height: 40rpx;
-    background: #4b86f7;
+    background: #3388ff;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1441,7 +1450,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #4b86f7;
+    background: #3388ff;
     color: #fff;
     font-size: $font-size-lg;
     font-weight: $font-weight-semibold;

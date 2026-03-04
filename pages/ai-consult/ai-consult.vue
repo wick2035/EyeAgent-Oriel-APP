@@ -10,9 +10,7 @@
 
       <!-- 顶部导航栏 -->
       <view class="navbar">
-        <view class="navbar__left" @click="goBack">
-          <view class="back-icon"></view>
-        </view>
+        <view class="navbar__left"></view>
         <text class="navbar__title">AI问诊</text>
         <view class="navbar__right" @click="showHistory">
           <view class="history-icon"></view>
@@ -1013,8 +1011,8 @@ export default {
   }
 
   &__title {
-    font-size: $font-size-lg;
-    font-weight: $font-weight-semibold;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
     color: $text-primary;
   }
 }

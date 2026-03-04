@@ -70,9 +70,11 @@
           >
             <!-- 医院Logo -->
             <view class="hospital-card__logo">
-              <text class="hospital-card__logo-text">{{
-                hospital.name.charAt(0)
-              }}</text>
+              <image
+                class="hospital-card__logo-img"
+                src="/static/hospital-default.svg"
+                mode="aspectFit"
+              />
             </view>
 
             <!-- 医院信息 -->
@@ -500,6 +502,10 @@ export default {
       return (meters / 1000).toFixed(1) + "km";
     },
 
+    onLogoError(hospital) {
+      this.$set(hospital, '_logoFailed', true);
+    },
+
     goToDepartments(hospital) {
       if (!hospital.isOpen) {
         uni.showToast({ title: "该医院暂停预约", icon: "none" });
@@ -788,13 +794,18 @@ export default {
   &__logo {
     width: 120rpx;
     height: 120rpx;
-    background: linear-gradient(135deg, #e8f4fd 0%, #d0e8f9 100%);
     border-radius: $radius-md;
+    border: 2rpx solid rgba(30, 58, 95, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    border: 2rpx solid rgba(30, 58, 95, 0.08);
+  }
+
+  &__logo-img {
+    width: 100%;
+    height: 100%;
+    border-radius: $radius-md;
   }
 
   &__logo-text {
@@ -903,7 +914,7 @@ export default {
 
   &__btn {
     padding: $spacing-sm $spacing-lg;
-    background: #4b86f7;
+    background: #3388ff;
     color: #fff;
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;

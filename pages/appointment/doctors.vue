@@ -56,9 +56,11 @@
         >
           <!-- 头像区 -->
           <view class="doctor-card__avatar">
-            <text class="doctor-card__avatar-text">{{
-              doctor.name.charAt(0)
-            }}</text>
+            <image
+              :src="doctor.avatar || '/static/temporary/male.jpg'"
+              class="doctor-card__avatar-img"
+              mode="aspectFill"
+            />
           </view>
 
           <!-- 信息区 -->
@@ -389,7 +391,7 @@ export default {
     left: 6rpx;
     width: calc(33.333% - 4rpx);
     height: 64rpx;
-    background: #5f9ef8;
+    background: #479fff;
     border-radius: $radius-full;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 0;
@@ -439,10 +441,10 @@ export default {
     flex-shrink: 0;
   }
 
-  &__avatar-text {
-    font-size: $font-size-3xl;
-    color: #fff;
-    font-weight: $font-weight-bold;
+  &__avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
   }
 
   &__info {
@@ -587,7 +589,7 @@ export default {
     }
 
     &--primary {
-      background: #4b86f7;
+      background: #3388ff;
       color: #fff;
 
       &:active {

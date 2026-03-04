@@ -92,7 +92,7 @@
 
 		<!-- 底部操作栏 -->
 		<view class="bottom-bar">
-			<template v-if="isPending">
+			<template v-if="isPending && canCancel">
 				<view class="btn-secondary" @click="handleCancel">
 					<text>取消预约</text>
 				</view>
@@ -101,7 +101,7 @@
 					<text>导航到医院</text>
 				</view>
 			</template>
-			<template v-else-if="isInProgress">
+			<template v-else-if="isPending || isInProgress">
 				<view class="btn-primary btn-primary--full" @click="handleNavigate">
 					<view class="nav-icon"></view>
 					<text>导航到医院</text>
@@ -187,6 +187,12 @@ export default {
 		},
 		isCancelled() {
 			return this.appointment.status === 'cancelled' || this.appointment.status === 'CANCELLED' || this.appointment.status === 'canceled' || this.appointment.status === 'CANCELED'
+		},
+		// 距就诊时间>=3小时才允许取消
+		canCancel() {
+			if (!this.appointment.startTime) return false
+			const hoursLeft = (new Date(this.appointment.startTime).getTime() - Date.now()) / (1000 * 60 * 60)
+			return hoursLeft >= 3
 		},
 		// 状态区域样式
 		statusSectionClass() {
@@ -399,10 +405,11 @@ export default {
 
 <style lang="scss" scoped>
 .page {
-	min-height: 100vh;
+	height: 100vh;
 	background: $bg-base;
 	display: flex;
 	flex-direction: column;
+	overflow: hidden;
 }
 
 // 隐藏的canvas（仅用于生成二维码图片）

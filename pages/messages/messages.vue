@@ -88,7 +88,11 @@
 					>
 						<!-- 医生头像 -->
 						<view class="conversation-row__doctor-avatar">
-							<text class="conversation-row__doctor-initial">{{ doctor.name.charAt(0) }}</text>
+							<image
+								:src="doctor.avatar || '/static/temporary/women.jpg'"
+								class="conversation-row__doctor-avatar-img"
+								mode="aspectFill"
+							/>
 							<view v-if="doctor.online" class="conversation-row__online-dot"></view>
 						</view>
 
@@ -508,10 +512,10 @@ export default {
 		position: relative;
 	}
 
-	&__doctor-initial {
-		font-size: $font-size-xl;
-		color: #FFFFFF;
-		font-weight: $font-weight-semibold;
+	&__doctor-avatar-img {
+		width: 100%;
+		height: 100%;
+		border-radius: inherit;
 	}
 
 	&__online-dot {

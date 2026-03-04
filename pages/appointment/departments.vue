@@ -51,32 +51,7 @@
 						@click="goToDoctors(dept)"
 					>
 						<view class="hot-item__icon" :class="'hot-item__icon--' + dept.icon">
-							<view class="eye-icon" v-if="dept.icon === 'cataract'">
-								<view class="eye-icon__outer"></view>
-								<view class="eye-icon__inner"></view>
-								<view class="eye-icon__pupil"></view>
-							</view>
-							<view class="eye-icon" v-else-if="dept.icon === 'glaucoma'">
-								<view class="eye-icon__outer"></view>
-								<view class="eye-icon__pressure"></view>
-							</view>
-							<view class="eye-icon" v-else-if="dept.icon === 'retina'">
-								<view class="eye-icon__outer"></view>
-								<view class="eye-icon__retina"></view>
-							</view>
-							<view class="eye-icon" v-else-if="dept.icon === 'refraction'">
-								<view class="glasses-icon"></view>
-							</view>
-							<view class="eye-icon" v-else-if="dept.icon === 'pediatric'">
-								<view class="child-icon"></view>
-							</view>
-							<view class="eye-icon" v-else-if="dept.icon === 'dryeye'">
-								<view class="drop-icon"></view>
-							</view>
-							<view class="eye-icon" v-else>
-								<view class="eye-icon__outer"></view>
-								<view class="eye-icon__inner"></view>
-							</view>
+							<image class="dept-img-icon" src="@/static/icons-eye.png" mode="aspectFit" />
 						</view>
 						<text class="hot-item__name">{{ dept.name }}</text>
 						<view class="hot-item__badge" :class="{ 'hot-item__badge--warning': dept.todayAvailable < 10 }">
@@ -113,7 +88,7 @@
 						@click="goToDoctors(dept)"
 					>
 						<view class="dept-card__icon" :class="'dept-card__icon--' + dept.icon">
-							<view class="eye-simple"></view>
+							<image class="dept-img-icon" src="@/static/icons-eye.png" mode="aspectFit" />
 						</view>
 						<view class="dept-card__info">
 							<view class="dept-card__header">
@@ -493,6 +468,11 @@ export default {
 			color: $color-warning;
 		}
 	}
+}
+
+.dept-img-icon {
+	width: 52rpx;
+	height: 52rpx;
 }
 
 // 眼睛图标
