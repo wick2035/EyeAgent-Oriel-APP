@@ -1086,12 +1086,7 @@ export default {
     background: $dark-bg-card;
 
     &__logo {
-      background: linear-gradient(
-        135deg,
-        rgba(74, 144, 217, 0.15) 0%,
-        rgba(74, 144, 217, 0.1) 100%
-      );
-      border-color: rgba(74, 144, 217, 0.2);
+      background: #fff;
     }
     &__logo-text {
       color: $dark-color-primary;

@@ -20,7 +20,7 @@
             class="navbar__favorite-icon" 
             src="/static/shoucang.svg"
             mode="aspectFit"
-            :style="{ filter: isFavorite ? 'invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg) brightness(101%) contrast(96%)' : 'none' }"
+            :style="{ filter: isFavorite ? 'invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg) brightness(101%) contrast(96%)' : darkIconFilter }"
           />
         </view>
         <view class="navbar__action" @click="handleShare">
@@ -94,7 +94,7 @@
               class="action-btn__icon" 
               src="/static/like.svg"
               mode="aspectFit"
-              :style="{ filter: isLiked ? 'invert(37%) sepia(93%) saturate(1719%) hue-rotate(335deg) brightness(101%) contrast(101%)' : 'none' }"
+              :style="{ filter: isLiked ? 'invert(37%) sepia(93%) saturate(1719%) hue-rotate(335deg) brightness(101%) contrast(101%)' : darkIconFilter }"
             />
             <text class="action-btn__text" :style="{ color: isLiked ? '#FF6B5B' : '' }">{{ formatCount(article.likeCount) }}</text>
           </view>
@@ -103,7 +103,7 @@
               class="action-btn__icon" 
               src="/static/shoucang.svg"
               mode="aspectFit"
-              :style="{ filter: isFavorite ? 'invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg) brightness(101%) contrast(96%)' : 'none' }"
+              :style="{ filter: isFavorite ? 'invert(67%) sepia(54%) saturate(2293%) hue-rotate(360deg) brightness(101%) contrast(96%)' : darkIconFilter }"
             />
             <text class="action-btn__text">收藏</text>
           </view>
@@ -194,6 +194,9 @@ export default {
   computed: {
     isDark() {
       return isDarkMode()
+    },
+    darkIconFilter() {
+      return this.isDark ? 'brightness(0) invert(0.7)' : 'none'
     },
     processedContent() {
       if (!this.article || !this.article.content) {
@@ -962,12 +965,29 @@ export default {
 
 // 深色模式适配
 .page--dark {
+  .status-bar {
+    background: rgba(22, 27, 34, 0.95);
+  }
+
   .navbar {
     background: rgba(22, 27, 34, 0.95);
   }
 
   .navbar__title {
     color: $dark-text-primary;
+  }
+
+  .navbar__back-icon {
+    border-left-color: $dark-text-primary;
+    border-bottom-color: $dark-text-primary;
+  }
+
+  .navbar__share-icon {
+    filter: brightness(0) invert(0.7);
+  }
+
+  .action-btn__icon {
+    filter: brightness(0) invert(0.7);
   }
 
   .progress-bar__fill {

@@ -1,7 +1,7 @@
 <template>
 	<view class="page" :class="{ 'page--dark': isDark }">
 		<!-- 自定义导航栏 -->
-		<view class="navbar">
+		<view class="navbar" :class="{ 'navbar--dark': isDark }">
 			<view class="navbar__status" :style="{ height: statusBarHeight + 'px' }"></view>
 			<view class="navbar__content">
 				<view class="navbar__back" @click="goBack">
