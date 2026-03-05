@@ -2,8 +2,8 @@
     "name" : "EyeAgent",
     "appid" : "__UNI__02B5478",
     "description" : "",
-    "versionName" : "1.0.1",
-    "versionCode" : "100",
+    "versionName" : "1.0.2",
+    "versionCode" : 101,
     "transformPx" : false,
     /* 5+App特有相关 */
     "app-plus" : {
@@ -23,7 +23,9 @@
             "delay" : 0
         },
         /* 模块配置 */
-        "modules" : {},
+        "modules" : {
+            "Push" : {}
+        },
         /* 应用发布信息 */
         "distribute" : {
             /* android打包配置 */
@@ -48,7 +50,10 @@
             },
             /* ios打包配置 */
             "ios" : {
-                "dSYMs" : false
+                "dSYMs" : false,
+                "privacyDescription" : {
+                    "NSUserNotificationsUsageDescription" : "用于向您发送用药提醒和诊疗通知，保障您的用药安全和及时获取医疗信息。"
+                }
             },
             /* SDK配置 */
             "sdkConfigs" : {},

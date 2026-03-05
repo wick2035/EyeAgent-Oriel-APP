@@ -132,6 +132,18 @@ export default {
       connectWebSocket();
       // 获取未读通知
       fetchUnreadNotifications();
+      // 请求 iOS 通知权限（首次调用会弹出系统权限对话框）
+      // uni.getPushClientId 是 Push 模块初始化的标准入口，必须在 Push 模块启用后才有效
+      // #ifdef APP-PLUS
+      uni.getPushClientId({
+        success: (res) => {
+          console.log('[Push] 通知权限已获取, CID:', res.cid)
+        },
+        fail: (err) => {
+          console.warn('[Push] 通知权限请求失败或被拒绝:', err)
+        }
+      })
+      // #endif
     },
 
     /**

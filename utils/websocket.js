@@ -341,15 +341,20 @@ function showSystemNotification(notification) {
 	console.log('已发送notification-received事件')
 
 	// #ifdef APP-PLUS
-	// App端同时使用本地推送（用于后台通知）
+	// 触发 iOS 系统通知横幅（Push 模块启用后生效）
+	// content 变量已在上方完成格式化（MEDICATION 类型的 JSON 已解析为可读文字）
 	try {
-		uni.createPushMessage({
-			title: notification.reminderTitle,
-			content: notification.reminderContent,
-			payload: JSON.stringify(notification)
+		plus.push.createMessage(content, JSON.stringify({
+			type: notification.reminderType,
+			reminderId: notification.reminderId,
+			action: 'open_' + (notification.reminderType || 'messages').toLowerCase()
+		}), {
+			title: notification.reminderTitle || '新消息',
+			cover: false,   // false = 不覆盖，每条通知独立显示
+			sound: 'system' // 使用系统默认提示音
 		})
 	} catch (e) {
-		console.log('创建推送消息失败:', e)
+		console.warn('[Push] 创建系统通知失败:', e)
 	}
 	// #endif
 }

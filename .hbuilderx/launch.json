@@ -6,6 +6,7 @@
             "type" : "uni-app:app-android"
         },
         {
+            "customPlaygroundType" : "device",
             "playground" : "standard",
             "type" : "uni-app:app-ios"
         }

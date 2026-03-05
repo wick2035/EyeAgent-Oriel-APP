@@ -67,6 +67,7 @@
 import { isDarkMode } from '@/store/theme.js'
 import { getFileDownloadUrl } from '@/utils/api/medical.js'
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
+import config from '@/utils/config.js'
 
 export default {
 	components: {
@@ -140,7 +141,9 @@ export default {
 				const res = await getFileDownloadUrl(this.fileId)
 				console.log('获取PDF链接响应:', res)
 				if (res.code === 200 && res.data) {
-					this.pdfUrl = res.data
+					// 修正后端 MinIO 返回 localhost 的问题：将 localhost 替换为实际服务器 IP
+					const serverHost = config.baseUrl.replace(/^https?:\/\//, '').split(':')[0]
+					this.pdfUrl = res.data.replace('localhost', serverHost)
 					console.log('pdfUrl:', this.pdfUrl)
 					// 下载并使用PDF.js查看器打开
 					this.downloadAndOpen()
@@ -173,10 +176,26 @@ export default {
 					if (status === 200) {
 						const filePath = d.filename
 						console.log('PDF已下载到:', filePath)
-						// 转换为本地文件URL
+
+						// iOS: WKWebView 沙盒限制，无法跨目录访问 _doc 下的 file:// 文件
+						// 改用系统原生 PDF 查看器（Quick Look）
+						if (uni.getSystemInfoSync().platform === 'ios') {
+							this.loading = false
+							uni.openDocument({
+								filePath: filePath,
+								fileType: 'pdf',
+								fail: (err) => {
+									console.error('openDocument 失败:', err)
+									this.loadError = true
+									this.errorMessage = '无法打开文档: ' + (err.errMsg || '')
+								}
+							})
+							return
+						}
+
+						// Android: 转换为本地文件URL，使用 PDF.js 子 webview 渲染
 						const localUrl = plus.io.convertLocalFileSystemURL(filePath)
 						console.log('本地文件URL:', localUrl)
-						// 创建子webview显示PDF
 						this.createPdfWebview(localUrl)
 					} else {
 						console.error('下载状态码异常:', status)
