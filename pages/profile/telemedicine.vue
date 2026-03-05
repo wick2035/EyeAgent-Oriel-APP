@@ -462,25 +462,26 @@ export default {
 	}
 }
 
+// 导航栏深色模式（直接绑定，避免 fixed 元素后代选择器失效）
+.navbar--dark {
+	background: rgba(22, 27, 34, 0.9);
+
+	.navbar__back-icon {
+		border-color: $dark-text-primary;
+	}
+
+	.navbar__back:active {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.navbar__title {
+		color: $dark-text-primary;
+	}
+}
+
 // 深色模式
 .page--dark {
 	background: linear-gradient(180deg, rgba(14, 165, 233, 0.08) 0%, $dark-bg-base 35%);
-
-	.navbar {
-		background: rgba(22, 27, 34, 0.9);
-
-		&__back-icon {
-			border-color: $dark-text-primary;
-		}
-
-		&__back:active {
-			background: rgba(255, 255, 255, 0.08);
-		}
-
-		&__title {
-			color: $dark-text-primary;
-		}
-	}
 
 	.hero {
 		&__icon-bg {
