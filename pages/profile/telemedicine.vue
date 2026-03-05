@@ -1,4 +1,5 @@
 <template>
+	<page-meta :background-color="isDark ? '#0D1117' : '#FAFBFD'"></page-meta>
 	<view class="page" :class="{ 'page--dark': isDark }">
 		<!-- 自定义导航栏 -->
 		<view class="navbar" :class="{ 'navbar--dark': isDark }">
@@ -482,6 +483,10 @@ export default {
 // 深色模式
 .page--dark {
 	background: linear-gradient(180deg, rgba(14, 165, 233, 0.08) 0%, $dark-bg-base 35%);
+
+	.main {
+		background: $dark-bg-base;
+	}
 
 	.hero {
 		&__icon-bg {

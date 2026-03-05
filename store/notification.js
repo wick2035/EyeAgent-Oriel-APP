@@ -112,8 +112,12 @@ export function addNotification(notification) {
 	}
 	const key = typeMap[notification.reminderType]
 	if (key && notificationState.unread[key]) {
-		// 检查是否已存在
-		const exists = notificationState.unread[key].some(n => n.id === notification.id)
+		// 兼容 API 返回的 id 字段和 WebSocket 推送的 reminderId 字段
+		const notifId = notification.id || notification.reminderId
+		const exists = notificationState.unread[key].some(n => {
+			const nId = n.id || n.reminderId
+			return nId && nId === notifId
+		})
 		if (!exists) {
 			notificationState.unread[key].unshift(notification)
 		}
@@ -161,7 +165,9 @@ export async function markAllAsRead() {
  */
 function removeFromUnread(reminderId) {
 	for (const key of ['system', 'reserve', 'medication']) {
-		const index = notificationState.unread[key].findIndex(n => n.id === reminderId)
+		const index = notificationState.unread[key].findIndex(n =>
+			(n.id || n.reminderId) === reminderId
+		)
 		if (index !== -1) {
 			notificationState.unread[key].splice(index, 1)
 			break

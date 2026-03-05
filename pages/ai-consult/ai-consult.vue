@@ -115,9 +115,9 @@
       :quickActions="quickActions"
       :showQuickActions="!hasMessages"
       @send="handleSend"
-      @voice="handleVoice"
       @stop="handleStop"
       @quickAction="handleQuickAction"
+      @mediaSelect="handleMediaSelect"
     />
 
     <!-- 底部导航 -->
@@ -394,8 +394,11 @@ export default {
       };
     },
 
-    handleVoice() {
-      uni.showToast({ title: "语音功能开发中", icon: "none" });
+    handleMediaSelect({ type, files }) {
+      const typeNames = { camera: '拍照图片', album: '相册图片', file: '文件' }
+      const name = typeNames[type] || '附件'
+      // 占位实现：发送描述消息；后续对接上传接口后替换为真实 URL
+      this.handleSend(`[已发送${name}，请帮我分析]`)
     },
 
     handleStop() {

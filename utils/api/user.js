@@ -371,6 +371,7 @@ export async function sendEmailCode(email) {
  * @param {string} data.password - 密码
  * @param {string} data.email - 邮箱
  * @param {string} data.emailCode - 邮箱验证码
+ * @param {string} [data.dateOfBirth] - 出生日期，ISO 8601 格式（从身份证解析）
  * @returns {Promise<object>}
  */
 export async function register(data) {
@@ -402,7 +403,8 @@ export async function register(data) {
 			idNumber: data.idNumber,
 			password: data.password,
 			email: data.email,
-			emailCode: data.emailCode
+			emailCode: data.emailCode,
+			dateOfBirth: data.dateOfBirth,
 		}
 
 		const response = await post('/api/app/base/register', requestData)

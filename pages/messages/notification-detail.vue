@@ -145,7 +145,14 @@ export default {
 		},
 		allNotifications() {
 			const unread = getUnreadByType(this.type).map(n => ({ ...n, isUnread: true }))
-			const read = this.readMessages.map(n => ({ ...n, isUnread: false }))
+			// 收集未读通知的 ID 集合，兼容 API 的 id 字段和 WebSocket 的 reminderId 字段
+			const unreadIds = new Set(
+				unread.map(n => n.id || n.reminderId).filter(Boolean)
+			)
+			// 已读列表中过滤掉与未读重复的条目，有未读时优先显示未读版本
+			const read = this.readMessages
+				.filter(n => !unreadIds.has(n.id || n.reminderId))
+				.map(n => ({ ...n, isUnread: false }))
 			return [...unread, ...read].sort((a, b) => {
 				const timeA = new Date(a.sentTime || a.createTime)
 				const timeB = new Date(b.sentTime || b.createTime)

@@ -29,8 +29,13 @@
 				}"
 			>
 				<!-- ── 文字模式 ─────────────────────────────── -->
-				<view v-if="!isVoiceMode" class="chat-input__ai-icon">
-					<view class="ai-sparkle"></view>
+
+				<view
+					v-if="!isVoiceMode"
+					class="chat-input__btn chat-input__btn--plus"
+					@click="toggleMediaPanel"
+				>
+					<view class="plus-icon" :class="{ 'plus-icon--active': showMediaPanel }"></view>
 				</view>
 
 				<input
@@ -67,7 +72,6 @@
 
 				<!-- ── 语音模式 ─────────────────────────────── -->
 
-				<!-- 触摸区：整个左侧区域均可按住录音 -->
 				<view
 					v-if="isVoiceMode"
 					class="voice-area"
@@ -75,27 +79,22 @@
 					@touchend.stop="stopRecording"
 					@touchcancel.stop="cancelRecording"
 				>
-					<!-- 空闲态：脉冲点 + 文字 -->
 					<template v-if="!isRecording">
 						<view class="voice-idle-dot"></view>
 						<text class="voice-area__text">按住说话</text>
 					</template>
 
-					<!-- 录制中：波形 + 文字 + 镜像波形（左右对称） -->
 					<template v-else>
 						<view class="waveform">
 							<view v-for="n in 7" :key="n" class="waveform__bar" :class="`waveform__bar--${n}`"></view>
 						</view>
-
 						<text class="voice-area__text voice-area__text--recording">松开发送</text>
-
 						<view class="waveform waveform--mirror">
 							<view v-for="n in 7" :key="n" class="waveform__bar" :class="`waveform__bar--${n}`"></view>
 						</view>
 					</template>
 				</view>
 
-				<!-- 键盘按钮：独立于 voice-area，自身吸收 touch 防止触发录音 -->
 				<view
 					v-if="isVoiceMode"
 					class="chat-input__btn chat-input__btn--keyboard"
@@ -108,6 +107,41 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- ── 媒体选项（贴在输入框下方，随动上移）──────────── -->
+		<view
+			v-if="showMediaPanel"
+			class="media-tiles-wrap"
+			:class="{ 'media-tiles-wrap--show': mediaPanelVisible }"
+		>
+			<view class="media-tiles" :class="{ 'media-tiles--show': mediaPanelVisible }">
+				<view class="media-item" @click="handleMediaAction('camera')">
+					<view class="media-item__icon">
+						<image class="media-item__img" src="@/static/camera.svg" mode="aspectFit" />
+					</view>
+					<text class="media-item__label">拍照</text>
+				</view>
+				<view class="media-item" @click="handleMediaAction('album')">
+					<view class="media-item__icon">
+						<image class="media-item__img" src="@/static/photo.svg" mode="aspectFit" />
+					</view>
+					<text class="media-item__label">相册</text>
+				</view>
+				<view class="media-item" @click="handleMediaAction('file')">
+					<view class="media-item__icon">
+						<image class="media-item__img" src="@/static/uploadfolder.svg" mode="aspectFit" />
+					</view>
+					<text class="media-item__label">本地文件</text>
+				</view>
+			</view>
+		</view>
+
+		<!-- 透明遮罩：点击任意处关闭 -->
+		<view
+			v-if="showMediaPanel"
+			class="media-dismiss"
+			@click="closeMediaPanel"
+		></view>
 	</view>
 </template>
 
@@ -147,7 +181,9 @@ export default {
 			inputValue: this.value,
 			isFocused: false,
 			isVoiceMode: false,
-			isRecording: false
+			isRecording: false,
+			showMediaPanel: false,
+			mediaPanelVisible: false
 		}
 	},
 	computed: {
@@ -213,6 +249,65 @@ export default {
 			this.isRecording = false
 			this.$emit('recordCancel')
 		},
+		// ── 媒体面板 ──────────────────────────────────────────
+		toggleMediaPanel() {
+			if (this.showMediaPanel) {
+				this.closeMediaPanel()
+				return
+			}
+			if (this.isFocused) {
+				this.isFocused = false
+				this.$emit('blur')
+				setTimeout(() => this.openMediaPanel(), 150)
+			} else {
+				this.openMediaPanel()
+			}
+		},
+		openMediaPanel() {
+			this.showMediaPanel = true
+			this.$nextTick(() => {
+				setTimeout(() => { this.mediaPanelVisible = true }, 30)
+			})
+		},
+		closeMediaPanel() {
+			this.mediaPanelVisible = false
+			setTimeout(() => { this.showMediaPanel = false }, 460)
+		},
+		handleMediaAction(type) {
+			this.closeMediaPanel()
+			setTimeout(() => {
+				switch (type) {
+					case 'camera':
+						uni.chooseImage({
+							count: 1,
+							sourceType: ['camera'],
+							success: (res) => {
+								this.$emit('mediaSelect', { type, files: res.tempFilePaths })
+							}
+						})
+						break
+					case 'album':
+						uni.chooseImage({
+							count: 9,
+							sourceType: ['album'],
+							sizeType: ['compressed'],
+							success: (res) => {
+								this.$emit('mediaSelect', { type, files: res.tempFilePaths })
+							}
+						})
+						break
+					case 'file':
+						uni.chooseFile({
+							count: 1,
+							type: 'all',
+							success: (res) => {
+								this.$emit('mediaSelect', { type, files: res.tempFilePaths })
+							}
+						})
+						break
+				}
+			}, 480)
+		},
 		clear() {
 			this.inputValue = ''
 		},
@@ -241,7 +336,6 @@ export default {
 	&__wrapper {
 		display: flex;
 		align-items: center;
-		// 文字模式与语音模式共用同一 padding，高度完全一致
 		padding: $spacing-md $spacing-lg;
 		background: $bg-card;
 		border-radius: $radius-xl;
@@ -249,20 +343,9 @@ export default {
 		z-index: 1;
 		transition: background 0.2s ease;
 
-		// 录制中：极淡暖色底
 		&--recording {
 			background: #FFF8F8;
 		}
-	}
-
-	&__ai-icon {
-		width: 56rpx;
-		height: 56rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-right: $spacing-sm;
-		flex-shrink: 0;
 	}
 
 	&__field {
@@ -291,12 +374,17 @@ export default {
 		transition: all 0.25s ease;
 		flex-shrink: 0;
 
+		&--plus {
+			background: $bg-elevated;
+			margin-right: $spacing-sm;
+			&:active { transform: scale(0.9); }
+		}
+
 		&--voice {
 			background: $bg-elevated;
 			&:active { transform: scale(0.9); }
 		}
 
-		// 键盘按钮：往左留出 8rpx 呼吸空间
 		&--keyboard {
 			background: $bg-elevated;
 			color: $text-secondary;
@@ -331,10 +419,6 @@ export default {
 			&::before { display: none; }
 		}
 		.chat-input__btn--send.chat-input__btn--active { background: #4A90E2; }
-		.ai-sparkle {
-			&::before { background: #4A90E2; }
-			&::after  { background: #4A90E2; }
-		}
 	}
 
 	// 深色模式
@@ -345,6 +429,7 @@ export default {
 		}
 		.glow-border { box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3); }
 		.chat-input__field { color: $dark-text-primary; }
+		.chat-input__btn--plus,
 		.chat-input__btn--voice,
 		.chat-input__btn--keyboard { background: $dark-bg-elevated; }
 		.chat-input__btn--keyboard { color: $dark-text-secondary; }
@@ -359,6 +444,14 @@ export default {
 			color: $dark-text-secondary;
 			&--recording { color: #F87171; }
 		}
+
+		.plus-icon {
+			&::before, &::after { background: $dark-text-secondary; }
+		}
+
+		.media-item__icon { background: $dark-bg-elevated; }
+		.media-item__label { color: $dark-text-secondary; }
+		.media-item__img { filter: invert(1); opacity: 0.6; }
 
 		.quick-action-btn {
 			background: #2A2D32;
@@ -418,7 +511,6 @@ export default {
 		animation: glow-spin 4s linear infinite;
 	}
 
-	// 录制中：流光加速 + 切换为暖色
 	&--recording::before {
 		background: conic-gradient(
 			from 0deg,
@@ -434,38 +526,44 @@ export default {
 	to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-// ── AI 星光图标 ───────────────────────────────────────────────────
-
-.ai-sparkle {
-	width: 32rpx; height: 32rpx;
-	position: relative;
-	&::before {
-		content: '';
-		position: absolute;
-		top: 0; left: 50%;
-		transform: translateX(-50%);
-		width: 8rpx; height: 32rpx;
-		background: linear-gradient(180deg, #667EEA 0%, #F093FB 100%);
-		border-radius: 4rpx;
-	}
-	&::after {
-		content: '';
-		position: absolute;
-		top: 50%; left: 0;
-		transform: translateY(-50%);
-		width: 32rpx; height: 8rpx;
-		background: linear-gradient(90deg, #667EEA 0%, #F093FB 100%);
-		border-radius: 4rpx;
-	}
-}
-
 // ── 图标尺寸 ──────────────────────────────────────────────────────
 
 .voice-icon { width: 36rpx; height: 36rpx; }
 .send-icon  { width: 36rpx; height: 36rpx; }
 .stop-icon  { width: 20rpx; height: 20rpx; background: $color-error; border-radius: 4rpx; }
 
-// ── 键盘图标（纯 CSS）────────────────────────────────────────────
+// ── + 号图标 ──────────────────────────────────────────────────────
+
+.plus-icon {
+	width: 22rpx; height: 22rpx;
+	position: relative;
+	transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+	&--active {
+		transform: rotate(45deg);
+	}
+
+	&::before {
+		content: '';
+		position: absolute;
+		left: 50%; top: 0;
+		transform: translateX(-50%);
+		width: 3rpx; height: 22rpx;
+		background: $text-secondary;
+		border-radius: 2rpx;
+	}
+	&::after {
+		content: '';
+		position: absolute;
+		top: 50%; left: 0;
+		transform: translateY(-50%);
+		width: 22rpx; height: 3rpx;
+		background: $text-secondary;
+		border-radius: 2rpx;
+	}
+}
+
+// ── 键盘图标 ──────────────────────────────────────────────────────
 
 .keyboard-icon {
 	width: 36rpx; height: 27rpx;
@@ -496,7 +594,6 @@ export default {
 
 .voice-area {
 	flex: 1;
-	// 高度与文字模式 input 对齐，保持 wrapper 总高度不变
 	height: 64rpx;
 	display: flex;
 	align-items: center;
@@ -505,7 +602,6 @@ export default {
 	animation: mode-in 0.25s ease;
 }
 
-// 空闲脉冲点
 .voice-idle-dot {
 	width: 18rpx; height: 18rpx;
 	border-radius: 50%;
@@ -519,7 +615,6 @@ export default {
 	50%       { opacity: 1;    transform: scale(1.25); }
 }
 
-// 状态文字
 .voice-area__text {
 	font-size: 30rpx;
 	font-weight: 500;
@@ -527,14 +622,13 @@ export default {
 	letter-spacing: 2rpx;
 	transition: color 0.2s ease;
 	flex-shrink: 0;
-
 	&--recording {
 		color: #EF4444;
 		font-weight: 600;
 	}
 }
 
-// ── 录制波形（左右各 7 根，对称排列）────────────────────────────
+// ── 录制波形 ──────────────────────────────────────────────────────
 
 .waveform {
 	display: flex;
@@ -543,23 +637,17 @@ export default {
 	height: 36rpx;
 	flex-shrink: 0;
 	animation: mode-in 0.2s ease;
-
-	// 右侧镜像：水平翻转，视觉上与左侧对称
-	&--mirror {
-		transform: scaleX(-1);
-	}
+	&--mirror { transform: scaleX(-1); }
 }
 
 .waveform__bar {
-	width: 4rpx;
-	height: 36rpx;
+	width: 4rpx; height: 36rpx;
 	border-radius: 2rpx;
 	background: linear-gradient(180deg, #EF4444 0%, #F97316 100%);
 	transform-origin: bottom center;
 	animation: wave-active 0.6s ease-in-out infinite;
 }
 
-// 7 根柱子错开延迟，形成自然律动
 .waveform__bar--1 { animation-delay: 0.00s; animation-duration: 0.55s; }
 .waveform__bar--2 { animation-delay: 0.12s; animation-duration: 0.70s; }
 .waveform__bar--3 { animation-delay: 0.24s; animation-duration: 0.45s; }
@@ -571,6 +659,86 @@ export default {
 @keyframes wave-active {
 	0%, 100% { transform: scaleY(0.18); }
 	50%       { transform: scaleY(1.00); }
+}
+
+// ── 媒体选项区域 ──────────────────────────────────────────────────
+
+// 透明遮罩：仅用于点击收起，不遮挡视觉
+.media-dismiss {
+	position: fixed;
+	top: 0; right: 0; bottom: 0; left: 0;
+	z-index: 99;   // 低于 chat-input(100)，高于页面内容
+}
+
+// 高度动画容器：驱动输入框上移
+.media-tiles-wrap {
+	overflow: hidden;
+	max-height: 0;
+	transition: max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+	position: relative;
+	z-index: 101;  // 确保在遮罩之上可点击
+
+	&--show {
+		max-height: 260rpx;
+	}
+}
+
+// 三个色块行
+.media-tiles {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	align-items: flex-start;
+	padding: $spacing-xs $spacing-lg $spacing-md;
+	opacity: 0;
+	transform: translateY(14rpx);
+	transition:
+		opacity 0.3s ease 0.06s,
+		transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.06s;
+
+	&--show {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.media-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: $spacing-xs;
+	flex: 1;
+
+	&:active .media-item__icon {
+		transform: scale(0.88);
+		opacity: 0.8;
+	}
+}
+
+.media-item__icon {
+	width: 96rpx; height: 96rpx;
+	border-radius: $radius-lg;
+	background: #F2F4F7;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+}
+
+.media-item__label {
+	font-size: 24rpx;
+	color: $text-secondary;
+	font-weight: 500;
+	text-align: center;
+	letter-spacing: 0.5rpx;
+}
+
+// ── 媒体图标（SVG 图片）──────────────────────────────────────────
+
+.media-item__img {
+	width: 48rpx;
+	height: 48rpx;
+	opacity: 0.65;
 }
 
 // ── 模式切换进入动画 ──────────────────────────────────────────────

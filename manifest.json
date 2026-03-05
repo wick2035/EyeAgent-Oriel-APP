@@ -45,13 +45,20 @@
                     "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
                     "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
                     "<uses-feature android:name=\"android.hardware.camera\"/>",
-                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>"
+                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>",
+                    "<uses-permission android:name=\"android.permission.RECORD_AUDIO\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
+                    "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>"
                 ]
             },
             /* ios打包配置 */
             "ios" : {
                 "dSYMs" : false,
                 "privacyDescription" : {
+                    "NSCameraUsageDescription" : "用于拍摄眼部症状照片及报告，帮助医生进行远程诊断。",
+                    "NSPhotoLibraryUsageDescription" : "用于从相册选取眼部照片、检查报告等医疗图片，辅助 AI 诊断分析。",
+                    "NSPhotoLibraryAddUsageDescription" : "用于将拍摄的医疗图片保存至相册。",
+                    "NSMicrophoneUsageDescription" : "用于语音输入症状描述，方便您与 AI 医生进行语音问诊。",
                     "NSUserNotificationsUsageDescription" : "用于向您发送用药提醒和诊疗通知，保障您的用药安全和及时获取医疗信息。"
                 }
             },

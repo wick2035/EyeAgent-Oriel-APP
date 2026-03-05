@@ -311,6 +311,16 @@ export default {
       } catch (error) {
         console.log("从API获取患者信息失败，使用本地数据:", error);
       }
+
+      // 若出生日期缺失但身份证号存在，自动从身份证号计算并回写
+      if (!this.formData.birthday && this.formData.idCard && this.formData.idCard.length === 18) {
+        const id = this.formData.idCard;
+        const year  = id.substring(6, 10);
+        const month = id.substring(10, 12);
+        const day   = id.substring(12, 14);
+        this.formData.birthday = `${year}-${month}-${day}`;
+        modifyPatientInfo({ dateOfBirth: `${year}-${month}-${day}T00:00:00` }).catch(() => {});
+      }
     },
 
     formatDate(date) {

@@ -582,6 +582,7 @@ export default {
       const month = idNumber.substring(10, 12);
       const day = idNumber.substring(12, 14);
       const birthday = `${year}年${parseInt(month)}月${parseInt(day)}日`;
+      const dateOfBirthISO = `${year}-${month}-${day}T00:00:00`;
 
       // 计算年龄
       const birthDate = new Date(year, parseInt(month) - 1, parseInt(day));
@@ -599,7 +600,7 @@ export default {
       const genderCode = parseInt(idNumber.charAt(16));
       const gender = genderCode % 2 === 1 ? "male" : "female";
 
-      return { birthday, age, gender };
+      return { birthday, age, gender, dateOfBirthISO };
     },
 
     // 验证身份证号
@@ -682,6 +683,7 @@ export default {
           password: this.formData.password,
           email: this.formData.email,
           emailCode: this.formData.emailCode,
+          dateOfBirth: this.idCardInfo.dateOfBirthISO,
         });
 
         if (result.success) {

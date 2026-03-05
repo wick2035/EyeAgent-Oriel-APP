@@ -1,7 +1,8 @@
 <template>
+	<page-meta :background-color="isDark ? '#0D1117' : '#FAFBFD'"></page-meta>
 	<view class="page" :class="{ 'page--dark': isDark }">
 		<!-- 自定义导航栏 -->
-		<view class="navbar">
+		<view class="navbar" :class="{ 'navbar--dark': isDark }">
 			<view class="navbar__status" :style="{ height: statusBarHeight + 'px' }"></view>
 			<view class="navbar__content">
 				<view class="navbar__back" @click="goBack">
@@ -197,20 +198,25 @@ export default {
 	}
 }
 
+// 导航栏深色模式（直接绑定，避免 fixed 元素后代选择器失效）
+.navbar--dark {
+	background: rgba(22, 27, 34, 0.9);
+
+	.navbar__back-icon {
+		border-color: $dark-text-primary;
+	}
+
+	.navbar__title {
+		color: $dark-text-primary;
+	}
+}
+
 // 深色模式
 .page--dark {
 	background: linear-gradient(180deg, rgba(14, 165, 233, 0.08) 0%, $dark-bg-base 30%);
 
-	.navbar {
-		background: rgba(22, 27, 34, 0.9);
-
-		&__back-icon {
-			border-color: $dark-text-primary;
-		}
-
-		&__title {
-			color: $dark-text-primary;
-		}
+	.empty-container {
+		background: $dark-bg-base;
 	}
 
 	.empty-state {

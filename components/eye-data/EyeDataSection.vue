@@ -158,8 +158,8 @@ export default {
 	// 深色模式
 	&--dark {
 		.eye-section__card {
-			background: rgba(22, 27, 34, 0.9);
-			border: 1rpx solid rgba(255, 255, 255, 0.06);
+			background: rgba(255, 255, 255, 0.06);
+			border: 1rpx solid rgba(255, 255, 255, 0.1);
 			box-shadow: none;
 			backdrop-filter: blur(20px);
 			-webkit-backdrop-filter: blur(20px);

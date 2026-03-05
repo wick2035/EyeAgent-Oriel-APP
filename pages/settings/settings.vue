@@ -14,25 +14,20 @@
       </view>
     </view>
 
-    <!-- 内容区 -->
-    <view class="content">
-      <!-- 状态栏占位 -->
-      <view
-        class="status-bar"
-        :style="{ height: statusBarHeight + 'px' }"
-      ></view>
-
-      <!-- 导航栏 -->
-      <view class="navbar" :class="{ 'navbar--visible': pageReady }">
+    <!-- 导航栏（固定顶部） -->
+    <view class="navbar" :class="{ 'navbar--dark': isDark }">
+      <view class="navbar__statusbar" :style="{ height: statusBarHeight + 'px' }"></view>
+      <view class="navbar__bar">
         <view class="navbar__back" @click="goBack">
           <view class="back-icon"></view>
         </view>
         <text class="navbar__title">设置</text>
         <view class="navbar__placeholder"></view>
       </view>
+    </view>
 
-      <!-- 滚动区域 -->
-      <scroll-view class="scroll-area" scroll-y>
+    <!-- 滚动区域 -->
+    <scroll-view class="scroll-area" scroll-y :style="{ paddingTop: (statusBarHeight + 44) + 'px' }">
         <!-- 用户卡片 -->
         <view
           class="user-card"
@@ -173,7 +168,6 @@
         <!-- 底部留白 -->
         <view class="bottom-space"></view>
       </scroll-view>
-    </view>
 
     <!-- 顶部通知栏 -->
     <TopNotificationBar />
@@ -388,7 +382,6 @@ $accent-coral-light: #ff8a7a;
 .settings-page {
   min-height: 100vh;
   position: relative;
-  overflow: hidden;
   background: $light-bg-base;
 }
 
@@ -492,32 +485,22 @@ $accent-coral-light: #ff8a7a;
   }
 }
 
-// ==================== 内容区 ====================
-.content {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.status-bar {
-  flex-shrink: 0;
-}
-
-// 导航栏
+// 导航栏（固定顶部，独立于滚动区）
 .navbar {
-  display: flex;
-  align-items: center;
-  height: 88rpx;
-  padding: 0 32rpx;
-  opacity: 0;
-  transform: translateY(-20rpx);
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(250, 251, 253, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 
-  &--visible {
-    opacity: 1;
-    transform: translateY(0);
+  &__bar {
+    display: flex;
+    align-items: center;
+    height: 88rpx;
+    padding: 0 32rpx;
   }
 
   &__back {
@@ -551,12 +534,24 @@ $accent-coral-light: #ff8a7a;
   margin-left: 8rpx;
 }
 
+// 导航栏深色模式（直接绑定，避免 fixed 元素后代选择器失效）
+.navbar--dark {
+  background: rgba(10, 22, 40, 0.92);
+
+  .navbar__title {
+    color: #F0F6FC;
+  }
+
+  .back-icon {
+    border-color: #F0F6FC;
+  }
+}
+
 // 滚动区域
 .scroll-area {
-  flex: 1;
-  padding: 0 32rpx;
-  box-sizing: border-box;
   width: 100%;
+  box-sizing: border-box;
+  padding: 0 32rpx;
 }
 
 // 入场动画
@@ -580,6 +575,7 @@ $accent-coral-light: #ff8a7a;
   display: flex;
   align-items: center;
   padding: 32rpx;
+  margin-top: 24rpx;
   margin-bottom: 32rpx;
   background: $light-bg-card;
   border-radius: 24rpx;
@@ -1069,14 +1065,6 @@ $accent-coral-light: #ff8a7a;
 
   .particles {
     opacity: 1;
-  }
-
-  .navbar__title {
-    color: $dark-text-light;
-  }
-
-  .back-icon {
-    border-color: $dark-text-light;
   }
 
   .user-card {

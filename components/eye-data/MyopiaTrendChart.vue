@@ -210,7 +210,7 @@ export default {
 				this.drawLine(ctx, osPredPts, OS_COLOR, 1.5, true, 0.45)
 			}
 
-			const dotBg = dark ? '#161B22' : '#FFFFFF'
+			const dotBg = dark ? '#0A1628' : '#FFFFFF'
 			hist.forEach((d, i) => {
 				this.drawDot(ctx, this.getX(i), this.getY(Math.abs(d.od)), 3, OD_COLOR, dotBg, 1.5, 1)
 				this.drawDot(ctx, this.getX(i), this.getY(Math.abs(d.os)), 3, OS_COLOR, dotBg, 1.5, 1)
