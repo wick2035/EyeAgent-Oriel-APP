@@ -45,7 +45,7 @@
 					class="menu-item"
 					@click="handleMenu(item)"
 				>
-					<view class="menu-item__icon" :style="{ background: item.bgColor }">
+					<view class="menu-item__icon" :style="{ background: getIconBgColor(item) }">
 						<image v-if="item.icon === 'orders'" class="menu-icon menu-icon--orders" src="@/static/shop.svg" mode="aspectFit" />
 						<image v-else-if="item.icon === 'medicine'" class="menu-icon menu-icon--medicine" src="@/static/medicine.svg" mode="aspectFit" />
 						<image v-else-if="item.icon === 'telemedicine'" class="menu-icon menu-icon--telemedicine" src="@/static/cloud.svg" mode="aspectFit" />
@@ -67,7 +67,7 @@
 					class="menu-item"
 					@click="handleMenu(item)"
 				>
-					<view class="menu-item__icon" :style="{ background: item.bgColor }">
+					<view class="menu-item__icon" :style="{ background: getIconBgColor(item) }">
 						<image v-if="item.icon === 'theme'" class="menu-icon menu-icon--theme" src="@/static/moon.svg" mode="aspectFit" />
 						<view v-else class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
 					</view>
@@ -82,7 +82,7 @@
 
 		<!-- 版本信息 -->
 		<view class="version">
-			<text class="version__text">AI医问通 v1.0.0</text>
+			<text class="version__text">AI医问通 v{{ appVersion }}</text>
 		</view>
 
 		<!-- 底部占位 -->
@@ -101,6 +101,7 @@ import TabBar from '@/components/TabBar.vue'
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import { isDarkMode, setTheme, THEME_LIGHT, THEME_DARK } from '@/store/theme.js'
 import { getUserInfo, isLoggedIn } from '@/store/user.js'
+import { getCurrentVersion } from '@/utils/version.js'
 
 export default {
 	components: {
@@ -110,6 +111,7 @@ export default {
 	data() {
 		return {
 			statusBarHeight: 44,
+			appVersion: '1.0.0',
 			serviceMenus: [
 				{ title: '我的订单', icon: 'orders', bgColor: 'rgba(249, 115, 22, 0.1)' },
 				{ title: '就诊记录', icon: 'record', bgColor: 'rgba(30, 58, 95, 0.1)' },
@@ -141,6 +143,7 @@ export default {
 	},
 	onLoad() {
 		this.getStatusBarHeight()
+		this.appVersion = getCurrentVersion()
 	},
 	onShow() {
 		// #ifdef APP-PLUS
@@ -226,6 +229,12 @@ export default {
 		toggleTheme(e) {
 			const isDarkMode = e.detail.value
 			setTheme(isDarkMode ? THEME_DARK : THEME_LIGHT)
+		},
+		getIconBgColor(item) {
+			if (this.isDark && item.icon === 'record') {
+				return 'rgba(74, 144, 217, 0.15)'
+			}
+			return item.bgColor
 		}
 	}
 }
@@ -645,6 +654,17 @@ export default {
 		border-color: #FF8A7A;
 		&::before {
 			background: #FF8A7A;
+		}
+	}
+
+	// 就诊记录图标深色模式适配
+	.menu-icon--record {
+		border-color: $dark-color-primary;
+		&::before {
+			background: $dark-color-primary;
+		}
+		&::after {
+			background: $dark-color-primary;
 		}
 	}
 

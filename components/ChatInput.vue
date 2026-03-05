@@ -21,14 +21,18 @@
 		</scroll-view>
 
 		<view class="glow-border">
-			<view class="chat-input__wrapper">
-				<!-- AI标识图标 -->
-				<view class="chat-input__ai-icon">
+			<view
+				class="chat-input__wrapper"
+				:class="{ 'chat-input__wrapper--voice': isVoiceMode }"
+			>
+				<!-- AI标识图标（仅文字模式） -->
+				<view v-if="!isVoiceMode" class="chat-input__ai-icon">
 					<view class="ai-sparkle"></view>
 				</view>
 
-				<!-- 输入框 -->
+				<!-- 文字模式：输入框 -->
 				<input
+					v-if="!isVoiceMode"
 					class="chat-input__field"
 					type="text"
 					v-model="inputValue"
@@ -42,14 +46,49 @@
 					confirm-type="send"
 				/>
 
-				<!-- 右侧按钮组 -->
-				<view class="chat-input__actions">
-					<!-- 语音按钮 -->
-					<view class="chat-input__btn chat-input__btn--voice" @click="handleVoice">
+				<!-- 语音模式 -->
+				<view v-else class="voice-mode">
+					<!-- 波形：仅按住时显示 -->
+					<view v-if="isRecording" class="waveform">
+						<view
+							v-for="n in 13"
+							:key="n"
+							class="waveform__bar"
+							:class="`waveform__bar--${n}`"
+						></view>
+					</view>
+
+					<!-- 底部操作行：按住说话按钮 + 键盘图标 -->
+					<view class="voice-mode__bottom">
+						<view
+							class="voice-record-btn"
+							:class="{ 'voice-record-btn--recording': isRecording }"
+							@touchstart.stop="startRecording"
+							@touchend.stop="stopRecording"
+							@touchcancel.stop="cancelRecording"
+						>
+							<text class="voice-record-btn__text">{{ isRecording ? '松开发送' : '按住说话' }}</text>
+						</view>
+
+						<view
+							class="chat-input__btn chat-input__btn--keyboard"
+							:class="{ 'chat-input__btn--disabled': isRecording }"
+							@click="toggleVoiceMode"
+						>
+							<view class="keyboard-icon"></view>
+						</view>
+					</view>
+				</view>
+
+				<!-- 文字模式：右侧按钮组 -->
+				<view v-if="!isVoiceMode" class="chat-input__actions">
+					<view
+						class="chat-input__btn chat-input__btn--voice"
+						@click="toggleVoiceMode"
+					>
 						<image class="voice-icon" src="@/static/radio.svg" mode="aspectFit" />
 					</view>
 
-					<!-- 停止按钮（仅在AI回复中显示） -->
 					<view
 						v-if="isSending"
 						class="chat-input__btn chat-input__btn--stop"
@@ -57,8 +96,6 @@
 					>
 						<view class="stop-icon"></view>
 					</view>
-
-					<!-- 发送按钮（AI回复中隐藏） -->
 					<view
 						v-else
 						class="chat-input__btn chat-input__btn--send"
@@ -107,7 +144,9 @@ export default {
 	data() {
 		return {
 			inputValue: this.value,
-			isFocused: false
+			isFocused: false,
+			isVoiceMode: false,
+			isRecording: false
 		}
 	},
 	computed: {
@@ -127,7 +166,6 @@ export default {
 		}
 	},
 	mounted() {
-		// 监听键盘高度变化
 		uni.onKeyboardHeightChange(res => {
 			this.$emit('keyboardChange', res.height)
 		})
@@ -142,10 +180,6 @@ export default {
 			this.$emit('send', this.inputValue.trim())
 			this.inputValue = ''
 		},
-		handleVoice() {
-			this.$emit('voice')
-			uni.showToast({ title: '语音功能开发中', icon: 'none' })
-		},
 		handleStop() {
 			this.$emit('stop')
 		},
@@ -159,6 +193,28 @@ export default {
 		},
 		handleQuickAction(action) {
 			this.$emit('quickAction', action)
+		},
+		// 切换语音 / 文字模式
+		toggleVoiceMode() {
+			if (this.isRecording) return
+			this.isVoiceMode = !this.isVoiceMode
+		},
+		// 开始录音（touchstart）
+		startRecording() {
+			this.isRecording = true
+			this.$emit('recordStart')
+		},
+		// 停止录音并发送（touchend）
+		stopRecording() {
+			if (!this.isRecording) return
+			this.isRecording = false
+			this.$emit('recordStop')
+		},
+		// 取消录音（touchcancel）
+		cancelRecording() {
+			if (!this.isRecording) return
+			this.isRecording = false
+			this.$emit('recordCancel')
 		},
 		// 外部调用清空输入
 		clear() {
@@ -196,6 +252,14 @@ export default {
 		border-radius: $radius-xl;
 		position: relative;
 		z-index: 1;
+
+		// 语音模式：竖向布局
+		&--voice {
+			flex-direction: column;
+			align-items: stretch;
+			padding: $spacing-md $spacing-lg;
+			gap: $spacing-sm;
+		}
 	}
 
 	&__ai-icon {
@@ -214,6 +278,7 @@ export default {
 		font-size: $font-size-base;
 		color: $text-primary;
 		background: transparent;
+		animation: mode-in 0.25s ease;
 	}
 
 	&__actions {
@@ -231,6 +296,7 @@ export default {
 		align-items: center;
 		justify-content: center;
 		transition: all 0.25s ease;
+		flex-shrink: 0;
 
 		&--voice {
 			background: $bg-elevated;
@@ -238,6 +304,20 @@ export default {
 			&:active {
 				transform: scale(0.9);
 			}
+		}
+
+		&--keyboard {
+			background: $bg-elevated;
+			color: $text-secondary;
+
+			&:active {
+				transform: scale(0.9);
+			}
+		}
+
+		&--disabled {
+			opacity: 0.35;
+			pointer-events: none;
 		}
 
 		&--send {
@@ -263,7 +343,6 @@ export default {
 			}
 		}
 	}
-
 
 	// 简明主题（仅浅色模式）
 	&--simple {
@@ -308,6 +387,11 @@ export default {
 
 		.chat-input__btn--voice {
 			background: $dark-bg-elevated;
+		}
+
+		.chat-input__btn--keyboard {
+			background: $dark-bg-elevated;
+			color: $dark-text-secondary;
 		}
 
 		.chat-input__btn--send {
@@ -463,5 +547,137 @@ export default {
 	height: 20rpx;
 	background: $color-error;
 	border-radius: 4rpx;
+}
+
+// 键盘图标（纯CSS绘制）
+.keyboard-icon {
+	width: 36rpx;
+	height: 27rpx;
+	border: 2.5rpx solid currentColor;
+	border-radius: 5rpx;
+	position: relative;
+	box-sizing: border-box;
+
+	// 上排三个按键点
+	&::before {
+		content: '';
+		position: absolute;
+		top: 6rpx;
+		left: 6rpx;
+		width: 5rpx;
+		height: 5rpx;
+		border-radius: 50%;
+		background: currentColor;
+		box-shadow: 9rpx 0 0 currentColor, 18rpx 0 0 currentColor;
+	}
+
+	// 下方空格键
+	&::after {
+		content: '';
+		position: absolute;
+		bottom: 5rpx;
+		left: 7rpx;
+		right: 7rpx;
+		height: 3.5rpx;
+		border-radius: 2rpx;
+		background: currentColor;
+	}
+}
+
+// ─── 语音模式布局 ─────────────────────────────────────────────
+
+.voice-mode {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-sm;
+	animation: mode-in 0.25s ease;
+}
+
+// 底部操作行：记录按钮 + 键盘图标
+.voice-mode__bottom {
+	display: flex;
+	align-items: center;
+	gap: $spacing-sm;
+}
+
+// ─── 波形动效（仅录制时显示）────────────────────────────────────
+
+.waveform {
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	height: 56rpx;
+	gap: 7rpx;
+	padding-bottom: 4rpx;
+	animation: mode-in 0.2s ease;
+}
+
+.waveform__bar {
+	width: 6rpx;
+	height: 48rpx;
+	border-radius: 3rpx;
+	background: linear-gradient(180deg, #667EEA 0%, #F093FB 100%);
+	transform-origin: bottom center;
+	animation: wave-active 0.6s ease-in-out infinite;
+}
+
+// 13根柱子各自错开延迟与时长，形成自然声波律动
+.waveform__bar--1  { animation-delay: 0.00s; animation-duration: 0.55s; }
+.waveform__bar--2  { animation-delay: 0.12s; animation-duration: 0.70s; }
+.waveform__bar--3  { animation-delay: 0.24s; animation-duration: 0.45s; }
+.waveform__bar--4  { animation-delay: 0.36s; animation-duration: 0.60s; }
+.waveform__bar--5  { animation-delay: 0.08s; animation-duration: 0.75s; }
+.waveform__bar--6  { animation-delay: 0.20s; animation-duration: 0.50s; }
+.waveform__bar--7  { animation-delay: 0.44s; animation-duration: 0.65s; }
+.waveform__bar--8  { animation-delay: 0.16s; animation-duration: 0.48s; }
+.waveform__bar--9  { animation-delay: 0.32s; animation-duration: 0.72s; }
+.waveform__bar--10 { animation-delay: 0.04s; animation-duration: 0.58s; }
+.waveform__bar--11 { animation-delay: 0.28s; animation-duration: 0.42s; }
+.waveform__bar--12 { animation-delay: 0.40s; animation-duration: 0.68s; }
+.waveform__bar--13 { animation-delay: 0.10s; animation-duration: 0.53s; }
+
+@keyframes wave-active {
+	0%, 100% { transform: scaleY(0.18); }
+	50%       { transform: scaleY(1.00); }
+}
+
+// ─── 按住说话按钮 ─────────────────────────────────────────────
+
+.voice-record-btn {
+	flex: 1;
+	height: 88rpx;
+	border-radius: 44rpx;
+	background: $gradient-ai;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.35);
+	transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+
+	&--recording {
+		background: linear-gradient(135deg, #EF4444 0%, #F97316 100%);
+		box-shadow: 0 8rpx 32rpx rgba(239, 68, 68, 0.4);
+		transform: scale(0.97);
+	}
+
+	&__text {
+		font-size: 32rpx;
+		font-weight: 600;
+		color: #FFFFFF;
+		letter-spacing: 4rpx;
+	}
+}
+
+// ─── 模式切换进入动画 ─────────────────────────────────────────
+
+@keyframes mode-in {
+	from {
+		opacity: 0;
+		transform: translateY(8rpx);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 </style>

@@ -688,10 +688,7 @@ export default {
     background: $dark-bg-card;
   }
   .notify-icon {
-    border-color: $dark-text-secondary;
-  }
-  .notify-icon::after {
-    background: $dark-text-secondary;
+    filter: brightness(0) invert(1);
   }
 
   .search-bar {
@@ -712,6 +709,17 @@ export default {
   }
   .service-item__text {
     color: $dark-text-secondary;
+  }
+  .service-item__icon--primary {
+    background: linear-gradient(
+      135deg,
+      rgba(74, 144, 217, 0.15) 0%,
+      rgba(74, 144, 217, 0.22) 100%
+    );
+  }
+  .service-icon--consult {
+    filter: invert(52%) sepia(94%) saturate(1095%) hue-rotate(176deg)
+      brightness(98%) contrast(92%);
   }
 
   .news__title {
