@@ -20,17 +20,19 @@
 			</view>
 		</scroll-view>
 
-		<view class="glow-border">
+		<view class="glow-border" :class="{ 'glow-border--recording': isVoiceMode && isRecording }">
 			<view
 				class="chat-input__wrapper"
-				:class="{ 'chat-input__wrapper--voice': isVoiceMode }"
+				:class="{
+					'chat-input__wrapper--voice': isVoiceMode,
+					'chat-input__wrapper--recording': isVoiceMode && isRecording
+				}"
 			>
-				<!-- AI标识图标（仅文字模式） -->
+				<!-- ── 文字模式 ─────────────────────────────── -->
 				<view v-if="!isVoiceMode" class="chat-input__ai-icon">
 					<view class="ai-sparkle"></view>
 				</view>
 
-				<!-- 文字模式：输入框 -->
 				<input
 					v-if="!isVoiceMode"
 					class="chat-input__field"
@@ -46,54 +48,11 @@
 					confirm-type="send"
 				/>
 
-				<!-- 语音模式 -->
-				<view v-else class="voice-mode">
-					<!-- 波形：仅按住时显示 -->
-					<view v-if="isRecording" class="waveform">
-						<view
-							v-for="n in 13"
-							:key="n"
-							class="waveform__bar"
-							:class="`waveform__bar--${n}`"
-						></view>
-					</view>
-
-					<!-- 底部操作行：按住说话按钮 + 键盘图标 -->
-					<view class="voice-mode__bottom">
-						<view
-							class="voice-record-btn"
-							:class="{ 'voice-record-btn--recording': isRecording }"
-							@touchstart.stop="startRecording"
-							@touchend.stop="stopRecording"
-							@touchcancel.stop="cancelRecording"
-						>
-							<text class="voice-record-btn__text">{{ isRecording ? '松开发送' : '按住说话' }}</text>
-						</view>
-
-						<view
-							class="chat-input__btn chat-input__btn--keyboard"
-							:class="{ 'chat-input__btn--disabled': isRecording }"
-							@click="toggleVoiceMode"
-						>
-							<view class="keyboard-icon"></view>
-						</view>
-					</view>
-				</view>
-
-				<!-- 文字模式：右侧按钮组 -->
 				<view v-if="!isVoiceMode" class="chat-input__actions">
-					<view
-						class="chat-input__btn chat-input__btn--voice"
-						@click="toggleVoiceMode"
-					>
+					<view class="chat-input__btn chat-input__btn--voice" @click="toggleVoiceMode">
 						<image class="voice-icon" src="@/static/radio.svg" mode="aspectFit" />
 					</view>
-
-					<view
-						v-if="isSending"
-						class="chat-input__btn chat-input__btn--stop"
-						@click="handleStop"
-					>
+					<view v-if="isSending" class="chat-input__btn chat-input__btn--stop" @click="handleStop">
 						<view class="stop-icon"></view>
 					</view>
 					<view
@@ -104,6 +63,48 @@
 					>
 						<image class="send-icon" src="@/static/send.svg" mode="aspectFit" />
 					</view>
+				</view>
+
+				<!-- ── 语音模式 ─────────────────────────────── -->
+
+				<!-- 触摸区：整个左侧区域均可按住录音 -->
+				<view
+					v-if="isVoiceMode"
+					class="voice-area"
+					@touchstart.stop="startRecording"
+					@touchend.stop="stopRecording"
+					@touchcancel.stop="cancelRecording"
+				>
+					<!-- 空闲态：脉冲点 + 文字 -->
+					<template v-if="!isRecording">
+						<view class="voice-idle-dot"></view>
+						<text class="voice-area__text">按住说话</text>
+					</template>
+
+					<!-- 录制中：波形 + 文字 + 镜像波形（左右对称） -->
+					<template v-else>
+						<view class="waveform">
+							<view v-for="n in 7" :key="n" class="waveform__bar" :class="`waveform__bar--${n}`"></view>
+						</view>
+
+						<text class="voice-area__text voice-area__text--recording">松开发送</text>
+
+						<view class="waveform waveform--mirror">
+							<view v-for="n in 7" :key="n" class="waveform__bar" :class="`waveform__bar--${n}`"></view>
+						</view>
+					</template>
+				</view>
+
+				<!-- 键盘按钮：独立于 voice-area，自身吸收 touch 防止触发录音 -->
+				<view
+					v-if="isVoiceMode"
+					class="chat-input__btn chat-input__btn--keyboard"
+					:class="{ 'chat-input__btn--disabled': isRecording }"
+					@click.stop="toggleVoiceMode"
+					@touchstart.stop
+					@touchend.stop
+				>
+					<view class="keyboard-icon"></view>
 				</view>
 			</view>
 		</view>
@@ -194,33 +195,27 @@ export default {
 		handleQuickAction(action) {
 			this.$emit('quickAction', action)
 		},
-		// 切换语音 / 文字模式
 		toggleVoiceMode() {
 			if (this.isRecording) return
 			this.isVoiceMode = !this.isVoiceMode
 		},
-		// 开始录音（touchstart）
 		startRecording() {
 			this.isRecording = true
 			this.$emit('recordStart')
 		},
-		// 停止录音并发送（touchend）
 		stopRecording() {
 			if (!this.isRecording) return
 			this.isRecording = false
 			this.$emit('recordStop')
 		},
-		// 取消录音（touchcancel）
 		cancelRecording() {
 			if (!this.isRecording) return
 			this.isRecording = false
 			this.$emit('recordCancel')
 		},
-		// 外部调用清空输入
 		clear() {
 			this.inputValue = ''
 		},
-		// 外部调用设置值
 		setValue(val) {
 			this.inputValue = val
 		}
@@ -237,7 +232,6 @@ export default {
 	z-index: 100;
 	background: transparent;
 
-	// 功能按钮区域
 	&__quick-actions {
 		white-space: nowrap;
 		padding: 0 $spacing-lg;
@@ -247,18 +241,17 @@ export default {
 	&__wrapper {
 		display: flex;
 		align-items: center;
+		// 文字模式与语音模式共用同一 padding，高度完全一致
 		padding: $spacing-md $spacing-lg;
 		background: $bg-card;
 		border-radius: $radius-xl;
 		position: relative;
 		z-index: 1;
+		transition: background 0.2s ease;
 
-		// 语音模式：竖向布局
-		&--voice {
-			flex-direction: column;
-			align-items: stretch;
-			padding: $spacing-md $spacing-lg;
-			gap: $spacing-sm;
+		// 录制中：极淡暖色底
+		&--recording {
+			background: #FFF8F8;
 		}
 	}
 
@@ -300,140 +293,90 @@ export default {
 
 		&--voice {
 			background: $bg-elevated;
-
-			&:active {
-				transform: scale(0.9);
-			}
+			&:active { transform: scale(0.9); }
 		}
 
+		// 键盘按钮：往左留出 8rpx 呼吸空间
 		&--keyboard {
 			background: $bg-elevated;
 			color: $text-secondary;
-
-			&:active {
-				transform: scale(0.9);
-			}
+			margin-right: 8rpx;
+			&:active { transform: scale(0.9); }
 		}
 
 		&--disabled {
-			opacity: 0.35;
+			opacity: 0.3;
 			pointer-events: none;
 		}
 
 		&--send {
 			background: $bg-elevated;
-
 			&.chat-input__btn--active {
 				background: $gradient-ai;
-				.send-icon {
-					filter: brightness(0) invert(1);
-				}
+				.send-icon { filter: brightness(0) invert(1); }
 			}
-
-			&:active {
-				transform: scale(0.9);
-			}
+			&:active { transform: scale(0.9); }
 		}
 
 		&--stop {
 			background: rgba(239, 68, 68, 0.1);
-
-			&:active {
-				transform: scale(0.9);
-			}
+			&:active { transform: scale(0.9); }
 		}
 	}
 
-	// 简明主题（仅浅色模式）
+	// 简明主题
 	&--simple {
 		.glow-border {
 			padding: 0;
-
-			&::before {
-				display: none;
-			}
+			&::before { display: none; }
 		}
-
-		.chat-input__btn--send.chat-input__btn--active {
-			background: #4A90E2;
-		}
-
+		.chat-input__btn--send.chat-input__btn--active { background: #4A90E2; }
 		.ai-sparkle {
-			&::before {
-				background: #4A90E2;
-			}
-
-			&::after {
-				background: #4A90E2;
-			}
+			&::before { background: #4A90E2; }
+			&::after  { background: #4A90E2; }
 		}
 	}
 
 	// 深色模式
 	&--dark {
-		background: transparent;
-
 		.chat-input__wrapper {
 			background: $dark-bg-card;
+			&--recording { background: #1F1815; }
 		}
-
-		.glow-border {
-			box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3);
-		}
-
-		.chat-input__field {
-			color: $dark-text-primary;
-		}
-
-		.chat-input__btn--voice {
-			background: $dark-bg-elevated;
-		}
-
-		.chat-input__btn--keyboard {
-			background: $dark-bg-elevated;
-			color: $dark-text-secondary;
-		}
-
+		.glow-border { box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3); }
+		.chat-input__field { color: $dark-text-primary; }
+		.chat-input__btn--voice,
+		.chat-input__btn--keyboard { background: $dark-bg-elevated; }
+		.chat-input__btn--keyboard { color: $dark-text-secondary; }
 		.chat-input__btn--send {
 			background: $dark-bg-elevated;
-
-			&.chat-input__btn--active {
-				background: $gradient-ai;
-			}
+			&.chat-input__btn--active { background: $gradient-ai; }
 		}
+		.voice-icon, .send-icon { filter: invert(0.6); }
+		.chat-input__btn--stop { background: rgba(239, 68, 68, 0.15); }
 
-		.voice-icon,
-		.send-icon {
-			filter: invert(0.6);
-		}
-
-		.chat-input__btn--stop {
-			background: rgba(239, 68, 68, 0.15);
+		.voice-area__text {
+			color: $dark-text-secondary;
+			&--recording { color: #F87171; }
 		}
 
 		.quick-action-btn {
 			background: #2A2D32;
 			border-color: #3A3D42;
-
-			&:active {
-				background: #353940;
-			}
-
-			&__text {
-				color: #E5E5E5;
-			}
+			&:active { background: #353940; }
+			&__text { color: #E5E5E5; }
 		}
 	}
 }
 
-// 功能按钮内层容器
+// ── 功能快捷按钮 ──────────────────────────────────────────────────
+
 .quick-actions-inner {
 	display: inline-flex;
 	gap: $spacing-md;
 	padding: $spacing-xs 0;
 }
 
-// 功能按钮样式
 .quick-action-btn {
 	display: inline-flex;
 	align-items: center;
@@ -444,25 +387,13 @@ export default {
 	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 	transition: all 0.2s ease;
 	flex-shrink: 0;
-
-	&:active {
-		transform: scale(0.96);
-		background: #F5F5F5;
-	}
-
-	&__icon {
-		font-size: 32rpx;
-		margin-right: 8rpx;
-	}
-
-	&__text {
-		font-size: 26rpx;
-		color: #1A1A1A;
-		font-weight: 500;
-	}
+	&:active { transform: scale(0.96); background: #F5F5F5; }
+	&__icon { font-size: 32rpx; margin-right: 8rpx; }
+	&__text { font-size: 26rpx; color: #1A1A1A; font-weight: 500; }
 }
 
-// 流光边框容器
+// ── 流光边框 ──────────────────────────────────────────────────────
+
 .glow-border {
 	position: relative;
 	overflow: hidden;
@@ -475,209 +406,177 @@ export default {
 	&::before {
 		content: '';
 		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 150vw;
-		height: 150vw;
+		top: 50%; left: 50%;
+		width: 150vw; height: 150vw;
 		transform: translate(-50%, -50%);
 		background: conic-gradient(
 			from 0deg,
-			#E2CBFF 0%,
-			#393BB2 25%,
-			#E2CBFF 50%,
-			#393BB2 75%,
+			#E2CBFF 0%, #393BB2 25%,
+			#E2CBFF 50%, #393BB2 75%,
 			#E2CBFF 100%
 		);
 		animation: glow-spin 4s linear infinite;
 	}
+
+	// 录制中：流光加速 + 切换为暖色
+	&--recording::before {
+		background: conic-gradient(
+			from 0deg,
+			#FFCDD2 0%, #EF4444 25%,
+			#FFCDD2 50%, #F97316 75%,
+			#FFCDD2 100%
+		);
+		animation-duration: 1.5s;
+	}
 }
 
 @keyframes glow-spin {
-	to {
-		transform: translate(-50%, -50%) rotate(360deg);
-	}
+	to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-// AI星光图标
-.ai-sparkle {
-	width: 32rpx;
-	height: 32rpx;
-	position: relative;
+// ── AI 星光图标 ───────────────────────────────────────────────────
 
+.ai-sparkle {
+	width: 32rpx; height: 32rpx;
+	position: relative;
 	&::before {
 		content: '';
 		position: absolute;
-		top: 0;
-		left: 50%;
+		top: 0; left: 50%;
 		transform: translateX(-50%);
-		width: 8rpx;
-		height: 32rpx;
+		width: 8rpx; height: 32rpx;
 		background: linear-gradient(180deg, #667EEA 0%, #F093FB 100%);
 		border-radius: 4rpx;
 	}
-
 	&::after {
 		content: '';
 		position: absolute;
-		top: 50%;
-		left: 0;
+		top: 50%; left: 0;
 		transform: translateY(-50%);
-		width: 32rpx;
-		height: 8rpx;
+		width: 32rpx; height: 8rpx;
 		background: linear-gradient(90deg, #667EEA 0%, #F093FB 100%);
 		border-radius: 4rpx;
 	}
 }
 
-// 语音图标
-.voice-icon {
-	width: 36rpx;
-	height: 36rpx;
-}
+// ── 图标尺寸 ──────────────────────────────────────────────────────
 
-// 发送图标
-.send-icon {
-	width: 36rpx;
-	height: 36rpx;
-}
+.voice-icon { width: 36rpx; height: 36rpx; }
+.send-icon  { width: 36rpx; height: 36rpx; }
+.stop-icon  { width: 20rpx; height: 20rpx; background: $color-error; border-radius: 4rpx; }
 
-// 停止图标 - 正方形
-.stop-icon {
-	width: 20rpx;
-	height: 20rpx;
-	background: $color-error;
-	border-radius: 4rpx;
-}
+// ── 键盘图标（纯 CSS）────────────────────────────────────────────
 
-// 键盘图标（纯CSS绘制）
 .keyboard-icon {
-	width: 36rpx;
-	height: 27rpx;
+	width: 36rpx; height: 27rpx;
 	border: 2.5rpx solid currentColor;
 	border-radius: 5rpx;
 	position: relative;
 	box-sizing: border-box;
-
-	// 上排三个按键点
 	&::before {
 		content: '';
 		position: absolute;
-		top: 6rpx;
-		left: 6rpx;
-		width: 5rpx;
-		height: 5rpx;
+		top: 6rpx; left: 6rpx;
+		width: 5rpx; height: 5rpx;
 		border-radius: 50%;
 		background: currentColor;
 		box-shadow: 9rpx 0 0 currentColor, 18rpx 0 0 currentColor;
 	}
-
-	// 下方空格键
 	&::after {
 		content: '';
 		position: absolute;
-		bottom: 5rpx;
-		left: 7rpx;
-		right: 7rpx;
+		bottom: 5rpx; left: 7rpx; right: 7rpx;
 		height: 3.5rpx;
 		border-radius: 2rpx;
 		background: currentColor;
 	}
 }
 
-// ─── 语音模式布局 ─────────────────────────────────────────────
+// ── 语音触摸区 ────────────────────────────────────────────────────
 
-.voice-mode {
+.voice-area {
+	flex: 1;
+	// 高度与文字模式 input 对齐，保持 wrapper 总高度不变
+	height: 64rpx;
 	display: flex;
-	flex-direction: column;
+	align-items: center;
+	justify-content: center;
 	gap: $spacing-sm;
 	animation: mode-in 0.25s ease;
 }
 
-// 底部操作行：记录按钮 + 键盘图标
-.voice-mode__bottom {
-	display: flex;
-	align-items: center;
-	gap: $spacing-sm;
+// 空闲脉冲点
+.voice-idle-dot {
+	width: 18rpx; height: 18rpx;
+	border-radius: 50%;
+	background: $gradient-ai;
+	flex-shrink: 0;
+	animation: voice-pulse 1.5s ease-in-out infinite;
 }
 
-// ─── 波形动效（仅录制时显示）────────────────────────────────────
+@keyframes voice-pulse {
+	0%, 100% { opacity: 0.45; transform: scale(1);    }
+	50%       { opacity: 1;    transform: scale(1.25); }
+}
+
+// 状态文字
+.voice-area__text {
+	font-size: 30rpx;
+	font-weight: 500;
+	color: $text-secondary;
+	letter-spacing: 2rpx;
+	transition: color 0.2s ease;
+	flex-shrink: 0;
+
+	&--recording {
+		color: #EF4444;
+		font-weight: 600;
+	}
+}
+
+// ── 录制波形（左右各 7 根，对称排列）────────────────────────────
 
 .waveform {
 	display: flex;
 	align-items: flex-end;
-	justify-content: center;
-	height: 56rpx;
-	gap: 7rpx;
-	padding-bottom: 4rpx;
+	gap: 4rpx;
+	height: 36rpx;
+	flex-shrink: 0;
 	animation: mode-in 0.2s ease;
+
+	// 右侧镜像：水平翻转，视觉上与左侧对称
+	&--mirror {
+		transform: scaleX(-1);
+	}
 }
 
 .waveform__bar {
-	width: 6rpx;
-	height: 48rpx;
-	border-radius: 3rpx;
-	background: linear-gradient(180deg, #667EEA 0%, #F093FB 100%);
+	width: 4rpx;
+	height: 36rpx;
+	border-radius: 2rpx;
+	background: linear-gradient(180deg, #EF4444 0%, #F97316 100%);
 	transform-origin: bottom center;
 	animation: wave-active 0.6s ease-in-out infinite;
 }
 
-// 13根柱子各自错开延迟与时长，形成自然声波律动
-.waveform__bar--1  { animation-delay: 0.00s; animation-duration: 0.55s; }
-.waveform__bar--2  { animation-delay: 0.12s; animation-duration: 0.70s; }
-.waveform__bar--3  { animation-delay: 0.24s; animation-duration: 0.45s; }
-.waveform__bar--4  { animation-delay: 0.36s; animation-duration: 0.60s; }
-.waveform__bar--5  { animation-delay: 0.08s; animation-duration: 0.75s; }
-.waveform__bar--6  { animation-delay: 0.20s; animation-duration: 0.50s; }
-.waveform__bar--7  { animation-delay: 0.44s; animation-duration: 0.65s; }
-.waveform__bar--8  { animation-delay: 0.16s; animation-duration: 0.48s; }
-.waveform__bar--9  { animation-delay: 0.32s; animation-duration: 0.72s; }
-.waveform__bar--10 { animation-delay: 0.04s; animation-duration: 0.58s; }
-.waveform__bar--11 { animation-delay: 0.28s; animation-duration: 0.42s; }
-.waveform__bar--12 { animation-delay: 0.40s; animation-duration: 0.68s; }
-.waveform__bar--13 { animation-delay: 0.10s; animation-duration: 0.53s; }
+// 7 根柱子错开延迟，形成自然律动
+.waveform__bar--1 { animation-delay: 0.00s; animation-duration: 0.55s; }
+.waveform__bar--2 { animation-delay: 0.12s; animation-duration: 0.70s; }
+.waveform__bar--3 { animation-delay: 0.24s; animation-duration: 0.45s; }
+.waveform__bar--4 { animation-delay: 0.08s; animation-duration: 0.62s; }
+.waveform__bar--5 { animation-delay: 0.36s; animation-duration: 0.75s; }
+.waveform__bar--6 { animation-delay: 0.20s; animation-duration: 0.50s; }
+.waveform__bar--7 { animation-delay: 0.44s; animation-duration: 0.65s; }
 
 @keyframes wave-active {
 	0%, 100% { transform: scaleY(0.18); }
 	50%       { transform: scaleY(1.00); }
 }
 
-// ─── 按住说话按钮 ─────────────────────────────────────────────
-
-.voice-record-btn {
-	flex: 1;
-	height: 88rpx;
-	border-radius: 44rpx;
-	background: $gradient-ai;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.35);
-	transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
-
-	&--recording {
-		background: linear-gradient(135deg, #EF4444 0%, #F97316 100%);
-		box-shadow: 0 8rpx 32rpx rgba(239, 68, 68, 0.4);
-		transform: scale(0.97);
-	}
-
-	&__text {
-		font-size: 32rpx;
-		font-weight: 600;
-		color: #FFFFFF;
-		letter-spacing: 4rpx;
-	}
-}
-
-// ─── 模式切换进入动画 ─────────────────────────────────────────
+// ── 模式切换进入动画 ──────────────────────────────────────────────
 
 @keyframes mode-in {
-	from {
-		opacity: 0;
-		transform: translateY(8rpx);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
+	from { opacity: 0; transform: translateY(6rpx); }
+	to   { opacity: 1; transform: translateY(0);    }
 }
 </style>

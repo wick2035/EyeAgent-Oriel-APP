@@ -506,6 +506,14 @@ export default {
 		background: $dark-bg-card;
 		box-shadow: none;
 
+		&__icon-area--consultation {
+			background: linear-gradient(135deg, rgba(74, 144, 217, 0.2) 0%, rgba(74, 144, 217, 0.4) 100%);
+		}
+
+		&__icon-area--followup {
+			background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(56, 189, 248, 0.3) 100%);
+		}
+
 		&__title {
 			color: $dark-text-primary;
 		}
