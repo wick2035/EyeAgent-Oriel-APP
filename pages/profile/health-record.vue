@@ -8,12 +8,9 @@
 			</view>
 		</view>
 
-		<!-- 内容区 -->
-		<view class="content">
-			<!-- 状态栏占位 -->
+		<!-- 固定顶栏 -->
+		<view class="fixed-header">
 			<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-
-			<!-- 导航栏 -->
 			<view class="navbar" :class="{ 'navbar--visible': pageReady }">
 				<view class="navbar__back" @click="goBack">
 					<view class="back-icon"></view>
@@ -21,15 +18,18 @@
 				<text class="navbar__title">健康档案</text>
 				<view class="navbar__placeholder"></view>
 			</view>
+		</view>
 
+		<!-- 内容区 -->
+		<view class="content">
 			<!-- 加载状态 -->
-			<view v-if="loading" class="loading-container">
+			<view v-if="loading" class="loading-container" :style="{ top: navbarTotalHeight }">
 				<view class="loading-spinner"></view>
 				<text class="loading-text">加载中...</text>
 			</view>
 
 			<!-- 主内容 -->
-			<scroll-view v-else class="scroll-area" scroll-y>
+			<scroll-view v-else class="scroll-area" scroll-y :style="{ top: navbarTotalHeight }">
 				<!-- 身份卡片 -->
 				<view class="identity-card" :class="{ 'section--visible': pageReady }">
 					<view class="identity-card__avatar">
@@ -249,6 +249,9 @@ export default {
 	computed: {
 		isDark() {
 			return isDarkMode()
+		},
+		navbarTotalHeight() {
+			return `calc(${this.statusBarHeight}px + 88rpx)`
 		},
 		patientState() {
 			return getPatientState()
@@ -491,6 +494,17 @@ $bmi-obese: #EF4444;
 	flex-shrink: 0;
 }
 
+// ==================== 固定顶栏 ====================
+.fixed-header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 100;
+	background: rgba(250, 251, 253, 0.92);
+	backdrop-filter: blur(20rpx);
+}
+
 // ==================== 导航栏 ====================
 .navbar {
 	display: flex;
@@ -539,7 +553,10 @@ $bmi-obese: #EF4444;
 
 // ==================== 加载状态 ====================
 .loading-container {
-	flex: 1;
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -567,10 +584,12 @@ $bmi-obese: #EF4444;
 
 // ==================== 滚动区域 ====================
 .scroll-area {
-	flex: 1;
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
 	padding: 0 32rpx;
 	box-sizing: border-box;
-	width: 100%;
 }
 
 // 入场动画
@@ -590,6 +609,7 @@ $bmi-obese: #EF4444;
 	padding: 32rpx;
 	background: #F0F4F8;
 	border-radius: 24rpx;
+	margin-top: 32rpx;
 	margin-bottom: 32rpx;
 	border: 1rpx solid #D0D7DE;
 	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
@@ -1103,6 +1123,10 @@ $bmi-obese: #EF4444;
 // ==================== 深色模式 ====================
 .health-page--dark {
 	background: $dark-bg-deep;
+
+	.fixed-header {
+		background: rgba(10, 22, 40, 0.92);
+	}
 
 	.bg-gradient {
 		background: linear-gradient(180deg, rgba(74, 144, 217, 0.15) 0%, $dark-bg-deep 100%);
