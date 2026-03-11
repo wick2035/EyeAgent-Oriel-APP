@@ -123,10 +123,20 @@ export default {
 
 		handleClick() {
 			this.close()
-			// 跳转到消息页面
-			uni.switchTab({
-				url: '/pages/messages/messages'
-			})
+			// 根据通知类型和附加数据精确导航
+			const data = this.notificationData
+			if (data) {
+				navigateByNotification({
+					type: data.reminderType,
+					appointmentId: data.appointmentId,
+					prescriptionId: data.prescriptionId
+				})
+			} else {
+				// 无通知数据时兜底跳转消息中心
+				uni.switchTab({
+					url: '/pages/messages/messages'
+				})
+			}
 		}
 	}
 }

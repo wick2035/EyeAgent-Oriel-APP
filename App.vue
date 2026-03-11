@@ -8,9 +8,10 @@ import {
 import { fetchUnreadNotifications } from "@/store/notification.js";
 import { checkTokenValid } from "@/utils/api/user.js";
 import { checkForUpdate, isUpdateDismissed } from "@/utils/version.js";
+import { navigateByNotification } from "@/utils/notificationNavigate.js";
 
 export default {
-  onLaunch: function () {
+  onLaunch: function (options) {
     console.log("AI医问通 启动");
     // #ifdef APP-PLUS
     // 隐藏原生 tabBar（仅 App 端需要）
@@ -26,6 +27,33 @@ export default {
       // 验证token有效性
       this.verifyTokenAndEnter();
     }
+
+    // #ifdef APP-PLUS
+    // 冷启动处理：App 从完全关闭状态被系统通知唤起时，
+    // 延迟 2s 等待登录验证和路由完成后，再处理推送消息并导航
+    setTimeout(() => {
+      if (!isLoggedIn()) return
+      try {
+        const messages = plus.push.getAllMessage()
+        if (messages && messages.length > 0) {
+          const lastMsg = messages[messages.length - 1]
+          if (lastMsg && lastMsg.payload && !this._coldStartHandled) {
+            this._coldStartHandled = true
+            const payload = typeof lastMsg.payload === 'string'
+              ? JSON.parse(lastMsg.payload) : lastMsg.payload
+            if (payload && payload.type) {
+              console.log('[Push] 冷启动检测到推送通知:', payload)
+              navigateByNotification(payload)
+            }
+          }
+          // 清空通知中心的所有消息，防止下次冷启动重复处理
+          plus.push.clear()
+        }
+      } catch (e) {
+        console.warn('[Push] 冷启动推送处理失败:', e)
+      }
+    }, 2000)
+    // #endif
   },
   onShow: function () {
     console.log("App Show");
@@ -143,6 +171,27 @@ export default {
           console.warn('[Push] 通知权限请求失败或被拒绝:', err)
         }
       })
+
+      // 监听用户从系统通知中心点击通知（App 在后台时触发）
+      // 用标记位防止重复注册
+      if (!this._pushClickListenerAdded) {
+        this._pushClickListenerAdded = true
+        plus.push.addEventListener('click', (msg) => {
+          console.log('[Push] 用户点击了系统通知:', msg)
+          try {
+            const payload = typeof msg.payload === 'string'
+              ? JSON.parse(msg.payload) : (msg.payload || {})
+            navigateByNotification({
+              type: payload.type,
+              appointmentId: payload.appointmentId,
+              prescriptionId: payload.prescriptionId
+            })
+          } catch (e) {
+            console.warn('[Push] 解析通知 payload 失败:', e)
+            uni.switchTab({ url: '/pages/messages/messages' })
+          }
+        }, false)
+      }
       // #endif
     },
 

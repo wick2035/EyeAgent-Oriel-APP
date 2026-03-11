@@ -77,108 +77,162 @@
 
 			<!-- 会议卡片列表 -->
 			<view v-if="!loading && currentList.length > 0" class="meeting-list">
-				<view
-					v-for="(meeting, index) in currentList"
-					:key="meeting.id"
-					class="meeting-card"
-					:class="[
-						'meeting-card--' + getDisplayState(meeting),
-						{ 'meeting-card--show': animationReady }
-					]"
-					:style="{ animationDelay: (index * 100) + 'ms' }"
-				>
-					<!-- 卡片头部：带色彩渐变的 header band -->
-					<view class="card-header-band">
-						<view class="card-header">
-							<view class="status-chip" :class="'status-chip--' + getDisplayState(meeting)">
-								<view
-									v-if="['waiting','in_progress','imminent'].includes(getDisplayState(meeting))"
-									class="pulse-dot"
-								></view>
-								<text class="status-chip__text">{{ getStatusLabel(meeting) }}</text>
-							</view>
-							<text
-								class="card-time"
-								:class="getTimeColorClass(meeting)"
-							>{{ getTimeDisplay(meeting) }}</text>
-						</view>
-					</view>
 
-					<!-- 医生信息 -->
-					<view class="doctor-row">
-						<view class="doctor-avatar-wrap">
-							<image
-								class="doctor-avatar"
-								:src="meeting.doctorAvatar || '/static/temporary/male.jpg'"
-								mode="aspectFill"
-							/>
-						</view>
-						<view class="doctor-info">
-							<view class="doctor-name-row">
-								<text class="doctor-name">{{ meeting.doctorName || '主治医生' }}</text>
-								<view v-if="meeting.doctorTitle" class="doctor-title-tag">
-									<text class="doctor-title-text">{{ meeting.doctorTitle }}</text>
-								</view>
-							</view>
-							<text v-if="meeting.doctorDept" class="doctor-dept">{{ meeting.doctorDept }}</text>
-						</view>
-					</view>
-
-					<!-- 分隔线 -->
-					<view class="card-divider"></view>
-
-					<!-- 预约信息 -->
-					<view class="meta-row">
-						<view class="meta-item">
-							<text class="meta-icon">📅</text>
-							<text class="meta-text">{{ formatScheduledDate(meeting.scheduledAt) }}</text>
-						</view>
-						<view v-if="meeting.notes" class="meta-item">
-							<text class="meta-icon">📋</text>
-							<text class="meta-text meta-text--notes" :numberOfLines="1">{{ meeting.notes }}</text>
-						</view>
-					</view>
-
-					<!-- 操作按钮 -->
+				<!-- 历史记录 Tab：appointment-card 简洁风格 -->
+				<block v-if="activeTab === 1">
 					<view
-						v-if="meeting.status !== 'COMPLETED' && meeting.status !== 'CANCELLED'"
-						class="card-actions"
+						v-for="(meeting, index) in currentList"
+						:key="meeting.id"
+						class="history-card"
+						:class="{ 'history-card--show': animationReady }"
+						:style="{ animationDelay: (index * 80) + 'ms' }"
 					>
-						<!-- 取消按钮 -->
-						<view
-							v-if="canCancel(meeting)"
-							class="action-btn action-btn--ghost"
-							@click.stop="openCancelSheet(meeting)"
-						>
-							<text class="action-btn__text">取消预约</text>
+						<!-- Header：状态标签 + 日期 -->
+						<view class="history-card__header">
+							<view
+								class="history-card__status"
+								:class="meeting.status === 'COMPLETED' ? 'history-card__status--completed' : 'history-card__status--cancelled'"
+							>
+								{{ meeting.status === 'COMPLETED' ? '已完成' : '已取消' }}
+							</view>
+							<text class="history-card__date">{{ formatShortDate(meeting.scheduledAt) }}</text>
 						</view>
-						<view v-else class="action-btn-placeholder"></view>
 
-						<!-- 进入诊室按钮 -->
+						<!-- Body -->
+						<view class="history-card__body">
+							<!-- 医生名称行 -->
+							<view class="history-card__doctor-row">
+								<image
+									class="history-card__avatar"
+									:src="meeting.doctorAvatar || '/static/temporary/male.jpg'"
+									mode="aspectFill"
+								/>
+								<text class="history-card__doctor-name">{{ meeting.doctorName || '主治医生' }}</text>
+							</view>
+							<!-- 科室 + 职称行 -->
+							<view class="history-card__info">
+								<text v-if="meeting.doctorDept" class="history-card__dept">{{ meeting.doctorDept }}</text>
+								<text v-if="meeting.doctorTitle" class="history-card__title-tag">{{ meeting.doctorTitle }}</text>
+							</view>
+							<!-- 时间行 -->
+							<view class="history-card__time-row">
+								<view class="history-time-icon"></view>
+								<text class="history-card__time-text">{{ formatScheduledDate(meeting.scheduledAt) }}</text>
+							</view>
+							<!-- 备注 -->
+							<text v-if="meeting.notes" class="history-card__notes">{{ meeting.notes }}</text>
+							<!-- 取消原因 -->
+							<text v-if="meeting.cancelReason" class="history-card__reason">取消原因：{{ meeting.cancelReason }}</text>
+						</view>
+					</view>
+				</block>
+
+				<!-- 待复诊 Tab：保持原有 meeting-card 风格 -->
+				<block v-else>
+					<view
+						v-for="(meeting, index) in currentList"
+						:key="meeting.id"
+						class="meeting-card"
+						:class="[
+							'meeting-card--' + getDisplayState(meeting),
+							{ 'meeting-card--show': animationReady }
+						]"
+						:style="{ animationDelay: (index * 100) + 'ms' }"
+					>
+						<!-- 卡片头部：带色彩渐变的 header band -->
+						<view class="card-header-band">
+							<view class="card-header">
+								<view class="status-chip" :class="'status-chip--' + getDisplayState(meeting)">
+									<view
+										v-if="['waiting','in_progress','imminent'].includes(getDisplayState(meeting))"
+										class="pulse-dot"
+									></view>
+									<text class="status-chip__text">{{ getStatusLabel(meeting) }}</text>
+								</view>
+								<text
+									class="card-time"
+									:class="getTimeColorClass(meeting)"
+								>{{ getTimeDisplay(meeting) }}</text>
+							</view>
+						</view>
+
+						<!-- 医生信息 -->
+						<view class="doctor-row">
+							<view class="doctor-avatar-wrap">
+								<image
+									class="doctor-avatar"
+									:src="meeting.doctorAvatar || '/static/temporary/male.jpg'"
+									mode="aspectFill"
+								/>
+							</view>
+							<view class="doctor-info">
+								<view class="doctor-name-row">
+									<text class="doctor-name">{{ meeting.doctorName || '主治医生' }}</text>
+									<view v-if="meeting.doctorTitle" class="doctor-title-tag">
+										<text class="doctor-title-text">{{ meeting.doctorTitle }}</text>
+									</view>
+								</view>
+								<text v-if="meeting.doctorDept" class="doctor-dept">{{ meeting.doctorDept }}</text>
+							</view>
+						</view>
+
+						<!-- 分隔线 -->
+						<view class="card-divider"></view>
+
+						<!-- 预约信息 -->
+						<view class="meta-row">
+							<view class="meta-item">
+								<text class="meta-icon">📅</text>
+								<text class="meta-text">{{ formatScheduledDate(meeting.scheduledAt) }}</text>
+							</view>
+							<view v-if="meeting.notes" class="meta-item">
+								<text class="meta-icon">📋</text>
+								<text class="meta-text meta-text--notes" :numberOfLines="1">{{ meeting.notes }}</text>
+							</view>
+						</view>
+
+						<!-- 操作按钮 -->
 						<view
-							class="action-btn action-btn--enter"
-							:class="{
-								'action-btn--enter-active': canEnter(meeting),
-								'action-btn--enter-progress': meeting.status === 'IN_PROGRESS',
-								'action-btn--enter-disabled': !canEnter(meeting)
-							}"
-							@click.stop="canEnter(meeting) && enterMeeting(meeting)"
+							v-if="meeting.status !== 'COMPLETED' && meeting.status !== 'CANCELLED'"
+							class="card-actions"
 						>
-							<text class="action-btn__text action-btn__text--enter">
-								{{ meeting.status === 'IN_PROGRESS' ? '立即进入' : '进入诊室' }}
+							<!-- 取消按钮 -->
+							<view
+								v-if="canCancel(meeting)"
+								class="action-btn action-btn--ghost"
+								@click.stop="openCancelSheet(meeting)"
+							>
+								<text class="action-btn__text">取消预约</text>
+							</view>
+							<view v-else class="action-btn-placeholder"></view>
+
+							<!-- 进入诊室按钮 -->
+							<view
+								class="action-btn action-btn--enter"
+								:class="{
+									'action-btn--enter-active': canEnter(meeting),
+									'action-btn--enter-progress': meeting.status === 'IN_PROGRESS',
+									'action-btn--enter-disabled': !canEnter(meeting)
+								}"
+								@click.stop="canEnter(meeting) && enterMeeting(meeting)"
+							>
+								<text class="action-btn__text action-btn__text--enter">
+									{{ meeting.status === 'IN_PROGRESS' ? '立即进入' : '进入诊室' }}
+								</text>
+								<text class="action-btn__arrow">→</text>
+							</view>
+						</view>
+
+						<!-- 完成/取消状态标记 -->
+						<view v-else class="card-finished">
+							<text class="card-finished__text">
+								{{ meeting.status === 'COMPLETED' ? '✓ 诊疗已完成' : '✗ 预约已取消' }}
 							</text>
-							<text class="action-btn__arrow">→</text>
+							<text v-if="meeting.cancelReason" class="card-finished__reason">{{ meeting.cancelReason }}</text>
 						</view>
 					</view>
+				</block>
 
-					<!-- 完成/取消状态标记 -->
-					<view v-else class="card-finished">
-						<text class="card-finished__text">
-							{{ meeting.status === 'COMPLETED' ? '✓ 诊疗已完成' : '✗ 预约已取消' }}
-						</text>
-						<text v-if="meeting.cancelReason" class="card-finished__reason">{{ meeting.cancelReason }}</text>
-					</view>
-				</view>
 			</view>
 
 			<!-- 空状态 -->
@@ -1041,6 +1095,160 @@ export default {
 }
 
 // ============================================================
+// 历史记录卡片（对齐 appointment-card 风格）
+// ============================================================
+.history-card {
+	background: #fff;
+	border-radius: $radius-lg;
+	padding: $spacing-lg;
+	margin-bottom: $spacing-md;
+	box-shadow: $shadow-sm;
+	opacity: 0;
+	transform: translateY(24rpx);
+	transition: transform 0.25s ease;
+
+	&--show {
+		animation: cardFadeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	}
+
+	&:active {
+		transform: scale(0.98);
+	}
+
+	&__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: $spacing-md;
+		padding-bottom: $spacing-md;
+		border-bottom: 2rpx solid $border-color-light;
+	}
+
+	&__status {
+		font-size: $font-size-sm;
+		padding: 6rpx 16rpx;
+		border-radius: $radius-sm;
+		font-weight: $font-weight-medium;
+
+		&--completed {
+			background: rgba(16, 185, 129, 0.1);
+			color: $color-success;
+		}
+
+		&--cancelled {
+			background: rgba(156, 163, 175, 0.1);
+			color: $text-muted;
+		}
+	}
+
+	&__date {
+		font-size: $font-size-sm;
+		color: $text-secondary;
+	}
+
+	&__body {
+		display: flex;
+		flex-direction: column;
+		gap: $spacing-sm;
+	}
+
+	&__doctor-row {
+		display: flex;
+		align-items: center;
+		gap: $spacing-sm;
+	}
+
+	&__avatar {
+		width: 48rpx;
+		height: 48rpx;
+		border-radius: 50%;
+		overflow: hidden;
+		flex-shrink: 0;
+	}
+
+	&__doctor-name {
+		font-size: $font-size-lg;
+		font-weight: $font-weight-semibold;
+		color: $text-primary;
+	}
+
+	&__info {
+		display: flex;
+		align-items: center;
+		gap: $spacing-md;
+	}
+
+	&__dept {
+		font-size: $font-size-base;
+		color: $color-primary;
+		background: rgba(30, 58, 95, 0.06);
+		padding: 4rpx 12rpx;
+		border-radius: $radius-xs;
+	}
+
+	&__title-tag {
+		font-size: $font-size-base;
+		color: $text-secondary;
+	}
+
+	&__time-row {
+		display: flex;
+		align-items: center;
+		gap: $spacing-xs;
+	}
+
+	&__time-text {
+		font-size: $font-size-sm;
+		color: $text-muted;
+	}
+
+	&__notes {
+		font-size: $font-size-xs;
+		color: $text-muted;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	&__reason {
+		font-size: $font-size-xs;
+		color: $text-muted;
+		font-style: italic;
+	}
+}
+
+.history-time-icon {
+	width: 28rpx;
+	height: 28rpx;
+	flex-shrink: 0;
+	position: relative;
+
+	&::before {
+		content: "";
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 20rpx;
+		height: 20rpx;
+		border: 3rpx solid $text-muted;
+		border-radius: 50%;
+	}
+
+	&::after {
+		content: "";
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 8rpx;
+		height: 3rpx;
+		background: $text-muted;
+		transform-origin: left center;
+		transform: translateY(-50%) rotate(-45deg);
+	}
+}
+
+// ============================================================
 // 骨架屏
 // ============================================================
 .skeleton-wrap {
@@ -1499,6 +1707,27 @@ export default {
 	.sheet-btn--ghost {
 		border-color: rgba(255, 255, 255, 0.12);
 		.sheet-btn__text { color: $dark-text-secondary; }
+	}
+
+	.history-card {
+		background: $dark-bg-card;
+
+		&__header        { border-bottom-color: $dark-border-color; }
+		&__date          { color: $dark-text-secondary; }
+		&__doctor-name   { color: $dark-text-primary; }
+		&__dept {
+			color: $dark-color-primary;
+			background: rgba(74, 144, 217, 0.1);
+		}
+		&__title-tag     { color: $dark-text-secondary; }
+		&__time-text     { color: $dark-text-muted; }
+		&__notes         { color: $dark-text-muted; }
+		&__reason        { color: $dark-text-muted; }
+	}
+
+	.history-time-icon {
+		&::before { border-color: $dark-text-muted; }
+		&::after  { background: $dark-text-muted; }
 	}
 }
 </style>

@@ -361,6 +361,8 @@ function showSystemNotification(notification) {
 		plus.push.createMessage(content, JSON.stringify({
 			type: notification.reminderType,
 			reminderId: notification.reminderId,
+			appointmentId: notification.appointmentId || null,
+			prescriptionId: notification.prescriptionId || null,
 			action: 'open_' + (notification.reminderType || 'messages').toLowerCase()
 		}), {
 			title: notification.reminderTitle || defaultTitles[notification.reminderType] || '新消息',
