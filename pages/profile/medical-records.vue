@@ -368,9 +368,9 @@ export default {
 
     getStatusText(status) {
       const map = {
-        pending: "待诊断",
-        in_progress: "正在诊断",
-        completed: "完成诊断",
+        pending: "待就诊",
+        in_progress: "诊断中",
+        completed: "已完成",
         expired: "已过期",
         cancelled: "已取消",
         canceled: "已取消",

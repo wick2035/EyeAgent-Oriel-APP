@@ -1034,3 +1034,180 @@ export const mockData = {
 	hotTags: mockHotTags,
 	newsList: mockNewsData
 }
+
+// ==================== 评论 Mock 数据 ====================
+
+const mockCommentsData = [
+	{
+		id: 1001, newsId: 1, userId: 'u001',
+		avatar: 'https://picsum.photos/100/100?random=101',
+		nickname: '张小明',
+		content: '这篇文章写得很好，作为一个长期近视的患者，读完之后对手术有了更清晰的认识，特别是角膜厚度那部分解释，非常实用！',
+		likeCount: 23, isLiked: false, replyCount: 1,
+		createTime: '2024-01-15 14:30:00',
+		replies: [{
+			id: 2001, userId: 'u002',
+			avatar: 'https://picsum.photos/100/100?random=102',
+			nickname: '李医生', content: '感谢认可！有问题可预约门诊详细咨询。',
+			replyToNickname: '张小明', likeCount: 5, isLiked: false,
+			createTime: '2024-01-15 15:10:00'
+		}]
+	},
+	{
+		id: 1002, newsId: 1, userId: 'u003',
+		avatar: 'https://picsum.photos/100/100?random=103', nickname: '李医生',
+		content: '建议认真阅读术前停戴隐形眼镜的部分，临床上很多患者忽视这点，导致检查数据不准确。',
+		likeCount: 18, isLiked: false, replyCount: 2, createTime: '2024-01-15 11:20:00',
+		replies: [
+			{
+				id: 2002, userId: 'u004', avatar: 'https://picsum.photos/100/100?random=104',
+				nickname: '王小红', content: '我就是因为这个被推迟了检查，提醒很重要！',
+				replyToNickname: '李医生', likeCount: 8, isLiked: false, createTime: '2024-01-15 12:00:00'
+			},
+			{
+				id: 2003, userId: 'u005', avatar: 'https://picsum.photos/100/100?random=105',
+				nickname: '陈同学', content: '软镜要停多久来着？',
+				replyToNickname: '李医生', likeCount: 1, isLiked: false, createTime: '2024-01-15 13:30:00'
+			}
+		]
+	},
+	{
+		id: 1003, newsId: 1, userId: 'u006', avatar: 'https://picsum.photos/100/100?random=106',
+		nickname: '赵梅', content: '上个月刚做了全飞秒，视力从1000度恢复到1.2，完全超出预期！',
+		likeCount: 45, isLiked: false, replyCount: 5, createTime: '2024-01-15 09:15:00', replies: []
+	},
+	{
+		id: 1004, newsId: 1, userId: 'u007', avatar: 'https://picsum.photos/100/100?random=107',
+		nickname: '孙伟', content: '价格方面有没有建议？各医院差异还是挺大的。',
+		likeCount: 12, isLiked: false, replyCount: 1, createTime: '2024-01-14 20:45:00', replies: []
+	},
+	{
+		id: 1005, newsId: 1, userId: 'u008', avatar: 'https://picsum.photos/100/100?random=108',
+		nickname: '刘艳', content: '干眼症患者可以做近视手术吗？文中没有提到这种情况……',
+		likeCount: 31, isLiked: false, replyCount: 4, createTime: '2024-01-14 18:00:00', replies: []
+	},
+	{
+		id: 1006, newsId: 1, userId: 'u009', avatar: 'https://picsum.photos/100/100?random=109',
+		nickname: '周健', content: '好文章，收藏了，准备年后去检查，看看自己适不适合手术。',
+		likeCount: 9, isLiked: false, replyCount: 0, createTime: '2024-01-14 15:30:00', replies: []
+	},
+	{
+		id: 1007, newsId: 1, userId: 'u010', avatar: 'https://picsum.photos/100/100?random=110',
+		nickname: '吴静', content: '我妈妈55岁有白内障，她还能做近视手术吗？',
+		likeCount: 7, isLiked: false, replyCount: 2, createTime: '2024-01-14 12:00:00', replies: []
+	},
+	{
+		id: 1008, newsId: 1, userId: 'u011', avatar: 'https://picsum.photos/100/100?random=111',
+		nickname: '郑浩', content: '一直在纠结全飞秒和ICL，看了这篇文章终于下定决心了。',
+		likeCount: 19, isLiked: false, replyCount: 1, createTime: '2024-01-14 09:30:00', replies: []
+	},
+	{
+		id: 1009, newsId: 1, userId: 'u012', avatar: 'https://picsum.photos/100/100?random=112',
+		nickname: '陈晓', content: '有没有推荐的医院？广州这边哪家做近视手术比较好？',
+		likeCount: 6, isLiked: false, replyCount: 3, createTime: '2024-01-13 21:00:00', replies: []
+	},
+	{
+		id: 1010, newsId: 1, userId: 'u013', avatar: 'https://picsum.photos/100/100?random=113',
+		nickname: '林婷', content: '术后干眼症会持续多久？我朋友做完之后眼睛一直很干。',
+		likeCount: 28, isLiked: false, replyCount: 2, createTime: '2024-01-13 16:45:00', replies: []
+	}
+]
+
+// ==================== 评论 API ====================
+
+/**
+ * 获取评论列表
+ * @param {Number} newsId - 新闻ID
+ * @param {Object} params - { page, pageSize }
+ */
+export function getComments(newsId, params = {}) {
+	// TODO: return request.get(`/news/${newsId}/comments`, params)
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			const { page = 1, pageSize = 20 } = params
+			const all = mockCommentsData
+			const total = all.length
+			const start = (page - 1) * pageSize
+			const end = start + pageSize
+			resolve({
+				code: 200, message: 'success',
+				data: { list: all.slice(start, end), total, page, pageSize, hasMore: end < total }
+			})
+		}, 400)
+	})
+}
+
+/**
+ * 发布评论
+ * @param {Number} newsId - 新闻ID
+ * @param {Object} data - { content }
+ */
+export function postComment(newsId, data) {
+	// TODO: return request.post(`/news/${newsId}/comments`, data)
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			const newComment = {
+				id: Date.now(), newsId, userId: 'current_user',
+				avatar: '', nickname: '我', content: data.content,
+				likeCount: 0, isLiked: false, replyCount: 0,
+				createTime: new Date().toISOString().replace('T', ' ').slice(0, 19),
+				replies: []
+			}
+			const news = mockNewsData.find(item => item.id === newsId)
+			if (news) news.commentCount++
+			resolve({ code: 200, message: 'success', data: newComment })
+		}, 300)
+	})
+}
+
+/**
+ * 点赞 / 取消点赞评论
+ * @param {Number} commentId - 评论ID
+ */
+export function likeComment(commentId) {
+	// TODO: return request.post(`/comments/${commentId}/like`)
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			let target = mockCommentsData.find(c => c.id === commentId)
+			if (!target) {
+				for (const c of mockCommentsData) {
+					target = c.replies.find(r => r.id === commentId)
+					if (target) break
+				}
+			}
+			if (target) {
+				target.isLiked = !target.isLiked
+				target.likeCount += target.isLiked ? 1 : -1
+			}
+			resolve({
+				code: 200, message: 'success',
+				data: { commentId, isLiked: target?.isLiked || false, likeCount: target?.likeCount || 0 }
+			})
+		}, 200)
+	})
+}
+
+/**
+ * 回复评论
+ * @param {Number} commentId - 被回复的评论ID
+ * @param {Object} data - { content, replyToNickname }
+ */
+export function replyComment(commentId, data) {
+	// TODO: return request.post(`/comments/${commentId}/reply`, data)
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			const newReply = {
+				id: Date.now(), userId: 'current_user', avatar: '', nickname: '我',
+				content: data.content, replyToNickname: data.replyToNickname,
+				likeCount: 0, isLiked: false,
+				createTime: new Date().toISOString().replace('T', ' ').slice(0, 19)
+			}
+			const parent = mockCommentsData.find(c => c.id === commentId)
+			if (parent) {
+				parent.replies.push(newReply)
+				parent.replyCount++
+			}
+			resolve({ code: 200, message: 'success', data: newReply })
+		}, 300)
+	})
+}

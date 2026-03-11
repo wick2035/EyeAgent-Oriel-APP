@@ -1,16 +1,22 @@
 <template>
 	<view class="page" :class="{ 'page--dark': isDark }">
-		<!-- 状态栏占位 -->
-		<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+		<!-- 固定顶栏 -->
+		<view class="fixed-header">
+			<!-- 状态栏占位 -->
+			<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
 
-		<!-- 导航栏 -->
-		<view class="navbar">
-			<view class="navbar__back" @click="goBack">
-				<view class="navbar__back-icon"></view>
+			<!-- 导航栏 -->
+			<view class="navbar">
+				<view class="navbar__back" @click="goBack">
+					<view class="navbar__back-icon"></view>
+				</view>
+				<text class="navbar__title">{{ hospitalName }}</text>
+				<view class="navbar__placeholder"></view>
 			</view>
-			<text class="navbar__title">{{ hospitalName }}</text>
-			<view class="navbar__placeholder"></view>
 		</view>
+
+		<!-- 顶栏占位（防止内容被固定顶栏遮挡） -->
+		<view :style="{ height: headerHeight + 'px' }"></view>
 
 		<!-- 内容区域 -->
 		<scroll-view class="content" scroll-y>
@@ -133,6 +139,7 @@ export default {
 	data() {
 		return {
 			statusBarHeight: 44,
+			headerHeight: 0,
 			hospitalId: '',
 			hospitalName: '',
 			hospitalDetail: null,
@@ -153,6 +160,17 @@ export default {
 		this.hospitalName = decodeURIComponent(options.hospitalName || '选择科室')
 		this.getStatusBarHeight()
 		this.loadData()
+	},
+	onReady() {
+		this.$nextTick(() => {
+			uni.createSelectorQuery()
+				.in(this)
+				.select('.fixed-header')
+				.boundingClientRect(rect => {
+					if (rect) this.headerHeight = rect.height
+				})
+				.exec()
+		})
 	},
 	methods: {
 		getStatusBarHeight() {
@@ -201,6 +219,16 @@ export default {
 	background: $bg-base;
 	display: flex;
 	flex-direction: column;
+}
+
+// 固定顶栏
+.fixed-header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 100;
+	background: $bg-base;
 }
 
 .status-bar {
@@ -827,6 +855,10 @@ export default {
 // ========== 深色模式 ==========
 .page--dark {
 	background: $dark-bg-base;
+
+	.fixed-header {
+		background: $dark-bg-base;
+	}
 
 	.navbar {
 		&__back-icon { border-color: $dark-text-primary; }

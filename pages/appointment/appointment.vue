@@ -33,7 +33,7 @@
       <view class="location-bar">
         <view class="location-bar__left">
           <image class="location-bar__icon" src="@/static/location.svg" mode="aspectFit" />
-          <text class="location-bar__city">{{ currentCity }}</text>
+          <text class="location-bar__city">{{ locating ? '定位中...' : (currentCity || '未知位置') }}</text>
         </view>
         <view class="location-bar__action" @click="switchCity">
           <text>切换</text>
@@ -245,7 +245,8 @@ export default {
       statusBarHeight: 44,
       headerHeight: 0,
       searchKeyword: "",
-      currentCity: "深圳市",
+      currentCity: "",
+      locating: false,
       loading: true,
       hospitals: [],
       allHospitals: [], // 存储全部医院数据用于筛选
@@ -255,7 +256,7 @@ export default {
       // 城市选择器
       showCityPicker: false,
       showCityContent: false,
-      locatedCity: "深圳市",
+      locatedCity: "",
       hotCities: [
         "全国",
         "深圳市",
@@ -405,12 +406,11 @@ export default {
   },
   onLoad() {
     this.getStatusBarHeight();
-    // 读取保存的城市
     const savedCity = uni.getStorageSync("selectedCity");
     if (savedCity) {
       this.currentCity = savedCity;
     }
-    this.loadHospitals();
+    this.autoLocateCity();
   },
   onShow() {
     // #ifdef APP-PLUS
@@ -430,6 +430,61 @@ export default {
     getStatusBarHeight() {
       const sysInfo = uni.getSystemInfoSync();
       this.statusBarHeight = sysInfo.statusBarHeight || 44;
+    },
+
+    // 系统定位自动获取城市
+    autoLocateCity() {
+      this.locating = true;
+      uni.getLocation({
+        type: 'gcj02',
+        geocode: true,
+        success: (res) => {
+          const city = res.city || res.province;
+          if (city) {
+            // 高德/百度提供商直接返回城市名
+            this.locating = false;
+            const cityName = city.endsWith('市') ? city : city + '市';
+            this.locatedCity = cityName;
+            if (!uni.getStorageSync("selectedCity")) {
+              this.currentCity = cityName;
+            }
+            this.loadHospitals();
+          } else {
+            // system 提供商只有经纬度，降级用 IP 定位获取城市名
+            this._locateCityByIP();
+          }
+        },
+        fail: () => {
+          // GPS 权限拒绝或不可用，降级用 IP 定位
+          this._locateCityByIP();
+        }
+      });
+    },
+
+    // IP 定位获取城市（降级方案）
+    _locateCityByIP() {
+      uni.request({
+        url: 'https://whois.pconline.com.cn/ipJson.jsp?json=true',
+        success: (res) => {
+          this.locating = false;
+          const data = res.data;
+          if (data && data.city) {
+            const cityName = data.city.endsWith('市') ? data.city : data.city + '市';
+            this.locatedCity = cityName;
+            if (!uni.getStorageSync("selectedCity")) {
+              this.currentCity = cityName;
+            }
+          } else if (!this.currentCity) {
+            this.currentCity = "全国";
+          }
+          this.loadHospitals();
+        },
+        fail: () => {
+          this.locating = false;
+          if (!this.currentCity) this.currentCity = "全国";
+          this.loadHospitals();
+        }
+      });
     },
 
     async loadHospitals() {

@@ -2,35 +2,42 @@
 	<view
 		v-show="visible"
 		class="notification-bar"
-		:class="[`notification-bar--${type}`, { 'notification-bar--dark': isDark, 'notification-bar--active': active }]"
-		:style="{ top: statusBarHeight + 'px' }"
+		:class="{ 'notification-bar--active': active }"
+		:style="{ paddingTop: statusBarHeight + 'px' }"
 		@click="handleClick"
 	>
-		<view class="notification-bar__content">
-			<!-- 类型图标 -->
-			<view class="notification-bar__icon" :class="`notification-bar__icon--${type}`">
-				<view v-if="type === 'system'" class="icon-system"></view>
-				<view v-else-if="type === 'reserve'" class="icon-reserve"></view>
-				<view v-else class="icon-medication"></view>
+		<!-- 内层彩色卡片（left/right margin + 圆角 + 背景色都在这里） -->
+		<view
+			class="notification-bar__card"
+			:class="[`notification-bar__card--${type}`, { 'notification-bar__card--dark': isDark }]"
+		>
+			<view class="notification-bar__content">
+				<!-- 类型图标 -->
+				<view class="notification-bar__icon" :class="`notification-bar__icon--${type}`">
+					<view v-if="type === 'system'" class="icon-system"></view>
+					<view v-else-if="type === 'reserve'" class="icon-reserve"></view>
+					<view v-else class="icon-medication"></view>
+				</view>
+				<!-- 文字内容 -->
+				<view class="notification-bar__text">
+					<text class="notification-bar__title">{{ title }}</text>
+					<text v-if="content" class="notification-bar__desc">{{ content }}</text>
+				</view>
+				<!-- 关闭按钮 -->
+				<view class="notification-bar__close" @click.stop="close">
+					<text class="close-icon">×</text>
+				</view>
 			</view>
-			<!-- 文字内容 -->
-			<view class="notification-bar__text">
-				<text class="notification-bar__title">{{ title }}</text>
-				<text v-if="content" class="notification-bar__desc">{{ content }}</text>
-			</view>
-			<!-- 关闭按钮 -->
-			<view class="notification-bar__close" @click.stop="close">
-				<text class="close-icon">×</text>
-			</view>
+			<!-- 进度条 -->
+			<view class="notification-bar__progress" :class="{ 'notification-bar__progress--active': active }" :style="{ animationDuration: duration + 'ms' }"></view>
 		</view>
-		<!-- 进度条 -->
-		<view class="notification-bar__progress" :class="{ 'notification-bar__progress--active': active }" :style="{ animationDuration: duration + 'ms' }"></view>
 	</view>
 </template>
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
 import { setNotificationBarReady } from '@/utils/websocket.js'
+import { navigateByNotification } from '@/utils/notificationNavigate.js'
 
 export default {
 	name: 'TopNotificationBar',
@@ -126,14 +133,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+// 外层透明容器：仅负责动画（transform / opacity），固定在顶部全宽
+// paddingTop 由 :style 动态注入（= statusBarHeight px），形成状态栏下方的透明间距
+// top: 0 保证 iOS App-plus 的 translateY(-100%) 动画正常工作
 .notification-bar {
 	position: fixed;
-	left: 24rpx;
-	right: 24rpx;
+	left: 0;
+	right: 0;
+	top: 0;
 	z-index: 9999;
-	border-radius: 24rpx;
-	overflow: hidden;
-	box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
 	-webkit-transform: translateY(-100%);
 	transform: translateY(-100%);
 	opacity: 0;
@@ -145,6 +153,14 @@ export default {
 		transform: translateY(0);
 		opacity: 1;
 	}
+}
+
+// 内层彩色卡片：承载背景色、圆角、阴影、左右留白
+.notification-bar__card {
+	margin: 0 24rpx;
+	border-radius: 24rpx;
+	overflow: hidden;
+	box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
 
 	&--system {
 		background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
@@ -158,76 +174,75 @@ export default {
 		background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
 	}
 
-	&__content {
-		display: flex;
-		align-items: center;
-		padding: 24rpx 32rpx;
-	}
-
-	&__icon {
-		width: 72rpx;
-		height: 72rpx;
-		border-radius: 16rpx;
-		background: rgba(255, 255, 255, 0.2);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		margin-right: 24rpx;
-	}
-
-	&__text {
-		flex: 1;
-		min-width: 0;
-	}
-
-	&__title {
-		display: block;
-		font-size: 30rpx;
-		font-weight: 600;
-		color: #fff;
-		margin-bottom: 4rpx;
-	}
-
-	&__desc {
-		display: block;
-		font-size: 26rpx;
-		color: rgba(255, 255, 255, 0.85);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	&__close {
-		width: 56rpx;
-		height: 56rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		margin-left: 16rpx;
-
-		.close-icon {
-			font-size: 40rpx;
-			color: rgba(255, 255, 255, 0.8);
-			font-weight: 300;
-		}
-	}
-
-	&__progress {
-		height: 4rpx;
-		background: rgba(255, 255, 255, 0.3);
-		width: 100%;
-	}
-
-	&__progress--active {
-		animation: progress linear forwards;
-	}
-
-	// 深色模式
 	&--dark {
 		box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.4);
 	}
+}
+
+.notification-bar__content {
+	display: flex;
+	align-items: center;
+	padding: 24rpx 32rpx;
+}
+
+.notification-bar__icon {
+	width: 72rpx;
+	height: 72rpx;
+	border-radius: 16rpx;
+	background: rgba(255, 255, 255, 0.2);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	margin-right: 24rpx;
+}
+
+.notification-bar__text {
+	flex: 1;
+	min-width: 0;
+}
+
+.notification-bar__title {
+	display: block;
+	font-size: 30rpx;
+	font-weight: 600;
+	color: #fff;
+	margin-bottom: 4rpx;
+}
+
+.notification-bar__desc {
+	display: block;
+	font-size: 26rpx;
+	color: rgba(255, 255, 255, 0.85);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.notification-bar__close {
+	width: 56rpx;
+	height: 56rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	margin-left: 16rpx;
+
+	.close-icon {
+		font-size: 40rpx;
+		color: rgba(255, 255, 255, 0.8);
+		font-weight: 300;
+	}
+}
+
+.notification-bar__progress {
+	height: 4rpx;
+	background: rgba(255, 255, 255, 0.3);
+	width: 100%;
+}
+
+.notification-bar__progress--active {
+	animation: progress linear forwards;
 }
 
 // 图标样式

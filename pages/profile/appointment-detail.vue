@@ -203,9 +203,9 @@ export default {
 		},
 		// 状态文字
 		statusText() {
-			if (this.isPending) return '预约成功'
-			if (this.isInProgress) return '正在诊断'
-			if (this.isCompleted) return '完成诊断'
+			if (this.isPending) return '待就诊'
+			if (this.isInProgress) return '诊断中'
+			if (this.isCompleted) return '已完成'
 			if (this.isExpired) return '已过期'
 			return '已取消'
 		},
@@ -356,30 +356,66 @@ export default {
 				this.canceling = false
 			}
 		},
-		// 导航到医院
+		// 导航到医院（先获取系统定位，再唤起地图）
 		handleNavigate() {
 			const apt = this.appointment
-			if (!apt.hospitalAddress && !apt.hospitalName) {
+			const name = apt.hospitalName || '医院'
+			const address = apt.hospitalAddress || apt.hospitalName
+
+			if (!name && !address) {
 				uni.showToast({ title: '暂无医院地址信息', icon: 'none' })
 				return
 			}
 
-			// 使用地图打开导航
-			uni.openLocation({
-				name: apt.hospitalName || '医院',
-				address: apt.hospitalAddress || apt.hospitalName,
-				latitude: 0,
-				longitude: 0,
+			uni.showLoading({ title: '定位中...', mask: true })
+
+			uni.getLocation({
+				type: 'gcj02',
+				success: (pos) => {
+					uni.hideLoading()
+					this._doNavigate(name, address, apt, pos.latitude, pos.longitude)
+				},
 				fail: () => {
-					// 如果打开失败，复制地址
-					uni.setClipboardData({
-						data: apt.hospitalAddress || apt.hospitalName,
-						success: () => {
-							uni.showToast({ title: '地址已复制', icon: 'success' })
-						}
-					})
+					uni.hideLoading()
+					this._doNavigate(name, address, apt, null, null)
 				}
 			})
+		},
+		_doNavigate(name, address, apt, userLat, userLng) {
+			const hospLat = parseFloat(apt.latitude || apt.hospitalLat || 0)
+			const hospLng = parseFloat(apt.longitude || apt.hospitalLng || 0)
+
+			// 医院有坐标时用 uni.openLocation（内置地图选择器，自动用设备当前位置导航）
+			if (hospLat !== 0 && hospLng !== 0) {
+				uni.openLocation({ name, address, latitude: hospLat, longitude: hospLng })
+				return
+			}
+
+			// 无医院坐标：通过 URL Scheme 唤起系统地图，传入用户坐标作为起点
+			const query = encodeURIComponent(address || name)
+			const platform = uni.getSystemInfoSync().platform
+			let url
+
+			if (platform === 'ios') {
+				url = userLat
+					? `maps://?saddr=${userLat},${userLng}&daddr=${query}`
+					: `maps://?q=${query}`
+			} else {
+				url = userLat
+					? `geo:${userLat},${userLng}?q=${query}`
+					: `geo:0,0?q=${query}`
+			}
+
+			if (typeof plus !== 'undefined') {
+				plus.runtime.openURL(url, () => {
+					uni.setClipboardData({
+						data: address || name,
+						success: () => uni.showToast({ title: '地址已复制，请手动搜索', icon: 'none' })
+					})
+				})
+			} else {
+				window.open(url)
+			}
 		},
 		// 再次/重新预约
 		handleRebook() {

@@ -117,6 +117,69 @@
           </view>
         </view>
 
+        <!-- 评论预览区 -->
+        <view class="comments-preview" v-if="!loading && article">
+          <view class="comments-preview__header" @click="goToComments">
+            <view class="comments-preview__title-wrap">
+              <text class="comments-preview__title">评论</text>
+              <text v-if="commentTotal > 0" class="comments-preview__count">{{ commentTotal }}</text>
+            </view>
+            <view class="comments-preview__more">
+              <text class="comments-preview__more-text">全部 ›</text>
+            </view>
+          </view>
+
+          <!-- 骨架（加载中） -->
+          <view v-if="commentLoading" class="comments-preview__loading">
+            <view class="comment-skeleton" v-for="i in 2" :key="i">
+              <view class="comment-skeleton__avatar"></view>
+              <view class="comment-skeleton__body">
+                <view class="comment-skeleton__name"></view>
+                <view class="comment-skeleton__text"></view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 评论列表 -->
+          <view v-else-if="commentPreview.length > 0" class="comments-preview__list">
+            <view
+              v-for="(comment, index) in commentPreview"
+              :key="comment.id"
+              class="comment-item"
+              :class="{ 'comment-item--last': index === commentPreview.length - 1 }"
+              @click="goToComments"
+            >
+              <image v-if="comment.avatar" class="comment-item__avatar" :src="comment.avatar" mode="aspectFill" />
+              <view v-else class="comment-item__avatar comment-item__avatar--placeholder">
+                <text class="comment-item__avatar-text">{{ comment.nickname.charAt(0) }}</text>
+              </view>
+              <view class="comment-item__body">
+                <view class="comment-item__header">
+                  <text class="comment-item__nickname">{{ comment.nickname }}</text>
+                  <view class="comment-item__like">
+                    <text class="comment-item__like-icon">♡</text>
+                    <text class="comment-item__like-count">{{ comment.likeCount }}</text>
+                  </view>
+                </view>
+                <text class="comment-item__content">{{ comment.content }}</text>
+                <text class="comment-item__time">{{ formatCommentTime(comment.createTime) }}</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 空状态 -->
+          <view v-else class="comments-preview__empty">
+            <text class="comments-preview__empty-text">暂无评论，来说点什么吧～</text>
+          </view>
+
+          <!-- 查看全部按钮 -->
+          <view class="comments-preview__view-all" @click="goToComments">
+            <text class="comments-preview__view-all-text">
+              查看全部{{ commentTotal > 0 ? ' ' + commentTotal + ' 条' : '' }}评论 ›
+            </text>
+          </view>
+        </view>
+
         <!-- 相关推荐 -->
         <view v-if="relatedNews.length" class="related-section">
           <text class="related-section__title">相关推荐</text>
@@ -157,6 +220,28 @@
       </view>
     </scroll-view>
 
+    <!-- 底部评论栏 -->
+    <view class="comment-bar" v-if="!loading && article" @click="goToComments">
+      <image
+        v-if="isLogin && currentUser && currentUser.avatar"
+        class="comment-bar__avatar"
+        :src="currentUser.avatar"
+        mode="aspectFill"
+      />
+      <view v-else class="comment-bar__avatar comment-bar__avatar--placeholder">
+        <text class="comment-bar__avatar-text">
+          {{ isLogin && currentUser && currentUser.name ? currentUser.name.charAt(0) : '?' }}
+        </text>
+      </view>
+      <view class="comment-bar__input-wrap">
+        <text class="comment-bar__placeholder">说点什么，聊聊你的想法...</text>
+      </view>
+      <view class="comment-bar__badge">
+        <text class="comment-bar__badge-icon">💬</text>
+        <text v-if="commentTotal > 0" class="comment-bar__badge-count">{{ commentTotal }}</text>
+      </view>
+    </view>
+
     <!-- 图片预览遮罩 -->
     <view v-if="showImagePreview" class="image-preview" @click="closeImagePreview">
       <image
@@ -173,9 +258,10 @@
 </template>
 
 <script>
-import { getNewsDetail, getRelatedNews, toggleLike } from '@/utils/api/news.js'
+import { getNewsDetail, getRelatedNews, toggleLike, getComments } from '@/utils/api/news.js'
 import { isFavorite, toggleFavorite as toggleFavoriteStore, addHistory } from '@/store/news.js'
 import { isDarkMode } from '@/store/theme.js'
+import { isLoggedIn, getUserInfo } from '@/store/user.js'
 
 export default {
   data() {
@@ -188,7 +274,10 @@ export default {
       isFavorite: false,
       isLiked: false,
       showImagePreview: false,
-      previewImageUrl: ''
+      previewImageUrl: '',
+      commentPreview: [],
+      commentTotal: 0,
+      commentLoading: false
     }
   },
   computed: {
@@ -197,6 +286,12 @@ export default {
     },
     darkIconFilter() {
       return this.isDark ? 'brightness(0) invert(0.7)' : 'none'
+    },
+    isLogin() {
+      return isLoggedIn()
+    },
+    currentUser() {
+      return getUserInfo()
     },
     processedContent() {
       if (!this.article || !this.article.content) {
@@ -218,6 +313,7 @@ export default {
       this.newsId = parseInt(options.id)
       this.loadDetail()
       this.loadRelatedNews()
+      this.loadCommentPreview()
     }
   },
   onUnload() {
@@ -356,6 +452,41 @@ export default {
 
     goBack() {
       uni.navigateBack()
+    },
+
+    async loadCommentPreview() {
+      if (!this.newsId) return
+      this.commentLoading = true
+      try {
+        const res = await getComments(this.newsId, { page: 1, pageSize: 2 })
+        if (res.code === 200) {
+          this.commentPreview = res.data.list
+          this.commentTotal = res.data.total
+        }
+      } catch (e) {
+        // 静默处理，不影响主内容加载
+      } finally {
+        this.commentLoading = false
+      }
+    },
+
+    goToComments() {
+      uni.navigateTo({
+        url: `/pages/news/news-comment?newsId=${this.newsId}&total=${this.commentTotal}`
+      })
+    },
+
+    formatCommentTime(timeStr) {
+      if (!timeStr) return ''
+      const time = new Date(timeStr.replace(/-/g, '/'))
+      const diff = Date.now() - time.getTime()
+      const m = 60000, h = 3600000, d = 86400000
+      if (diff < m) return '刚刚'
+      if (diff < h) return Math.floor(diff / m) + '分钟前'
+      if (diff < d) return Math.floor(diff / h) + '小时前'
+      if (diff < 2 * d) return '昨天'
+      if (diff < 7 * d) return Math.floor(diff / d) + '天前'
+      return `${time.getMonth() + 1}月${time.getDate()}日`
     },
 
     formatTime(timeStr) {
@@ -857,7 +988,7 @@ export default {
 }
 
 .bottom-placeholder {
-  height: 80rpx;
+  height: 200rpx;
 }
 
 .error-state {
@@ -1082,6 +1213,393 @@ export default {
 
   .error-state__text {
     color: $dark-text-muted;
+  }
+
+  // 评论预览深色
+  .comments-preview {
+    background: $dark-bg-card;
+
+    &__header {
+      border-bottom-color: $dark-border-color;
+
+      &:active {
+        background: $dark-bg-elevated;
+      }
+    }
+
+    &__title {
+      color: $dark-text-primary;
+    }
+
+    &__count,
+    &__more-text {
+      color: $dark-text-muted;
+    }
+
+    &__empty-text {
+      color: $dark-text-muted;
+    }
+
+    &__view-all-text {
+      color: $dark-color-primary;
+      border-color: $dark-color-primary;
+    }
+  }
+
+  .comment-skeleton {
+    &__avatar,
+    &__name,
+    &__text {
+      background: linear-gradient(90deg, #21262d 25%, #30363d 50%, #21262d 75%);
+      background-size: 200% 100%;
+    }
+  }
+
+  .comment-item {
+    border-bottom-color: $dark-border-color;
+
+    &:active {
+      background: $dark-bg-elevated;
+    }
+
+    &__nickname {
+      color: $dark-text-primary;
+    }
+
+    &__content {
+      color: $dark-text-secondary;
+    }
+
+    &__like-icon,
+    &__like-count,
+    &__time {
+      color: $dark-text-muted;
+    }
+
+    &__avatar--placeholder {
+      background: $dark-bg-elevated;
+    }
+
+    &__avatar-text {
+      color: $dark-text-secondary;
+    }
+  }
+
+  // 底部评论栏深色
+  .comment-bar {
+    background: $dark-bg-card;
+    border-top-color: $dark-border-color;
+    box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.3);
+
+    &:active {
+      background: $dark-bg-elevated;
+    }
+
+    &__input-wrap {
+      background: $dark-bg-elevated;
+    }
+
+    &__placeholder {
+      color: $dark-text-muted;
+    }
+
+    &__badge-count {
+      color: $dark-text-secondary;
+    }
+
+    &__avatar--placeholder {
+      background: $dark-bg-elevated;
+    }
+
+    &__avatar-text {
+      color: $dark-text-secondary;
+    }
+  }
+}
+
+// ==================== 评论预览区 ====================
+.comments-preview {
+  margin-bottom: $spacing-xl;
+  background: $bg-card;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1rpx solid $border-color;
+    transition: background 0.15s;
+
+    &:active {
+      background: $bg-elevated;
+    }
+  }
+
+  &__title-wrap {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__count {
+    font-size: $font-size-sm;
+    color: $text-muted;
+    margin-left: 4rpx;
+  }
+
+  &__more-text {
+    font-size: $font-size-sm;
+    color: $text-muted;
+  }
+
+  &__loading {
+    padding: $spacing-md $spacing-lg;
+  }
+
+  &__empty {
+    padding: $spacing-2xl $spacing-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__empty-text {
+    font-size: $font-size-base;
+    color: $text-muted;
+  }
+
+  &__view-all {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-md $spacing-lg $spacing-lg;
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
+
+  &__view-all-text {
+    font-size: $font-size-base;
+    color: $color-primary;
+    font-weight: $font-weight-medium;
+    border: 2rpx solid $color-primary;
+    border-radius: $radius-full;
+    padding: $spacing-xs $spacing-xl;
+    letter-spacing: 1rpx;
+  }
+}
+
+// 评论骨架屏
+.comment-skeleton {
+  display: flex;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+
+  &__avatar {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: $radius-full;
+    flex-shrink: 0;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  &__body {
+    flex: 1;
+  }
+
+  &__name {
+    width: 120rpx;
+    height: 28rpx;
+    border-radius: 8rpx;
+    margin-bottom: $spacing-xs;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  &__text {
+    width: 100%;
+    height: 40rpx;
+    border-radius: 8rpx;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+// 单条评论
+.comment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1rpx solid $border-color;
+  transition: background 0.15s;
+
+  &--last {
+    border-bottom: none;
+  }
+
+  &:active {
+    background: $bg-elevated;
+  }
+
+  &__avatar {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: $radius-full;
+    flex-shrink: 0;
+    box-shadow: $shadow-sm;
+
+    &--placeholder {
+      background: $bg-elevated;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &__avatar-text {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__nickname {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+  }
+
+  &__like {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+  }
+
+  &__like-icon {
+    font-size: $font-size-base;
+    color: $text-muted;
+  }
+
+  &__like-count {
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+
+  &__content {
+    font-size: $font-size-base;
+    color: $text-secondary;
+    line-height: $line-height-normal;
+    word-break: break-all;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__time {
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+}
+
+// ==================== 底部评论栏 ====================
+.comment-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm $spacing-lg;
+  padding-bottom: calc(#{$spacing-sm} + env(safe-area-inset-bottom));
+  background: $bg-card;
+  border-top: 1rpx solid $border-color;
+  box-shadow: 0 -2rpx 12rpx rgba(30, 58, 95, 0.06);
+  transition: background 0.15s;
+
+  &:active {
+    background: $bg-elevated;
+  }
+
+  &__avatar {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: $radius-full;
+    flex-shrink: 0;
+
+    &--placeholder {
+      background: $bg-elevated;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &__avatar-text {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__input-wrap {
+    flex: 1;
+    height: 72rpx;
+    background: $bg-elevated;
+    border-radius: $radius-full;
+    padding: 0 $spacing-md;
+    display: flex;
+    align-items: center;
+  }
+
+  &__placeholder {
+    font-size: $font-size-sm;
+    color: $text-muted;
+  }
+
+  &__badge {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    flex-shrink: 0;
+  }
+
+  &__badge-icon {
+    font-size: $font-size-lg;
+  }
+
+  &__badge-count {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    font-weight: $font-weight-medium;
   }
 }
 

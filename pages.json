@@ -144,6 +144,13 @@
 			}
 		},
 		{
+			"path": "pages/cloud-hospital/video-meeting",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "视频复诊"
+			}
+		},
+		{
 			"path": "pages/settings/settings",
 			"style": {
 				"navigationStyle": "custom",
@@ -234,6 +241,16 @@
 			"style": {
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "资讯详情"
+			}
+		},
+		{
+			"path": "pages/news/news-comment",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "评论",
+				"app-plus": {
+					"softinputMode": "adjustResize"
+				}
 			}
 		}
 	],

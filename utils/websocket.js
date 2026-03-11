@@ -317,10 +317,24 @@ function showSystemNotification(notification) {
 		}
 	}
 
+	// 各类型通知的默认标题（服务端未返回标题时使用）
+	const defaultTitles = {
+		'SYSTEM':     '系统通知',
+		'RESERVE':    '预约提醒',
+		'MEDICATION': '用药提醒'
+	}
+
+	// 各类型通知无内容时的兜底文案
+	const defaultContents = {
+		'SYSTEM':     '您有一条新的系统通知，点击查看详情',
+		'RESERVE':    '您有一条预约相关通知，点击查看详情',
+		'MEDICATION': '请按时服药，点击查看用药详情'
+	}
+
 	const eventData = {
 		type: typeMap[notification.reminderType] || 'system',
-		title: notification.reminderTitle || '新消息',
-		content: content,
+		title: notification.reminderTitle || defaultTitles[notification.reminderType] || '新消息',
+		content: content || defaultContents[notification.reminderType] || '点击查看详情',
 		duration: 5000,
 		data: notification
 	}
@@ -349,7 +363,7 @@ function showSystemNotification(notification) {
 			reminderId: notification.reminderId,
 			action: 'open_' + (notification.reminderType || 'messages').toLowerCase()
 		}), {
-			title: notification.reminderTitle || '新消息',
+			title: notification.reminderTitle || defaultTitles[notification.reminderType] || '新消息',
 			cover: false,   // false = 不覆盖，每条通知独立显示
 			sound: 'system' // 使用系统默认提示音
 		})
