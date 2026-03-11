@@ -102,11 +102,7 @@
 						<view class="history-card__body">
 							<!-- 医生名称行 -->
 							<view class="history-card__doctor-row">
-								<image
-									class="history-card__avatar"
-									:src="meeting.doctorAvatar || '/static/temporary/male.jpg'"
-									mode="aspectFill"
-								/>
+								<image class="computer-icon" src="@/static/computer.svg" mode="aspectFit"></image>
 								<text class="history-card__doctor-name">{{ meeting.doctorName || '主治医生' }}</text>
 							</view>
 							<!-- 科室 + 职称行 -->
@@ -116,7 +112,7 @@
 							</view>
 							<!-- 时间行 -->
 							<view class="history-card__time-row">
-								<view class="history-time-icon"></view>
+								<image class="history-time-icon" src="@/static/time.svg" mode="aspectFit"></image>
 								<text class="history-card__time-text">{{ formatScheduledDate(meeting.scheduledAt) }}</text>
 							</view>
 							<!-- 备注 -->
@@ -1158,13 +1154,6 @@ export default {
 		gap: $spacing-sm;
 	}
 
-	&__avatar {
-		width: 48rpx;
-		height: 48rpx;
-		border-radius: 50%;
-		overflow: hidden;
-		flex-shrink: 0;
-	}
 
 	&__doctor-name {
 		font-size: $font-size-lg;
@@ -1217,35 +1206,20 @@ export default {
 	}
 }
 
+.computer-icon {
+	width: 32rpx;
+	height: 32rpx;
+	margin-right: $spacing-sm;
+	flex-shrink: 0;
+	filter: invert(40%) sepia(80%) saturate(1800%) hue-rotate(200deg) brightness(100%) contrast(100%);
+}
+
 .history-time-icon {
 	width: 28rpx;
 	height: 28rpx;
 	flex-shrink: 0;
-	position: relative;
-
-	&::before {
-		content: "";
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 20rpx;
-		height: 20rpx;
-		border: 3rpx solid $text-muted;
-		border-radius: 50%;
-	}
-
-	&::after {
-		content: "";
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 8rpx;
-		height: 3rpx;
-		background: $text-muted;
-		transform-origin: left center;
-		transform: translateY(-50%) rotate(-45deg);
-	}
+	margin-right: $spacing-xs;
+	filter: invert(65%);
 }
 
 // ============================================================
@@ -1725,9 +1699,12 @@ export default {
 		&__reason        { color: $dark-text-muted; }
 	}
 
+	.computer-icon {
+		filter: invert(52%) sepia(94%) saturate(1095%) hue-rotate(176deg) brightness(98%) contrast(92%);
+	}
+
 	.history-time-icon {
-		&::before { border-color: $dark-text-muted; }
-		&::after  { background: $dark-text-muted; }
+		filter: invert(55%);
 	}
 }
 </style>

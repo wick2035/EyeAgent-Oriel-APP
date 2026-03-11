@@ -77,7 +77,7 @@
 						<!-- 卡片头部：订单号 + 时间 + 状态 -->
 						<view class="order-card__header">
 							<view class="order-card__header-left">
-								<view class="shop-icon"></view>
+								<image class="shop-icon" src="/static/shopbag.svg" mode="aspectFit"></image>
 								<text class="order-card__no">{{ order.order_no }}</text>
 							</view>
 							<view class="order-card__status" :class="'order-card__status--' + order.status">
@@ -147,7 +147,7 @@
 
 							<!-- 退款中 / 已退款 -->
 							<template v-else-if="order.status === 'refunding' || order.status === 'refunded'">
-								<view class="action-btn action-btn--warning" @click.stop="handleRefundProgress(order)">
+								<view class="action-btn action-btn--ghost" @click.stop="handleRefundProgress(order)">
 									{{ order.status === 'refunding' ? '查看退款进度' : '退款详情' }}
 								</view>
 							</template>
@@ -1042,31 +1042,8 @@ export default {
 .shop-icon {
 	width: 28rpx;
 	height: 28rpx;
-	position: relative;
 	flex-shrink: 0;
-
-	&::before {
-		content: '';
-		position: absolute;
-		top: 4rpx;
-		left: 4rpx;
-		right: 4rpx;
-		bottom: 0;
-		border: 2rpx solid $text-muted;
-		border-radius: 2rpx;
-	}
-
-	&::after {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 6rpx;
-		right: 6rpx;
-		height: 8rpx;
-		border: 2rpx solid $text-muted;
-		border-bottom: none;
-		border-radius: 4rpx 4rpx 0 0;
-	}
+	opacity: 0.45;
 }
 
 // ============================================================
@@ -1172,7 +1149,7 @@ export default {
 	}
 
 	&--ghost {
-		border: 1rpx solid $border-color-light;
+		border: 1.5rpx solid $border-color;
 		color: $text-secondary;
 		background: transparent;
 	}
@@ -1821,9 +1798,7 @@ export default {
 	}
 
 	.shop-icon {
-		&::before, &::after {
-			border-color: $dark-text-muted;
-		}
+		opacity: 0.3;
 	}
 
 	// 商品行

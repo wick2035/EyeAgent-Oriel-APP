@@ -86,9 +86,7 @@
 
 			<!-- 隐私横幅 -->
 			<view class="privacy-banner" :class="{ 'privacy-banner--show': animationReady }">
-				<view class="privacy-banner__shield">
-					<view class="privacy-banner__check"></view>
-				</view>
+				<image class="privacy-banner__icon" src="@/static/sqcheck.svg" mode="aspectFit" />
 				<text class="privacy-banner__text">您的隐私和健康数据受到严格保护</text>
 			</view>
 		</scroll-view>
@@ -393,25 +391,12 @@ export default {
 		animation: cardSlideUp 0.4s ease-out 0.5s forwards;
 	}
 
-	&__shield {
+	&__icon {
 		width: 28rpx;
 		height: 32rpx;
-		border: 3rpx solid $color-success;
-		border-radius: 4rpx 4rpx 50% 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 		margin-right: $spacing-xs;
 		flex-shrink: 0;
-	}
-
-	&__check {
-		width: 10rpx;
-		height: 6rpx;
-		border-left: 2rpx solid $color-success;
-		border-bottom: 2rpx solid $color-success;
-		transform: rotate(-45deg);
-		margin-top: -2rpx;
+		filter: invert(61%) sepia(79%) saturate(399%) hue-rotate(112deg) brightness(89%) contrast(94%);
 	}
 
 	&__text {
@@ -549,12 +534,8 @@ export default {
 	}
 
 	.privacy-banner {
-		&__shield {
-			border-color: rgba(16, 185, 129, 0.6);
-		}
-
-		&__check {
-			border-color: rgba(16, 185, 129, 0.6);
+		&__icon {
+			opacity: 0.6;
 		}
 
 		&__text {
