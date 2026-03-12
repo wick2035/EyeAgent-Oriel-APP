@@ -13,6 +13,10 @@ Vue.config.productionTip = false
 // 挂载全局 Toast 工具
 Vue.prototype.$toast = toast
 
+// 全局注册通知组件（所有页面模板中可直接使用，无需 import）
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+Vue.component('TopNotificationBar', TopNotificationBar)
+
 App.mpType = 'app'
 const app = new Vue({
   ...App

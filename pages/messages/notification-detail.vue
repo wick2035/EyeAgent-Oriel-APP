@@ -29,9 +29,6 @@
 			@secondary="onModalSecondary"
 		/>
 
-		<!-- 自定义 Toast -->
-		<CustomToast ref="customToast" />
-
 		<!-- 通知时间线列表 -->
 		<scroll-view
 			class="content"
@@ -74,6 +71,7 @@
 						:style="{ animationDelay: (index % 10) * 50 + 'ms' }"
 						@click="openNotification(item.data)"
 						@action="openNotificationAction(item.data)"
+    <TopNotificationBar />
 					/>
 				</template>
 
@@ -95,7 +93,6 @@
 <script>
 import NotificationBubble from '@/components/NotificationBubble.vue'
 import MessageModal from '@/components/MessageModal.vue'
-import CustomToast from '@/components/CustomToast.vue'
 import { isDarkMode } from '@/store/theme.js'
 import {
 	fetchUnreadNotifications,
@@ -109,8 +106,7 @@ import { getReminderList, toggleReminderState } from '@/utils/api/medication.js'
 export default {
 	components: {
 		NotificationBubble,
-		MessageModal,
-		CustomToast
+		MessageModal
 	},
 	data() {
 		return {

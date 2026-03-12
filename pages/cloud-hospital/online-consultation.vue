@@ -109,6 +109,7 @@
 				</view>
 			</view>
 		</view>
+    <TopNotificationBar />
 	</view>
 </template>
 

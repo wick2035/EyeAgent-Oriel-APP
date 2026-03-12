@@ -142,7 +142,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 // 外层透明容器：仅负责动画（transform / opacity），固定在顶部全宽
 // paddingTop 由 :style 动态注入（= statusBarHeight px），形成状态栏下方的透明间距
 // top: 0 保证 iOS App-plus 的 translateY(-100%) 动画正常工作

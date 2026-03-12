@@ -92,6 +92,7 @@
             :uiPending="msg.uiPending"
             @optionClick="handleOptionClick"
             @productAction="handleProductAction"
+    <TopNotificationBar />
           />
         </template>
       </view>
@@ -124,7 +125,6 @@
     <TabBar />
 
     <!-- 顶部通知栏 -->
-    <TopNotificationBar />
 
     <!-- 退出确认弹窗 -->
     <ConfirmDialog
@@ -141,7 +141,6 @@
 
 <script>
 import TabBar from "@/components/TabBar.vue";
-import TopNotificationBar from "@/components/TopNotificationBar.vue";
 import ChatInput from "@/components/ChatInput.vue";
 import QuickPrompt from "@/components/QuickPrompt.vue";
 import MessageBubble from "@/components/MessageBubble.vue";
@@ -158,7 +157,6 @@ import {
 export default {
   components: {
     TabBar,
-    TopNotificationBar,
     ChatInput,
     QuickPrompt,
     MessageBubble,

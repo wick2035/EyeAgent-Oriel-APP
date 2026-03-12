@@ -208,12 +208,11 @@
 		</view>
 
 		<!-- 顶部通知栏 -->
-		<TopNotificationBar />
+    <TopNotificationBar />
 	</view>
 </template>
 
 <script>
-import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import EyeDataSection from '@/components/eye-data/EyeDataSection.vue'
 import { isDarkMode } from '@/store/theme.js'
 import {
@@ -233,7 +232,6 @@ import {
 
 export default {
 	components: {
-		TopNotificationBar,
 		EyeDataSection
 	},
 	data() {

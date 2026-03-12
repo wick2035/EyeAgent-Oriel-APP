@@ -109,8 +109,11 @@
                 }
             },
             "splashscreen" : {
-                "iosStyle" : "common",
-                "androidStyle" : "common"
+                "iosStyle" : "storyboard",
+                "androidStyle" : "common",
+                "ios" : {
+                    "storyboard" : "static/CustomStoryboard.zip"
+                }
             }
         }
     },

@@ -170,7 +170,6 @@
       </scroll-view>
 
     <!-- 顶部通知栏 -->
-    <TopNotificationBar />
 
     <!-- 退出登录确认弹窗 -->
     <ConfirmDialog
@@ -182,6 +181,7 @@
       cancelText="取消"
       @confirm="confirmLogout"
     />
+    <TopNotificationBar />
   </view>
 </template>
 
@@ -190,12 +190,10 @@ import { getUserInfo, clearLoginState } from "@/store/user.js";
 import { isDarkMode, getBubbleTheme, setBubbleTheme } from "@/store/theme.js";
 import { logout } from "@/utils/api/user.js";
 import { setMuted, getMuted } from "@/utils/websocket.js";
-import TopNotificationBar from "@/components/TopNotificationBar.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 export default {
   components: {
-    TopNotificationBar,
     ConfirmDialog,
   },
   data() {

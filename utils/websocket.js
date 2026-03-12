@@ -295,16 +295,56 @@ function handleNotification(notification) {
  * 显示系统级通知
  */
 function showSystemNotification(notification) {
-	// 通知类型映射
+	// 通知类型映射（用于应用内弹窗颜色）
 	const typeMap = {
-		'SYSTEM': 'system',
-		'RESERVE': 'reserve',
-		'MEDICATION': 'medication'
+		'SYSTEM':        'system',
+		'RESERVE':       'reserve',
+		'MEDICATION':    'medication',
+		'FOLLOWUP':      'system',
+		'VIDEO_MEETING': 'system'
 	}
 
-	// 格式化通知内容（用药提醒的 reminderContent 是 JSON）
-	let content = notification.reminderContent || ''
-	if (notification.reminderType === 'MEDICATION' && content) {
+	// 各类型通知无内容时的兜底文案
+	const defaultContents = {
+		'SYSTEM':        '您有一条新的系统通知，点击查看详情',
+		'RESERVE':       '您有一条预约相关通知，点击查看详情',
+		'MEDICATION':    '请按时服药，点击查看用药详情',
+		'FOLLOWUP':      '您有一条随访通知，点击查看详情',
+		'VIDEO_MEETING': '点击查看视频问诊详情'
+	}
+
+	// ── 兼容两种数据格式 ──────────────────────────────────────────────
+	const isVideoMeeting = notification.type === 'VIDEO_MEETING'
+
+	// 统一类型标识
+	const reminderType = isVideoMeeting ? 'VIDEO_MEETING' : (notification.reminderType || '')
+
+	// 各类型通知的默认标题（服务端未返回标题时使用）
+	const defaultTitles = {
+		'SYSTEM':        '系统通知',
+		'RESERVE':       '预约提醒',
+		'MEDICATION':    '用药提醒',
+		'FOLLOWUP':      '随访提醒',
+		'VIDEO_MEETING': '视频问诊通知'
+	}
+
+	// VIDEO_MEETING 用 eventType 推导中文标题
+	const videoEventTitles = {
+		'CREATED':   '视频问诊预约',
+		'STARTED':   '视频问诊开始',
+		'ENDED':     '视频问诊结束',
+		'CANCELLED': '视频问诊取消',
+		'REMINDER':  '视频问诊提醒'
+	}
+	const resolvedTitle = isVideoMeeting
+		? (videoEventTitles[notification.eventType] || '视频问诊通知')
+		: (notification.reminderTitle || defaultTitles[reminderType] || '新消息')
+
+	// 统一正文内容
+	let content = (isVideoMeeting ? notification.message : notification.reminderContent) || ''
+
+	// 用药提醒的 reminderContent 是 JSON，需解析为可读文字
+	if (!isVideoMeeting && reminderType === 'MEDICATION' && content) {
 		try {
 			const obj = JSON.parse(content)
 			const parts = []
@@ -316,27 +356,15 @@ function showSystemNotification(notification) {
 			// 非 JSON 格式，保持原文
 		}
 	}
-
-	// 各类型通知的默认标题（服务端未返回标题时使用）
-	const defaultTitles = {
-		'SYSTEM':     '系统通知',
-		'RESERVE':    '预约提醒',
-		'MEDICATION': '用药提醒'
-	}
-
-	// 各类型通知无内容时的兜底文案
-	const defaultContents = {
-		'SYSTEM':     '您有一条新的系统通知，点击查看详情',
-		'RESERVE':    '您有一条预约相关通知，点击查看详情',
-		'MEDICATION': '请按时服药，点击查看用药详情'
-	}
+	// ─────────────────────────────────────────────────────────────────
 
 	const eventData = {
-		type: typeMap[notification.reminderType] || 'system',
-		title: notification.reminderTitle || defaultTitles[notification.reminderType] || '新消息',
-		content: content || defaultContents[notification.reminderType] || '点击查看详情',
+		type: typeMap[reminderType] || 'system',
+		title: resolvedTitle,
+		content: content || defaultContents[reminderType] || '点击查看详情',
 		duration: 5000,
-		data: notification
+		// 注入 reminderType，确保 TopNotificationBar 点击时能正确导航
+		data: { ...notification, reminderType }
 	}
 
 	console.log('发送通知事件, 通知栏就绪状态:', notificationBarReady)
@@ -356,19 +384,22 @@ function showSystemNotification(notification) {
 
 	// #ifdef APP-PLUS
 	// 触发 iOS 系统通知横幅（Push 模块启用后生效）
-	// content 变量已在上方完成格式化（MEDICATION 类型的 JSON 已解析为可读文字）
 	try {
-		plus.push.createMessage(content, JSON.stringify({
-			type: notification.reminderType,
-			reminderId: notification.reminderId,
-			appointmentId: notification.appointmentId || null,
-			prescriptionId: notification.prescriptionId || null,
-			action: 'open_' + (notification.reminderType || 'messages').toLowerCase()
-		}), {
-			title: notification.reminderTitle || defaultTitles[notification.reminderType] || '新消息',
-			cover: false,   // false = 不覆盖，每条通知独立显示
-			sound: 'system' // 使用系统默认提示音
-		})
+		plus.push.createMessage(
+			content || defaultContents[reminderType] || '点击查看详情',
+			JSON.stringify({
+				type: reminderType,
+				reminderId: notification.reminderId || null,
+				meetingId: notification.meetingId || null,
+				appointmentId: notification.appointmentId || null,
+				prescriptionId: notification.prescriptionId || null
+			}),
+			{
+				title: resolvedTitle,
+				cover: false,   // false = 不覆盖，每条通知独立显示
+				sound: 'system' // 使用系统默认提示音
+			}
+		)
 	} catch (e) {
 		console.warn('[Push] 创建系统通知失败:', e)
 	}

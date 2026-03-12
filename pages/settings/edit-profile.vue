@@ -207,13 +207,11 @@
 <script>
 import { getUserInfo, updateUserInfo } from "@/store/user.js";
 import { isDarkMode } from "@/store/theme.js";
-import TopNotificationBar from "@/components/TopNotificationBar.vue";
 import { getPatientInfo, modifyPatientInfo } from "@/utils/api/patient.js";
 import { maskIdNumber } from "@/store/patient.js";
 
 export default {
   components: {
-    TopNotificationBar,
   },
   data() {
     return {

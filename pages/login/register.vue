@@ -376,20 +376,13 @@
       </view>
     </view>
 
-    <!-- 自定义 Toast -->
-    <CustomToast ref="customToast" />
+    <TopNotificationBar />
   </view>
 </template>
 
 <script>
 import { sendEmailCode, register } from "@/utils/api/user.js";
-import CustomToast from "@/components/CustomToast.vue";
-import { setToastInstance } from "@/utils/toast.js";
-
 export default {
-  components: {
-    CustomToast,
-  },
   data() {
     return {
       statusBarHeight: 44,
@@ -514,9 +507,6 @@ export default {
       clearInterval(this.countdownTimer);
     }
   },
-  onReady() {
-    setToastInstance(this.$refs.customToast);
-  },
   methods: {
     getStatusBarHeight() {
       const sysInfo = uni.getSystemInfoSync();
@@ -636,7 +626,7 @@ export default {
     async handleSendCode() {
       if (!this.canSendCode) return;
 
-      this.$refs.customToast.success("验证码已发送，请查收邮箱");
+      this.$toast.success("验证码已发送，请查收邮箱");
       this.startCountdown();
 
       // 后台调用发送接口
@@ -659,7 +649,7 @@ export default {
     async handleRegister() {
       // 先检查用户协议
       if (!this.agreedTerms) {
-        this.$refs.customToast.warning("请先同意用户协议");
+        this.$toast.warning("请先同意用户协议");
         return;
       }
 
@@ -687,15 +677,15 @@ export default {
         });
 
         if (result.success) {
-          this.$refs.customToast.success("注册成功");
+          this.$toast.success("注册成功");
           setTimeout(() => {
             uni.switchTab({ url: "/pages/index/index" });
           }, 1500);
         } else {
-          this.$refs.customToast.error(result.message || "注册失败");
+          this.$toast.error(result.message || "注册失败");
         }
       } catch (error) {
-        this.$refs.customToast.error("网络异常，请稍后重试");
+        this.$toast.error("网络异常，请稍后重试");
       } finally {
         this.isLoading = false;
       }

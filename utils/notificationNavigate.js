@@ -24,6 +24,12 @@ export function navigateByNotification(payload) {
 
 	const { type, appointmentId, prescriptionId } = payload
 
+	// 视频问诊通知 → 消息中心
+	if (type === 'VIDEO_MEETING') {
+		uni.switchTab({ url: '/pages/messages/messages' })
+		return
+	}
+
 	// 预约提醒 + 有预约ID → 直接跳转预约详情
 	if (type === 'RESERVE' && appointmentId) {
 		uni.navigateTo({

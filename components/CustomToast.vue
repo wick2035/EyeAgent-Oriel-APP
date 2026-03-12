@@ -158,7 +158,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 // ==================== Toast 包装器 ====================
 .toast-wrapper {
 	position: fixed;

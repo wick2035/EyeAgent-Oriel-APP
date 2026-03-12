@@ -59,19 +59,17 @@
 		</view>
 
 		<!-- 顶部通知栏 -->
-		<TopNotificationBar />
+    <TopNotificationBar />
 	</view>
 </template>
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
 import { getFileDownloadUrl } from '@/utils/api/medical.js'
-import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import config from '@/utils/config.js'
 
 export default {
 	components: {
-		TopNotificationBar
 	},
 	data() {
 		return {

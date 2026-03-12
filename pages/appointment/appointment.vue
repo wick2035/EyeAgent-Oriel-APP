@@ -146,7 +146,6 @@
     <TabBar />
 
     <!-- 顶部通知栏 -->
-    <TopNotificationBar />
 
     <!-- 城市选择弹窗 -->
     <view
@@ -226,19 +225,18 @@
         </scroll-view>
       </view>
     </view>
+    <TopNotificationBar />
   </view>
 </template>
 
 <script>
 import TabBar from "@/components/TabBar.vue";
-import TopNotificationBar from "@/components/TopNotificationBar.vue";
 import { isDarkMode } from "@/store/theme.js";
 import { getHospitalList } from "@/utils/api/appointment.js";
 
 export default {
   components: {
     TabBar,
-    TopNotificationBar,
   },
   data() {
     return {

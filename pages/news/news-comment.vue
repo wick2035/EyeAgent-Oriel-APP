@@ -89,6 +89,7 @@
                 <text class="reply-item__name">{{ reply.nickname }}</text>
                 <template v-if="reply.replyToNickname">
                   <text class="reply-item__to"> 回复 </text>
+    <TopNotificationBar />
                   <text class="reply-item__to-name">@{{ reply.replyToNickname }}</text>
                 </template>
                 <text class="reply-item__colon">：</text>

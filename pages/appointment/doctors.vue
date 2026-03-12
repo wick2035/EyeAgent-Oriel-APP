@@ -129,6 +129,7 @@
                     v-if="doctor.availableDates.length > 4"
                     class="doctor-card__date-more"
                     >+{{ doctor.availableDates.length - 4 }}</text
+    <TopNotificationBar />
                   >
                 </template>
                 <text v-else class="doctor-card__date-more">点击查看排班</text>
@@ -172,18 +173,15 @@
     </scroll-view>
 
     <!-- 顶部通知栏 -->
-    <TopNotificationBar />
   </view>
 </template>
 
 <script>
 import { isDarkMode } from "@/store/theme.js";
 import { getDoctorList } from "@/utils/api/appointment.js";
-import TopNotificationBar from "@/components/TopNotificationBar.vue";
 
 export default {
   components: {
-    TopNotificationBar,
   },
   data() {
     return {

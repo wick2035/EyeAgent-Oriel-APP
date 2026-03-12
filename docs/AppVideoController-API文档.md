@@ -1,7 +1,7 @@
 # App 端视频问诊 API 文档（患者端）
 
-> **版本**: v1.0
-> **更新日期**: 2026-03-10
+> **版本**: v1.1
+> **更新日期**: 2026-03-12
 > **控制器**: `AppVideoController`
 > **基础路径**: `/api/app/video`
 > **认证方式**: Sa-Token（所有接口均需登录）
@@ -20,9 +20,10 @@
    - [3.5 取消会议](#35-取消会议)
 4. [数据模型](#4-数据模型)
 5. [会议状态说明](#5-会议状态说明)
-6. [错误码](#6-错误码)
-7. [cURL 示例](#7-curl-示例)
-8. [版本历史](#8-版本历史)
+6. [会议分类说明](#6-会议分类说明)
+7. [错误码](#7-错误码)
+8. [cURL 示例](#8-curl-示例)
+9. [版本历史](#9-版本历史)
 
 ---
 
@@ -91,6 +92,7 @@ Header: satoken: <token_value>
 |---------------|----------------|------|------------------------|------------------|
 | `doctorId`    | String         | 是   | `@NotBlank` 不能为空    | 目标医生的用户ID  |
 | `scheduledAt` | LocalDateTime  | 是   | `@NotNull` 不能为空     | 预约时间          |
+| `classify`    | String         | 否   | 见[会议分类说明](#6-会议分类说明) | 会议分类，不传默认 `video` |
 | `notes`       | String         | 否   | 无                     | 患者备注信息      |
 
 **请求示例**
@@ -99,6 +101,7 @@ Header: satoken: <token_value>
 {
   "doctorId": "doctor-uuid-001",
   "scheduledAt": "2026-03-15T14:30:00",
+  "classify": "video_consultation",
   "notes": "近期视力下降，希望进行远程复查"
 }
 ```
@@ -115,6 +118,7 @@ Header: satoken: <token_value>
     "doctorId": "doctor-uuid-001",
     "patientId": "patient-uuid-001",
     "roomName": "room-abc123",
+    "classify": "video_consultation",
     "status": "SCHEDULED",
     "scheduledAt": "2026-03-15T14:30:00",
     "startedAt": null,
@@ -123,7 +127,7 @@ Header: satoken: <token_value>
     "maxDurationMinutes": 30,
     "notes": "近期视力下降，希望进行远程复查",
     "cancelReason": null,
-    "createTime": "2026-03-10T10:00:00"
+    "createTime": "2026-03-12T10:00:00"
   }
 }
 ```
@@ -171,20 +175,36 @@ Header: satoken: <token_value>
   "data": [
     {
       "id": "meeting-uuid-001",
+      "meetingTitle": "视频就诊",
       "doctorId": "doctor-uuid-001",
+      "doctorName": "张三",
+      "doctorTitle": "主任医师",
       "patientId": "patient-uuid-001",
+      "patientName": "李四",
+      "hospitalName": "北京协和医院",
+      "departmentName": "眼科",
+      "classify": "video_consultation",
       "status": "SCHEDULED",
       "scheduledAt": "2026-03-15T14:30:00",
       "startedAt": null,
+      "maxDurationMinutes": 30,
       "notes": "近期视力下降，希望进行远程复查"
     },
     {
       "id": "meeting-uuid-002",
+      "meetingTitle": "视频复诊",
       "doctorId": "doctor-uuid-002",
+      "doctorName": "王五",
+      "doctorTitle": "副主任医师",
       "patientId": "patient-uuid-001",
+      "patientName": "李四",
+      "hospitalName": "北京同仁医院",
+      "departmentName": "眼底病科",
+      "classify": "video_follow_up",
       "status": "COMPLETED",
       "scheduledAt": "2026-03-08T10:00:00",
       "startedAt": "2026-03-08T10:02:00",
+      "maxDurationMinutes": 30,
       "notes": "术后复查"
     }
   ]
@@ -193,21 +213,30 @@ Header: satoken: <token_value>
 
 **响应字段说明（列表项）**
 
-| 字段名        | 类型           | 说明                        |
-|---------------|----------------|-----------------------------|
-| `id`          | String         | 会议唯一标识                 |
-| `doctorId`    | String         | 医生ID                      |
-| `patientId`   | String         | 患者ID                      |
-| `status`      | String         | 会议状态，见[会议状态说明](#5-会议状态说明) |
-| `scheduledAt` | LocalDateTime  | 预约时间                     |
-| `startedAt`   | LocalDateTime  | 实际开始时间（未开始则为 null）|
-| `notes`       | String         | 备注信息                     |
+| 字段名              | 类型           | 说明                                         |
+|---------------------|----------------|----------------------------------------------|
+| `id`                | String         | 会议唯一标识                                  |
+| `meetingTitle`      | String         | 会议名称（如"视频就诊"、"视频复诊"）            |
+| `doctorId`          | String         | 医生ID                                       |
+| `doctorName`        | String         | 医生姓名                                     |
+| `doctorTitle`       | String         | 医生职称（如"主任医师"）                       |
+| `patientId`         | String         | 患者ID                                       |
+| `patientName`       | String         | 患者姓名                                     |
+| `hospitalName`      | String         | 医院名称                                     |
+| `departmentName`    | String         | 科室名称                                     |
+| `classify`          | String         | 会议分类代码，见[会议分类说明](#6-会议分类说明)  |
+| `status`            | String         | 会议状态，见[会议状态说明](#5-会议状态说明)      |
+| `scheduledAt`       | LocalDateTime  | 预约时间                                      |
+| `startedAt`         | LocalDateTime  | 实际开始时间（未开始则为 null）                 |
+| `maxDurationMinutes`| Integer        | 最大允许时长（分钟）                           |
+| `notes`             | String         | 备注信息                                      |
 
 **业务逻辑**
 
 1. 从 Sa-Token 获取当前登录患者 ID
 2. 查询该患者的所有会议记录
-3. 返回会议列表（按时间排序）
+3. 批量查询关联的医生、科室、医院信息（避免 N+1 查询）
+4. 返回会议列表
 
 ---
 
@@ -241,6 +270,7 @@ Header: satoken: <token_value>
     "doctorId": "doctor-uuid-001",
     "patientId": "patient-uuid-001",
     "roomName": "room-abc123",
+    "classify": "video_consultation",
     "status": "SCHEDULED",
     "scheduledAt": "2026-03-15T14:30:00",
     "startedAt": null,
@@ -249,29 +279,30 @@ Header: satoken: <token_value>
     "maxDurationMinutes": 30,
     "notes": "近期视力下降，希望进行远程复查",
     "cancelReason": null,
-    "createTime": "2026-03-10T10:00:00"
+    "createTime": "2026-03-12T10:00:00"
   }
 }
 ```
 
 **响应字段说明（会议详情）**
 
-| 字段名              | 类型           | 说明                                       |
-|---------------------|----------------|--------------------------------------------|
-| `id`                | String         | 会议唯一标识                                |
-| `agendaId`          | String         | 关联的日程ID                                |
-| `doctorId`          | String         | 医生ID                                     |
-| `patientId`         | String         | 患者ID                                     |
-| `roomName`          | String         | Jitsi 视频房间名                            |
-| `status`            | String         | 会议状态，见[会议状态说明](#5-会议状态说明)    |
-| `scheduledAt`       | LocalDateTime  | 预约时间                                    |
-| `startedAt`         | LocalDateTime  | 实际开始时间（未开始则为 null）               |
-| `endedAt`           | LocalDateTime  | 实际结束时间（未结束则为 null）               |
-| `durationMinutes`   | Integer        | 实际持续时长（分钟），会议结束后计算           |
-| `maxDurationMinutes`| Integer        | 最大允许时长（分钟）                         |
-| `notes`             | String         | 备注信息                                    |
-| `cancelReason`      | String         | 取消原因（未取消则为 null）                   |
-| `createTime`        | LocalDateTime  | 记录创建时间                                 |
+| 字段名              | 类型           | 说明                                         |
+|---------------------|----------------|----------------------------------------------|
+| `id`                | String         | 会议唯一标识                                  |
+| `agendaId`          | String         | 关联的日程ID                                  |
+| `doctorId`          | String         | 医生ID                                       |
+| `patientId`         | String         | 患者ID                                       |
+| `roomName`          | String         | Jitsi 视频房间名                              |
+| `classify`          | String         | 会议分类代码，见[会议分类说明](#6-会议分类说明)  |
+| `status`            | String         | 会议状态，见[会议状态说明](#5-会议状态说明)      |
+| `scheduledAt`       | LocalDateTime  | 预约时间                                      |
+| `startedAt`         | LocalDateTime  | 实际开始时间（未开始则为 null）                 |
+| `endedAt`           | LocalDateTime  | 实际结束时间（未结束则为 null）                 |
+| `durationMinutes`   | Integer        | 实际持续时长（分钟），会议结束后计算             |
+| `maxDurationMinutes`| Integer        | 最大允许时长（分钟）                           |
+| `notes`             | String         | 备注信息                                      |
+| `cancelReason`      | String         | 取消原因（未取消则为 null）                     |
+| `createTime`        | LocalDateTime  | 记录创建时间                                   |
 
 **业务逻辑**
 
@@ -329,14 +360,6 @@ Header: satoken: <token_value>
 | `jitsiToken`  | String | Jitsi JWT Token，用于前端 SDK 直接接入    |
 | `roomName`    | String | Jitsi 房间名，用于前端 SDK 指定房间       |
 
-**业务逻辑**
-
-1. 从 Sa-Token 获取当前登录患者 ID
-2. 根据 meetingId 查询会议记录
-3. 校验当前用户是否有权限访问该会议
-4. 以 `patient` 角色获取加入信息（区分医生和患者的权限）
-5. 返回加入 URL、Token 和房间名
-
 **使用说明**
 
 前端可通过以下两种方式加入会议：
@@ -388,8 +411,6 @@ Header: satoken: <token_value>
 }
 ```
 
-或不传请求体也可。
-
 **成功响应**
 
 ```json
@@ -425,11 +446,12 @@ Header: satoken: <token_value>
 
 #### CreateVideoMeetingRequest（预约请求）
 
-| 字段名        | 类型           | 必填 | 说明        |
-|---------------|----------------|------|-------------|
-| `doctorId`    | String         | 是   | 医生ID      |
-| `scheduledAt` | LocalDateTime  | 是   | 预约时间     |
-| `notes`       | String         | 否   | 备注信息     |
+| 字段名        | 类型           | 必填 | 说明                                          |
+|---------------|----------------|------|-----------------------------------------------|
+| `doctorId`    | String         | 是   | 医生ID                                        |
+| `scheduledAt` | LocalDateTime  | 是   | 预约时间                                       |
+| `classify`    | String         | 否   | 会议分类，见[会议分类说明](#6-会议分类说明)，不传默认 `video` |
+| `notes`       | String         | 否   | 备注信息                                       |
 
 #### CancelVideoMeetingRequest（取消请求）
 
@@ -441,34 +463,43 @@ Header: satoken: <token_value>
 
 #### VideoMeetingResponse（会议详情）
 
-| 字段名              | 类型           | 说明             |
-|---------------------|----------------|------------------|
-| `id`                | String         | 会议唯一标识      |
-| `agendaId`          | String         | 关联日程ID        |
-| `doctorId`          | String         | 医生ID           |
-| `patientId`         | String         | 患者ID           |
-| `roomName`          | String         | Jitsi 房间名     |
-| `status`            | String         | 会议状态          |
-| `scheduledAt`       | LocalDateTime  | 预约时间          |
-| `startedAt`         | LocalDateTime  | 开始时间          |
-| `endedAt`           | LocalDateTime  | 结束时间          |
-| `durationMinutes`   | Integer        | 持续时长（分钟）   |
-| `maxDurationMinutes`| Integer        | 最大时长（分钟）   |
-| `notes`             | String         | 备注信息          |
-| `cancelReason`      | String         | 取消原因          |
-| `createTime`        | LocalDateTime  | 创建时间          |
+| 字段名              | 类型           | 说明                                         |
+|---------------------|----------------|----------------------------------------------|
+| `id`                | String         | 会议唯一标识                                  |
+| `agendaId`          | String         | 关联日程ID                                    |
+| `doctorId`          | String         | 医生ID                                       |
+| `patientId`         | String         | 患者ID                                       |
+| `roomName`          | String         | Jitsi 房间名                                  |
+| `classify`          | String         | 会议分类代码，见[会议分类说明](#6-会议分类说明)  |
+| `status`            | String         | 会议状态                                      |
+| `scheduledAt`       | LocalDateTime  | 预约时间                                      |
+| `startedAt`         | LocalDateTime  | 开始时间                                      |
+| `endedAt`           | LocalDateTime  | 结束时间                                      |
+| `durationMinutes`   | Integer        | 持续时长（分钟）                               |
+| `maxDurationMinutes`| Integer        | 最大时长（分钟）                               |
+| `notes`             | String         | 备注信息                                      |
+| `cancelReason`      | String         | 取消原因                                      |
+| `createTime`        | LocalDateTime  | 创建时间                                      |
 
 #### VideoMeetingListResponse（会议列表项）
 
-| 字段名        | 类型           | 说明             |
-|---------------|----------------|------------------|
-| `id`          | String         | 会议唯一标识      |
-| `doctorId`    | String         | 医生ID           |
-| `patientId`   | String         | 患者ID           |
-| `status`      | String         | 会议状态          |
-| `scheduledAt` | LocalDateTime  | 预约时间          |
-| `startedAt`   | LocalDateTime  | 开始时间          |
-| `notes`       | String         | 备注信息          |
+| 字段名              | 类型           | 说明                                         |
+|---------------------|----------------|----------------------------------------------|
+| `id`                | String         | 会议唯一标识                                  |
+| `meetingTitle`      | String         | 会议名称（如"视频就诊"、"视频复诊"）            |
+| `doctorId`          | String         | 医生ID                                       |
+| `doctorName`        | String         | 医生姓名                                     |
+| `doctorTitle`       | String         | 医生职称                                     |
+| `patientId`         | String         | 患者ID                                       |
+| `patientName`       | String         | 患者姓名                                     |
+| `hospitalName`      | String         | 医院名称                                     |
+| `departmentName`    | String         | 科室名称                                     |
+| `classify`          | String         | 会议分类代码，见[会议分类说明](#6-会议分类说明)  |
+| `status`            | String         | 会议状态                                      |
+| `scheduledAt`       | LocalDateTime  | 预约时间                                      |
+| `startedAt`         | LocalDateTime  | 开始时间                                      |
+| `maxDurationMinutes`| Integer        | 最大时长（分钟）                               |
+| `notes`             | String         | 备注信息                                      |
 
 #### VideoJoinResponse（加入信息）
 
@@ -505,16 +536,29 @@ SCHEDULED → WAITING → IN_PROGRESS → COMPLETED
 
 ---
 
-## 6. 错误码
+## 6. 会议分类说明
 
-### 6.1 通用错误
+| 分类代码              | 中文描述   | DB 值 | 说明                   |
+|-----------------------|-----------|-------|------------------------|
+| `video`               | 视频问诊  | 3     | 通用视频问诊（默认值）   |
+| `video_consultation`  | 视频就诊  | 4     | 初次视频就诊             |
+| `video_follow_up`     | 视频复诊  | 5     | 复诊类视频会议           |
+
+- 创建会议时 `classify` 为可选字段，不传默认为 `video`
+- `meetingTitle` 字段值由 `classify` 的中文描述自动生成
+
+---
+
+## 7. 错误码
+
+### 7.1 通用错误
 
 | HTTP 状态码 | code | 说明         |
 |------------|------|--------------|
 | 200        | 401  | 未登录        |
 | 200        | 500  | 服务器内部错误 |
 
-### 6.2 业务错误
+### 7.2 业务错误
 
 | 错误信息                   | 触发场景                            |
 |---------------------------|-------------------------------------|
@@ -528,9 +572,9 @@ SCHEDULED → WAITING → IN_PROGRESS → COMPLETED
 
 ---
 
-## 7. cURL 示例
+## 8. cURL 示例
 
-### 7.1 预约视频问诊
+### 8.1 预约视频问诊
 
 ```bash
 curl -X POST 'http://localhost:8081/api/app/video/reserve' \
@@ -539,32 +583,33 @@ curl -X POST 'http://localhost:8081/api/app/video/reserve' \
   -d '{
     "doctorId": "doctor-uuid-001",
     "scheduledAt": "2026-03-15T14:30:00",
+    "classify": "video_consultation",
     "notes": "近期视力下降，希望进行远程复查"
   }'
 ```
 
-### 7.2 获取我的会议列表
+### 8.2 获取我的会议列表
 
 ```bash
 curl -X GET 'http://localhost:8081/api/app/video/meetings' \
   -H 'satoken: your-token-here'
 ```
 
-### 7.3 获取会议详情
+### 8.3 获取会议详情
 
 ```bash
 curl -X GET 'http://localhost:8081/api/app/video/meeting/meeting-uuid-001' \
   -H 'satoken: your-token-here'
 ```
 
-### 7.4 获取会议加入信息
+### 8.4 获取会议加入信息
 
 ```bash
 curl -X GET 'http://localhost:8081/api/app/video/meeting/meeting-uuid-001/join' \
   -H 'satoken: your-token-here'
 ```
 
-### 7.5 取消会议
+### 8.5 取消会议
 
 ```bash
 # 带取消原因
@@ -582,8 +627,9 @@ curl -X POST 'http://localhost:8081/api/app/video/meeting/meeting-uuid-001/cance
 
 ---
 
-## 8. 版本历史
+## 9. 版本历史
 
-| 版本  | 日期       | 变更说明               |
-|-------|------------|------------------------|
-| v1.0  | 2026-03-10 | 初始版本，包含患者端全部5个接口 |
+| 版本  | 日期       | 变更说明                                                        |
+|-------|------------|----------------------------------------------------------------|
+| v1.0  | 2026-03-10 | 初始版本，包含患者端全部5个接口                                    |
+| v1.1  | 2026-03-12 | 预约请求新增 `classify` 字段；会议列表新增 `meetingTitle`、`doctorName`、`doctorTitle`、`hospitalName`、`departmentName`、`classify` 字段；会议详情新增 `classify` 字段 |

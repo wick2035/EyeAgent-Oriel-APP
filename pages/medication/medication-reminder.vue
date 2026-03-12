@@ -71,6 +71,7 @@
 							@delete="handleDeleteClick"
 						/>
 					</view>
+    <TopNotificationBar />
 				</view>
 			</template>
 
@@ -163,7 +164,6 @@
 		</view>
 
 		<!-- 顶部通知栏 -->
-		<TopNotificationBar />
 	</view>
 </template>
 
@@ -171,7 +171,6 @@
 import ReminderCard from '@/components/medication/ReminderCard.vue'
 import EmptyState from '@/components/medication/EmptyState.vue'
 import ReminderModal from '@/components/medication/ReminderModal.vue'
-import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
 import { isDarkMode } from '@/store/theme.js'
 import {
@@ -193,7 +192,6 @@ export default {
 		ReminderCard,
 		EmptyState,
 		ReminderModal,
-		TopNotificationBar
 	},
 	data() {
 		return {

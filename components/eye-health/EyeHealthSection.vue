@@ -77,15 +77,13 @@ export default {
       this.healthData = getHealthDataByGroup(group);
     },
     goToDetail() {
-      uni.showToast({
-        title: "功能开发中",
-        icon: "none",
+      uni.navigateTo({
+        url: `/pages/health/eye-health-detail?ageGroup=${this.ageGroup}`
       });
     },
     handleCardClick(item) {
-      uni.showToast({
-        title: `${item.title} 详情开发中`,
-        icon: "none",
+      uni.navigateTo({
+        url: `/pages/health/eye-health-detail?ageGroup=${this.ageGroup}`
       });
     },
   },

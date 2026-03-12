@@ -99,6 +99,7 @@
 				<view class="btn-primary" @click="handleNavigate">
 					<view class="nav-icon"></view>
 					<text>导航到医院</text>
+    <TopNotificationBar />
 				</view>
 			</template>
 			<template v-else-if="isPending || isInProgress">
@@ -134,7 +135,6 @@
 		</view>
 
 		<!-- 顶部通知栏 -->
-		<TopNotificationBar />
 
 		<!-- 隐藏的canvas用于生成二维码 -->
 		<canvas
@@ -150,12 +150,10 @@
 import { isDarkMode } from '@/store/theme.js'
 import { cancelAppointment } from '@/utils/api/appointment.js'
 import { getAppointmentList } from '@/utils/api/medical.js'
-import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import uQRCode from '@/uni_modules/cc-defineNewQRCode/components/cc-defineNewQRCode/common/uqrcode.js'
 
 export default {
 	components: {
-		TopNotificationBar
 	},
 	data() {
 		return {

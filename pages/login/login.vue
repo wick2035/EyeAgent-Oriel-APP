@@ -148,20 +148,13 @@
       </view>
     </view>
 
-    <!-- 自定义 Toast -->
-    <CustomToast ref="customToast" />
+    <TopNotificationBar />
   </view>
 </template>
 
 <script>
 import { login, wxLogin, getWxLoginCode } from "@/utils/api/user.js";
-import CustomToast from "@/components/CustomToast.vue";
-import { setToastInstance } from "@/utils/toast.js";
-
 export default {
-  components: {
-    CustomToast,
-  },
   data() {
     return {
       statusBarHeight: 44,
@@ -203,10 +196,6 @@ export default {
       clearTimeout(this.typingTimer);
     }
   },
-  onReady() {
-    // 注册全局 Toast 实例
-    setToastInstance(this.$refs.customToast);
-  },
   methods: {
     getStatusBarHeight() {
       const sysInfo = uni.getSystemInfoSync();
@@ -233,7 +222,7 @@ export default {
     async handleLogin() {
       // 先检查用户协议
       if (!this.agreedTerms) {
-        this.$refs.customToast.warning("请先同意用户协议");
+        this.$toast.warning("请先同意用户协议");
         return;
       }
 
@@ -251,15 +240,15 @@ export default {
         const result = await login(this.username, this.password);
 
         if (result.success) {
-          this.$refs.customToast.success("登录成功");
+          this.$toast.success("登录成功");
           setTimeout(() => {
             uni.switchTab({ url: "/pages/index/index" });
           }, 1500);
         } else {
-          this.$refs.customToast.error(result.message || "登录失败");
+          this.$toast.error(result.message || "登录失败");
         }
       } catch (error) {
-        this.$refs.customToast.error("网络异常，请稍后重试");
+        this.$toast.error("网络异常，请稍后重试");
       } finally {
         this.isLoading = false;
       }
@@ -267,7 +256,7 @@ export default {
 
     async handleWxLogin() {
       if (!this.agreedTerms) {
-        this.$refs.customToast.warning("请先同意用户协议");
+        this.$toast.warning("请先同意用户协议");
         return;
       }
 
@@ -280,16 +269,16 @@ export default {
         uni.hideLoading();
 
         if (result.success) {
-          this.$refs.customToast.success("登录成功");
+          this.$toast.success("登录成功");
           setTimeout(() => {
             uni.switchTab({ url: "/pages/index/index" });
           }, 1500);
         } else {
-          this.$refs.customToast.error(result.message || "微信登录失败");
+          this.$toast.error(result.message || "微信登录失败");
         }
       } catch (error) {
         uni.hideLoading();
-        this.$refs.customToast.error(error.message || "微信登录失败");
+        this.$toast.error(error.message || "微信登录失败");
       }
     },
 

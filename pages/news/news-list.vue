@@ -166,6 +166,7 @@
       <!-- 底部占位 -->
       <view class="bottom-placeholder"></view>
     </scroll-view>
+    <TopNotificationBar />
   </view>
 </template>
 

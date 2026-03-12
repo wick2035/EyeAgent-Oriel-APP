@@ -121,16 +121,15 @@
     <TabBar />
 
     <!-- 顶部通知栏 -->
-    <TopNotificationBar />
 
     <!-- 版本更新弹窗 -->
     <UpdateDialog ref="updateDialog" @cancel="onUpdateDismiss" />
+    <TopNotificationBar />
   </view>
 </template>
 
 <script>
 import TabBar from "@/components/TabBar.vue";
-import TopNotificationBar from "@/components/TopNotificationBar.vue";
 import EyeHealthSection from "@/components/eye-health/EyeHealthSection.vue";
 import UpdateDialog from "@/components/UpdateDialog.vue";
 import { isDarkMode } from "@/store/theme.js";
@@ -141,7 +140,6 @@ import { dismissUpdate } from "@/utils/version.js";
 export default {
   components: {
     TabBar,
-    TopNotificationBar,
     EyeHealthSection,
     UpdateDialog,
   },

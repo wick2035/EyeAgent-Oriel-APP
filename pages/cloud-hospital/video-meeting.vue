@@ -46,6 +46,7 @@
 			</cover-view>
 		</cover-view>
 
+    <TopNotificationBar />
 	</view>
 </template>
 
@@ -431,6 +432,7 @@ export default {
 	align-items: center;
 	padding: 0 80rpx;
 	width: 100%;
+	text-align: center;
 }
 
 .vm-end-check {
@@ -444,6 +446,8 @@ export default {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	text-align: center;
+	line-height: 120rpx;
 	margin-bottom: 48rpx;
 }
 
@@ -452,18 +456,21 @@ export default {
 	font-weight: 700;
 	color: #1E293B;
 	margin-bottom: 16rpx;
+	text-align: center;
 }
 
 .vm-end-sub {
 	font-size: 28rpx;
 	color: #64748B;
 	margin-bottom: 24rpx;
+	text-align: center;
 }
 
 .vm-end-countdown {
 	font-size: 26rpx;
 	color: #94A3B8;
 	margin-bottom: 64rpx;
+	text-align: center;
 }
 
 .vm-end-btn {
@@ -477,6 +484,8 @@ export default {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	text-align: center;
+	line-height: 96rpx;
 }
 
 // ── 连接中占位 ──────────────────────────────────────

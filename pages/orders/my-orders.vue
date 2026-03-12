@@ -132,6 +132,7 @@
 								</view>
 								<view class="action-btn action-btn--primary" @click.stop="handlePay(order)">
 									立即付款
+    <TopNotificationBar />
 								</view>
 							</template>
 
@@ -318,12 +319,10 @@
 		</view>
 
 		<!-- ⑤顶部通知栏 -->
-		<TopNotificationBar />
 	</view>
 </template>
 
 <script>
-import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import { isDarkMode } from '@/store/theme.js'
 import {
 	cartState,
@@ -342,8 +341,6 @@ import {
 import { getOrderList, cancelOrder } from '@/utils/api/order.js'
 
 export default {
-	components: { TopNotificationBar },
-
 	data() {
 		return {
 			statusBarHeight: 44,

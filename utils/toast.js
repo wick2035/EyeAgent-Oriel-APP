@@ -13,7 +13,14 @@
 let toastInstance = null
 
 /**
- * 设置 Toast 实例（由 App.vue 调用）
+ * 检查 Toast 实例是否可用（未被销毁）
+ */
+function isInstanceValid() {
+	return toastInstance && !toastInstance._isDestroyed
+}
+
+/**
+ * 设置 Toast 实例
  * @param {Object} instance - CustomToast 组件实例
  */
 export function setToastInstance(instance) {
@@ -30,7 +37,7 @@ export const toast = {
 	 * @param {number} duration - 显示时长（毫秒），默认 2000
 	 */
 	success(message, duration = 2000) {
-		if (toastInstance) {
+		if (isInstanceValid()) {
 			toastInstance.success(message, duration)
 		} else {
 			// 降级为原生 Toast
@@ -44,7 +51,7 @@ export const toast = {
 	 * @param {number} duration - 显示时长（毫秒），默认 2500
 	 */
 	error(message, duration = 2500) {
-		if (toastInstance) {
+		if (isInstanceValid()) {
 			toastInstance.error(message, duration)
 		} else {
 			uni.showToast({ title: message, icon: 'none' })
@@ -57,7 +64,7 @@ export const toast = {
 	 * @param {number} duration - 显示时长（毫秒），默认 2500
 	 */
 	warning(message, duration = 2500) {
-		if (toastInstance) {
+		if (isInstanceValid()) {
 			toastInstance.warning(message, duration)
 		} else {
 			uni.showToast({ title: message, icon: 'none' })
@@ -70,7 +77,7 @@ export const toast = {
 	 * @param {number} duration - 显示时长（毫秒），默认 2000
 	 */
 	info(message, duration = 2000) {
-		if (toastInstance) {
+		if (isInstanceValid()) {
 			toastInstance.info(message, duration)
 		} else {
 			uni.showToast({ title: message, icon: 'none' })
@@ -86,7 +93,7 @@ export const toast = {
 	 * @param {number} options.duration - 显示时长（毫秒）
 	 */
 	show(options) {
-		if (toastInstance) {
+		if (isInstanceValid()) {
 			toastInstance.show(options)
 		} else {
 			uni.showToast({
@@ -100,7 +107,7 @@ export const toast = {
 	 * 隐藏 Toast
 	 */
 	hide() {
-		if (toastInstance) {
+		if (isInstanceValid()) {
 			toastInstance.hide()
 		} else {
 			uni.hideToast()

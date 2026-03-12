@@ -90,6 +90,7 @@
 				<text class="privacy-banner__text">您的隐私和健康数据受到严格保护</text>
 			</view>
 		</scroll-view>
+    <TopNotificationBar />
 	</view>
 </template>
 

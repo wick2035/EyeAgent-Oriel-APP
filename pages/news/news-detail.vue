@@ -39,7 +39,7 @@
       scroll-y
       @scroll="handleScroll"
     >
-      <view v-if="loading" class="skeleton-detail">
+      <view v-if="loading" class="skeleton-detail" :style="{ paddingTop: articlePaddingTop }">
         <view class="skeleton-title"></view>
         <view class="skeleton-meta"></view>
         <view class="skeleton-image"></view>
@@ -48,7 +48,7 @@
         <view class="skeleton-text skeleton-text--short"></view>
       </view>
 
-      <view v-else-if="article" class="article">
+      <view v-else-if="article" class="article" :style="{ paddingTop: articlePaddingTop }">
         <!-- 文章头部 -->
         <view class="article-header">
           <text class="article-header__title">{{ article.title }}</text>
@@ -254,6 +254,7 @@
         <view class="close-icon"></view>
       </view>
     </view>
+    <TopNotificationBar />
   </view>
 </template>
 
@@ -283,6 +284,9 @@ export default {
   computed: {
     isDark() {
       return isDarkMode()
+    },
+    articlePaddingTop() {
+      return (this.statusBarHeight + 44 + 20) + 'px'
     },
     darkIconFilter() {
       return this.isDark ? 'brightness(0) invert(0.7)' : 'none'
@@ -653,7 +657,7 @@ export default {
 }
 
 .skeleton-detail {
-  padding: 180rpx $spacing-lg $spacing-lg;
+  padding: 0 $spacing-lg $spacing-lg;
 
   .skeleton-title {
     width: 90%;
@@ -701,7 +705,7 @@ export default {
 }
 
 .article {
-  padding: 180rpx $spacing-lg $spacing-lg;
+  padding: 0 $spacing-lg $spacing-lg;
   animation: fadeIn 0.5s ease;
 }
 

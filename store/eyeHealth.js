@@ -282,6 +282,141 @@ export function getMockTrendData() {
 	}
 }
 
+// ==================== Sankey 因果解析数据 ====================
+
+/**
+ * 成人版 Sankey 数据 (SPH -3.50D, AL 25.12mm, IOP 15mmHg)
+ */
+export function getAdultSankeyData() {
+	return {
+		score: 85,
+		scoreLabel: '综合眼健康评估',
+		chips: [
+			{ text: '中度近视', status: RISK_LEVEL.ATTENTION },
+			{ text: '眼压正常', status: RISK_LEVEL.NORMAL },
+			{ text: '眼轴偏长', status: RISK_LEVEL.ATTENTION }
+		],
+		leftNodes: [
+			{ tag: '屈光', label: '屈光度', value: '-3.50D', color: '#FF6B9D' },
+			{ tag: '进展', label: '近视进展', value: '-0.75D/年', color: '#5B9EFF' },
+			{ tag: '眼轴', label: '眼轴长度', value: '25.12mm', color: '#607D9C' },
+			{ tag: '眼压', label: '眼压', value: '15mmHg', color: '#9B72CF' },
+			{ tag: '视力', label: '裸眼视力', value: '4.5', color: '#FF9D6B' }
+		],
+		middleNodes: ['中度近视', '进展偏快', '眼轴偏长', '眼压正常', '轻度下降'],
+		rightNodes: [
+			{ label: '视网膜病变', risk: '中等风险', color: '#26C6DA' },
+			{ label: '眼疲劳症', risk: '中等风险', color: '#4DD0E1' },
+			{ label: '干眼症', risk: '低风险', color: '#80DEEA' }
+		],
+		connections: [
+			[0, 0, 2], [0, 1, 2],
+			[1, 0, 1], [1, 1, 2],
+			[2, 0, 3],
+			[3, 2, 1],
+			[4, 1, 1], [4, 2, 2]
+		],
+		tips: [
+			{ icon: '⏱', iconSize: '50rpx', title: '控制用眼时间', desc: '近距离用眼每50分钟休息10分钟，望远≥6米处' },
+			{ icon: '📐', title: '定期眼轴监测', desc: '每6个月复查眼轴，及时评估近视进展速度' },
+			{ icon: '🌿', title: '增加户外活动', desc: '每日户外活动≥2小时，有助减缓近视进展' }
+		]
+	}
+}
+
+/**
+ * 学生版 Sankey 数据 (13-17岁，SPH -2.00D，进展较快)
+ */
+export function getStudentSankeyData() {
+	return {
+		score: 70,
+		scoreLabel: '综合眼健康评估',
+		chips: [
+			{ text: '轻中度近视', status: RISK_LEVEL.ATTENTION },
+			{ text: '进展较快', status: RISK_LEVEL.MEDIUM },
+			{ text: '眼轴增长', status: RISK_LEVEL.ATTENTION }
+		],
+		leftNodes: [
+			{ tag: '屈光', label: '屈光度', value: '-2.00D', color: '#FF6B9D' },
+			{ tag: '进展', label: '近视进展', value: '-1.00D/年', color: '#5B9EFF' },
+			{ tag: '眼轴', label: '眼轴长度', value: '24.50mm', color: '#607D9C' },
+			{ tag: '眼压', label: '眼压', value: '14mmHg', color: '#9B72CF' },
+			{ tag: '视力', label: '裸眼视力', value: '4.2', color: '#FF9D6B' }
+		],
+		middleNodes: ['轻中度近视', '进展过快', '眼轴偏长', '眼压正常', '明显下降'],
+		rightNodes: [
+			{ label: '高度近视风险', risk: '中等风险', color: '#26C6DA' },
+			{ label: '眼疲劳症', risk: '较高风险', color: '#4DD0E1' },
+			{ label: '干眼症', risk: '低风险', color: '#80DEEA' }
+		],
+		connections: [
+			[0, 0, 2], [0, 1, 2],
+			[1, 0, 3], [1, 1, 2],
+			[2, 0, 2],
+			[3, 2, 1],
+			[4, 1, 2], [4, 2, 1]
+		],
+		tips: [
+			{ icon: '📚', title: '规范用眼习惯', desc: '保持阅读距离≥33cm，光线充足，姿势端正' },
+			{ icon: '🔬', title: '积极近视防控', desc: '考虑角膜塑形镜等防控手段，减缓眼轴增长' },
+			{ icon: '🌿', title: '户外活动优先', desc: '每日户外活动≥2小时是目前最有效的防控方式' }
+		]
+	}
+}
+
+/**
+ * 儿童版 Sankey 数据 (0-12岁，远视储备偏低)
+ */
+export function getChildSankeyData() {
+	return {
+		score: 78,
+		scoreLabel: '综合眼健康评估',
+		chips: [
+			{ text: '远视储备偏低', status: RISK_LEVEL.ATTENTION },
+			{ text: '眼压正常', status: RISK_LEVEL.NORMAL },
+			{ text: '发育待观察', status: RISK_LEVEL.ATTENTION }
+		],
+		leftNodes: [
+			{ tag: '屈光', label: '屈光度', value: '+0.50D', color: '#FF6B9D' },
+			{ tag: '储备', label: '远视储备', value: '偏低', color: '#5B9EFF' },
+			{ tag: '眼轴', label: '眼轴长度', value: '22.80mm', color: '#607D9C' },
+			{ tag: '眼压', label: '眼压', value: '13mmHg', color: '#9B72CF' },
+			{ tag: '视力', label: '裸眼视力', value: '4.8', color: '#FF9D6B' }
+		],
+		middleNodes: ['正视化偏快', '储备不足', '眼轴正常', '眼压正常', '视力良好'],
+		rightNodes: [
+			{ label: '早发近视风险', risk: '中等风险', color: '#26C6DA' },
+			{ label: '视力疲劳', risk: '低风险', color: '#4DD0E1' },
+			{ label: '弱视风险', risk: '低风险', color: '#80DEEA' }
+		],
+		connections: [
+			[0, 0, 2], [1, 0, 3],
+			[2, 0, 1],
+			[3, 1, 1],
+			[4, 1, 1], [4, 2, 1]
+		],
+		tips: [
+			{ icon: '🌳', title: '户外活动是关键', desc: '每天≥2小时户外活动，自然光有助于延缓近视发生' },
+			{ icon: '📺', title: '减少屏幕时间', desc: '6岁以下每天屏幕时间不超过1小时，避免近距离用眼' },
+			{ icon: '👁', title: '定期视力筛查', desc: '每6个月进行一次眼科检查，监测远视储备变化' }
+		]
+	}
+}
+
+/**
+ * 根据年龄分组获取 Sankey 详情数据
+ * @param {'child'|'student'|'adult'} ageGroup
+ * @returns {object} Sankey 数据
+ */
+export function getSankeyDataByGroup(ageGroup) {
+	switch (ageGroup) {
+		case 'child':   return getChildSankeyData()
+		case 'student': return getStudentSankeyData()
+		case 'adult':
+		default:        return getAdultSankeyData()
+	}
+}
+
 /**
  * 眼部数据字段配置
  */

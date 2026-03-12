@@ -216,6 +216,7 @@
         <view class="bottom-space"></view>
       </scroll-view>
     </view>
+    <TopNotificationBar />
   </view>
 </template>
 

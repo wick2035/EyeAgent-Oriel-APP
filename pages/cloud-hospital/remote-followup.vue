@@ -78,7 +78,7 @@
 			<!-- 会议卡片列表 -->
 			<view v-if="!loading && currentList.length > 0" class="meeting-list">
 
-				<!-- 历史记录 Tab：appointment-card 简洁风格 -->
+				<!-- 历史记录 Tab -->
 				<block v-if="activeTab === 1">
 					<view
 						v-for="(meeting, index) in currentList"
@@ -87,144 +87,96 @@
 						:class="{ 'history-card--show': animationReady }"
 						:style="{ animationDelay: (index * 80) + 'ms' }"
 					>
-						<!-- Header：状态标签 + 日期 -->
-						<view class="history-card__header">
-							<view
-								class="history-card__status"
-								:class="meeting.status === 'COMPLETED' ? 'history-card__status--completed' : 'history-card__status--cancelled'"
-							>
-								{{ meeting.status === 'COMPLETED' ? '已完成' : '已取消' }}
+						<!-- Header：会议名称 + 状态badge -->
+						<view class="hc-header">
+							<text class="hc-title">{{ meeting.meetingTitle || '远程复诊' }}</text>
+							<view class="hc-badge" :class="meeting.status === 'COMPLETED' ? 'hc-badge--done' : 'hc-badge--cancelled'">
+								<text class="hc-badge-text">{{ meeting.status === 'COMPLETED' ? '已完成' : '已取消' }}</text>
 							</view>
-							<text class="history-card__date">{{ formatShortDate(meeting.scheduledAt) }}</text>
 						</view>
-
-						<!-- Body -->
-						<view class="history-card__body">
-							<!-- 医生名称行 -->
-							<view class="history-card__doctor-row">
-								<image class="computer-icon" src="@/static/computer.svg" mode="aspectFit"></image>
-								<text class="history-card__doctor-name">{{ meeting.doctorName || '主治医生' }}</text>
-							</view>
-							<!-- 科室 + 职称行 -->
-							<view class="history-card__info">
-								<text v-if="meeting.doctorDept" class="history-card__dept">{{ meeting.doctorDept }}</text>
-								<text v-if="meeting.doctorTitle" class="history-card__title-tag">{{ meeting.doctorTitle }}</text>
-							</view>
-							<!-- 时间行 -->
-							<view class="history-card__time-row">
-								<image class="history-time-icon" src="@/static/time.svg" mode="aspectFit"></image>
-								<text class="history-card__time-text">{{ formatScheduledDate(meeting.scheduledAt) }}</text>
-							</view>
-							<!-- 备注 -->
-							<text v-if="meeting.notes" class="history-card__notes">{{ meeting.notes }}</text>
-							<!-- 取消原因 -->
-							<text v-if="meeting.cancelReason" class="history-card__reason">取消原因：{{ meeting.cancelReason }}</text>
+						<view class="hc-sep"></view>
+						<!-- 医生信息 -->
+						<text class="hc-doc-name">{{ meeting.doctorName || '主治医生' }}</text>
+						<view class="hc-doc-secondary">
+							<text v-if="meeting.departmentName" class="hc-dept-pill">{{ meeting.departmentName }}</text>
+							<text v-if="meeting.doctorTitle || meeting.hospitalName" class="hc-doc-secondary-text">{{ [meeting.doctorTitle, meeting.hospitalName].filter(Boolean).join(' · ') }}</text>
+						</view>
+						<view class="hc-sep"></view>
+						<!-- 起止时间 -->
+						<view class="hc-time-row">
+							<image class="hc-time-icon" src="@/static/time.svg" mode="aspectFit" />
+							<text class="hc-time-text">{{ formatHistoryTime(meeting) }}</text>
 						</view>
 					</view>
 				</block>
 
-				<!-- 待复诊 Tab：保持原有 meeting-card 风格 -->
+				<!-- 待复诊 Tab -->
 				<block v-else>
 					<view
 						v-for="(meeting, index) in currentList"
 						:key="meeting.id"
-						class="meeting-card"
+						class="mc"
 						:class="[
-							'meeting-card--' + getDisplayState(meeting),
-							{ 'meeting-card--show': animationReady }
+							'mc--' + getDisplayState(meeting),
+							{ 'mc--show': animationReady }
 						]"
 						:style="{ animationDelay: (index * 100) + 'ms' }"
 					>
-						<!-- 卡片头部：带色彩渐变的 header band -->
-						<view class="card-header-band">
-							<view class="card-header">
-								<view class="status-chip" :class="'status-chip--' + getDisplayState(meeting)">
-									<view
-										v-if="['waiting','in_progress','imminent'].includes(getDisplayState(meeting))"
-										class="pulse-dot"
-									></view>
-									<text class="status-chip__text">{{ getStatusLabel(meeting) }}</text>
-								</view>
-								<text
-									class="card-time"
-									:class="getTimeColorClass(meeting)"
-								>{{ getTimeDisplay(meeting) }}</text>
+						<!-- Header: 会议名称 + 状态指示 -->
+						<view class="mc-header">
+							<text class="mc-title">{{ meeting.meetingTitle || '远程复诊' }}</text>
+							<view class="mc-status-bar" :class="'mc-status-bar--' + getDisplayState(meeting)">
+								<view class="mc-status-dot"></view>
+								<text class="mc-status-label">{{ getStatusLabel(meeting) }}</text>
+								<text class="mc-status-time" :class="getTimeColorClass(meeting)">{{ getTimeDisplay(meeting) }}</text>
 							</view>
 						</view>
-
+						<view class="mc-sep"></view>
 						<!-- 医生信息 -->
-						<view class="doctor-row">
-							<view class="doctor-avatar-wrap">
-								<image
-									class="doctor-avatar"
-									:src="meeting.doctorAvatar || '/static/temporary/male.jpg'"
-									mode="aspectFill"
-								/>
-							</view>
-							<view class="doctor-info">
-								<view class="doctor-name-row">
-									<text class="doctor-name">{{ meeting.doctorName || '主治医生' }}</text>
-									<view v-if="meeting.doctorTitle" class="doctor-title-tag">
-										<text class="doctor-title-text">{{ meeting.doctorTitle }}</text>
-									</view>
-								</view>
-								<text v-if="meeting.doctorDept" class="doctor-dept">{{ meeting.doctorDept }}</text>
+						<view class="mc-doctor">
+							<text class="mc-doc-name">{{ meeting.doctorName || '主治医生' }}</text>
+							<view class="mc-doc-secondary">
+								<text v-if="meeting.departmentName" class="mc-dept-pill">{{ meeting.departmentName }}</text>
+								<text v-if="meeting.doctorTitle || meeting.hospitalName" class="mc-doc-secondary-text">{{ [meeting.doctorTitle, meeting.hospitalName].filter(Boolean).join(' · ') }}</text>
 							</view>
 						</view>
-
-						<!-- 分隔线 -->
-						<view class="card-divider"></view>
-
-						<!-- 预约信息 -->
-						<view class="meta-row">
-							<view class="meta-item">
-								<text class="meta-icon">📅</text>
-								<text class="meta-text">{{ formatScheduledDate(meeting.scheduledAt) }}</text>
-							</view>
-							<view v-if="meeting.notes" class="meta-item">
-								<text class="meta-icon">📋</text>
-								<text class="meta-text meta-text--notes" :numberOfLines="1">{{ meeting.notes }}</text>
-							</view>
+						<view class="mc-sep"></view>
+						<!-- 预约时间 -->
+						<view class="mc-time-row">
+							<image class="mc-time-icon" src="@/static/time.svg" mode="aspectFit" />
+							<text class="mc-time-text">预约　{{ formatScheduledDate(meeting.scheduledAt) }}</text>
 						</view>
-
 						<!-- 操作按钮 -->
 						<view
 							v-if="meeting.status !== 'COMPLETED' && meeting.status !== 'CANCELLED'"
-							class="card-actions"
+							class="mc-actions-wrap"
 						>
-							<!-- 取消按钮 -->
-							<view
-								v-if="canCancel(meeting)"
-								class="action-btn action-btn--ghost"
-								@click.stop="openCancelSheet(meeting)"
-							>
-								<text class="action-btn__text">取消预约</text>
-							</view>
-							<view v-else class="action-btn-placeholder"></view>
-
-							<!-- 进入诊室按钮 -->
-							<view
-								class="action-btn action-btn--enter"
-								:class="{
-									'action-btn--enter-active': canEnter(meeting),
-									'action-btn--enter-progress': meeting.status === 'IN_PROGRESS',
-									'action-btn--enter-disabled': !canEnter(meeting)
-								}"
-								@click.stop="canEnter(meeting) && enterMeeting(meeting)"
-							>
-								<text class="action-btn__text action-btn__text--enter">
-									{{ meeting.status === 'IN_PROGRESS' ? '立即进入' : '进入诊室' }}
-								</text>
-								<text class="action-btn__arrow">→</text>
+							<text class="mc-hint">开始前5分钟方可进入云诊室</text>
+							<view class="mc-actions">
+								<view
+									v-if="canCancel(meeting)"
+									class="mc-btn mc-btn--ghost"
+									@click.stop="openCancelSheet(meeting)"
+								>
+									<text class="mc-btn-text">取消预约</text>
+								</view>
+								<view v-else class="mc-btn-placeholder"></view>
+								<view
+									class="mc-btn mc-btn--enter"
+									:class="{
+										'mc-btn--enter-active': canEnter(meeting),
+										'mc-btn--enter-progress': meeting.status === 'IN_PROGRESS',
+										'mc-btn--enter-disabled': !canEnter(meeting)
+									}"
+									@click.stop="canEnter(meeting) && enterMeeting(meeting)"
+								>
+									<text class="mc-btn-text mc-btn-text--enter">{{ meeting.status === 'IN_PROGRESS' ? '立即进入' : '进入诊室' }}</text>
+								</view>
 							</view>
 						</view>
-
 						<!-- 完成/取消状态标记 -->
-						<view v-else class="card-finished">
-							<text class="card-finished__text">
-								{{ meeting.status === 'COMPLETED' ? '✓ 诊疗已完成' : '✗ 预约已取消' }}
-							</text>
-							<text v-if="meeting.cancelReason" class="card-finished__reason">{{ meeting.cancelReason }}</text>
+						<view v-else class="mc-finished">
+							<text class="mc-finished-text">{{ meeting.status === 'COMPLETED' ? '✓ 诊疗已完成' : '✗ 预约已取消' }}</text>
 						</view>
 					</view>
 				</block>
@@ -285,6 +237,7 @@
 			</view>
 		</view>
 
+    <TopNotificationBar />
 	</view>
 </template>
 
@@ -391,7 +344,9 @@ export default {
 			this.loading = true
 			const res = await getMeetingList()
 			if (res.code === 200) {
-				this.meetings = res.data || []
+				this.meetings = (res.data || []).filter(m =>
+					m.classify === 'video_follow_up' || m.classify === 'video'
+				)
 				this.tabs[0].count = this.upcomingMeetings.length
 				this.tabs[1].count = 0
 			} else {
@@ -522,6 +477,21 @@ export default {
 		formatShortDate(scheduledAt) {
 			const d = new Date(scheduledAt)
 			return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
+		},
+		formatHistoryTime(meeting) {
+			const d = new Date(meeting.scheduledAt)
+			const dateStr = `${pad(d.getMonth()+1)}月${pad(d.getDate())}日  ${DAYS[d.getDay()]}`
+			if (meeting.startedAt && meeting.maxDurationMinutes) {
+				const s = new Date(meeting.startedAt)
+				const endMs = s.getTime() + meeting.maxDurationMinutes * 60000
+				const e = new Date(endMs)
+				return `${dateStr}   ${pad(s.getHours())}:${pad(s.getMinutes())} — ${pad(e.getHours())}:${pad(e.getMinutes())}`
+			}
+			if (meeting.startedAt) {
+				const s = new Date(meeting.startedAt)
+				return `${dateStr}   ${pad(s.getHours())}:${pad(s.getMinutes())} 开始`
+			}
+			return `${dateStr}   ${pad(d.getHours())}:${pad(d.getMinutes())}`
 		},
 
 		// ── 进入诊室 ──────────────────────────────
@@ -797,20 +767,21 @@ export default {
 }
 
 // ============================================================
-// 会议卡片
+
+// ============================================================
+// 会议卡片（待复诊）
 // ============================================================
 .meeting-list {
 	padding: $spacing-sm $spacing-md;
 }
 
-.meeting-card {
-	background: #fff;
+.mc {
+	background: #F8FBFF;
 	border-radius: $radius-xl;
-	padding: $spacing-lg;
+	padding: 32rpx;
 	margin-bottom: $spacing-md;
 	box-shadow: 0 1rpx 4rpx rgba(30, 58, 95, 0.04), 0 6rpx 24rpx rgba(30, 58, 95, 0.08);
-	border: 1.5rpx solid rgba(0, 0, 0, 0.14);
-	overflow: hidden;
+	border: 1.5rpx solid rgba(30, 58, 95, 0.08);
 	opacity: 0;
 	transform: translateY(36rpx);
 
@@ -818,203 +789,148 @@ export default {
 		animation: cardFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 	}
 
-	// 进行中：绿色边框
 	&--in_progress {
-		border-color: rgba(16, 185, 129, 0.40);
+		border-color: rgba(16, 185, 129, 0.35);
 	}
 
-	// 等待中：蓝紫色边框
 	&--waiting {
-		border-color: rgba(99, 102, 241, 0.35);
-	}
-
-	// 历史：轻微降低对比度
-	&--completed,
-	&--cancelled {
-		opacity: 0.72;
+		border-color: rgba(99, 102, 241, 0.3);
 	}
 }
 
-// 卡片头部 header band（负 margin 撑满顶部，overflow:hidden 裁剪圆角）
-.card-header-band {
-	margin: -32rpx -32rpx 24rpx;
-	padding: 20rpx 32rpx;
-	border-radius: 32rpx 32rpx 0 0;
-}
-
-.meeting-card--in_progress .card-header-band {
-	background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.03) 100%);
-}
-
-.meeting-card--imminent .card-header-band {
-	background: linear-gradient(135deg, rgba(16, 185, 129, 0.10) 0%, rgba(16, 185, 129, 0.02) 100%);
-}
-
-.meeting-card--waiting .card-header-band {
-	background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.03) 100%);
-}
-
-.meeting-card--soon .card-header-band {
-	background: linear-gradient(135deg, rgba(245, 158, 11, 0.10) 0%, rgba(245, 158, 11, 0.02) 100%);
-}
-
-.meeting-card--scheduled .card-header-band {
-	background: linear-gradient(135deg, rgba(51, 136, 255, 0.08) 0%, rgba(51, 136, 255, 0.01) 100%);
-}
-
-.card-header {
+.mc-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	margin-bottom: 24rpx;
 }
 
-// 状态 chip
-.status-chip {
-	display: inline-flex;
-	align-items: center;
-	gap: 8rpx;
-	padding: 8rpx 20rpx;
-	border-radius: $radius-full;
-	font-size: $font-size-xs;
-	font-weight: $font-weight-semibold;
-
-	&--scheduled  { background: rgba(51, 136, 255, 0.1);  color: #3388FF; }
-	&--soon       { background: rgba(245, 158, 11, 0.1);  color: #F59E0B; }
-	&--imminent   { background: rgba(16, 185, 129, 0.12); color: #10B981; }
-	&--waiting    { background: rgba(99, 102, 241, 0.1);  color: #6366F1; }
-	&--in_progress { background: rgba(16, 185, 129, 0.12); color: #10B981; }
-	&--completed  { background: rgba(148, 163, 184, 0.1); color: #94A3B8; }
-	&--cancelled  { background: rgba(239, 68, 68, 0.08);  color: #EF4444; }
-}
-
-.pulse-dot {
-	width: 12rpx;
-	height: 12rpx;
-	border-radius: 50%;
-	background: currentColor;
-	animation: dotPulse 1.5s ease-in-out infinite;
-}
-
-// 时间显示
-.card-time {
+.mc-title {
 	font-size: $font-size-sm;
 	font-weight: $font-weight-semibold;
-
-	&.time--green  { color: #10B981; }
-	&.time--amber  { color: #F59E0B; }
-	&.time--red    { color: #EF4444; }
-	&.time--blue   { color: #3388FF; }
-	&.time--muted  { color: $text-muted; }
+	color: $text-primary;
+	flex: 1;
 }
 
-// 医生行
-.doctor-row {
+.mc-status-bar {
 	display: flex;
 	align-items: center;
-	gap: $spacing-md;
-	margin-bottom: $spacing-md;
-}
-
-.doctor-avatar-wrap {
-	width: 96rpx;
-	height: 96rpx;
-	border-radius: 50%;
-	overflow: hidden;
+	gap: 8rpx;
 	flex-shrink: 0;
 }
 
-.doctor-avatar {
-	width: 100%;
-	height: 100%;
+.mc-status-dot {
+	width: 10rpx;
+	height: 10rpx;
+	border-radius: 50%;
+	background: currentColor;
 }
 
-.doctor-info {
-	flex: 1;
-	overflow: hidden;
-}
-
-.doctor-name-row {
-	display: flex;
-	align-items: center;
-	gap: $spacing-xs;
-	margin-bottom: 6rpx;
-}
-
-.doctor-name {
-	font-size: $font-size-lg;
-	font-weight: $font-weight-semibold;
-	color: $text-primary;
-}
-
-.doctor-title-tag {
-	padding: 4rpx 12rpx;
-	background: rgba(51, 136, 255, 0.08);
-	border-radius: $radius-sm;
-}
-
-.doctor-title-text {
+.mc-status-label {
 	font-size: 20rpx;
-	color: $color-primary;
 	font-weight: $font-weight-medium;
 }
 
-.doctor-dept {
-	font-size: $font-size-xs;
-	color: $text-muted;
+.mc-status-time {
+	font-size: 20rpx;
+	font-weight: $font-weight-semibold;
 }
 
-// 分隔线
-.card-divider {
-	height: 2rpx;
-	background: rgba(0, 0, 0, 0.05);
-	margin: $spacing-sm 0 $spacing-md;
+.mc-status-bar--in_progress { color: #10B981; }
+.mc-status-bar--imminent    { color: #10B981; }
+.mc-status-bar--waiting     { color: #6366F1; }
+.mc-status-bar--soon        { color: #F59E0B; }
+.mc-status-bar--scheduled   { .mc-status-dot { color: #3388FF; } .mc-status-label { color: $text-muted; } .mc-status-time { color: #3388FF; } }
+
+.mc-status-bar--in_progress .mc-status-time,
+.mc-status-bar--in_progress .mc-status-label,
+.mc-status-bar--in_progress .mc-status-dot { color: #10B981; }
+
+.mc-status-bar--imminent .mc-status-time,
+.mc-status-bar--imminent .mc-status-label,
+.mc-status-bar--imminent .mc-status-dot { color: #10B981; }
+
+.mc-status-bar--waiting .mc-status-time,
+.mc-status-bar--waiting .mc-status-label,
+.mc-status-bar--waiting .mc-status-dot { color: #6366F1; }
+
+.mc-status-bar--soon .mc-status-time,
+.mc-status-bar--soon .mc-status-label,
+.mc-status-bar--soon .mc-status-dot { color: #F59E0B; }
+
+.mc-status-bar--scheduled .mc-status-dot,
+.mc-status-bar--scheduled .mc-status-time { color: #3388FF; }
+.mc-status-bar--scheduled .mc-status-label { color: $text-muted; }
+
+.mc-sep {
+	height: 1.5rpx;
+	background: rgba(0, 0, 0, 0.06);
+	margin: 0 0 24rpx;
 }
 
-// 元信息行
-.meta-row {
-	display: flex;
-	flex-direction: column;
-	gap: 8rpx;
-	margin-bottom: $spacing-lg;
+.mc-doctor {
+	margin-bottom: 24rpx;
 }
 
-.meta-item {
+.mc-doc-name {
+	font-size: 32rpx;
+	font-weight: $font-weight-semibold;
+	color: $text-primary;
+	display: block;
+	margin-bottom: 10rpx;
+}
+
+.mc-doc-secondary {
 	display: flex;
 	align-items: center;
-	gap: $spacing-xs;
+	flex-wrap: wrap;
+	gap: 12rpx;
 }
 
-.meta-icon {
-	font-size: 28rpx;
-	width: 36rpx;
+.mc-dept-pill {
+	font-size: $font-size-xs;
+	color: $color-primary;
+	background: rgba(30, 58, 95, 0.06);
+	padding: 4rpx 12rpx;
+	border-radius: $radius-xs;
 }
 
-.meta-text {
+.mc-doc-secondary-text {
 	font-size: $font-size-sm;
 	color: $text-secondary;
-	flex: 1;
-
-	&--notes {
-		color: $text-muted;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
 }
 
-// 操作按钮区
-.card-actions {
+.mc-time-row {
 	display: flex;
 	align-items: center;
+	gap: 10rpx;
+	margin-bottom: 24rpx;
+}
+
+.mc-time-icon {
+	width: 28rpx;
+	height: 28rpx;
+	flex-shrink: 0;
+	filter: invert(65%);
+}
+
+.mc-time-text {
+	font-size: $font-size-sm;
+	color: $text-secondary;
+}
+
+.mc-actions {
+	display: flex;
 	gap: $spacing-sm;
 }
 
-.action-btn-placeholder {
+.mc-btn-placeholder {
 	flex: 1;
+	width: 0;
 }
 
-.action-btn {
-	height: 72rpx;
+.mc-btn {
+	height: 80rpx;
 	border-radius: $radius-lg;
 	display: flex;
 	align-items: center;
@@ -1023,80 +939,73 @@ export default {
 
 	&--ghost {
 		flex: 1;
+		width: 0;
 		border: 2rpx solid rgba(0, 0, 0, 0.12);
 
-		.action-btn__text { color: $text-secondary; font-size: $font-size-sm; }
+		.mc-btn-text { color: $text-secondary; }
 	}
 
 	&--enter {
-		flex: 1.4;
-		padding: 0 $spacing-md;
+		flex: 1;
+		width: 0;
 	}
 
 	&--enter-disabled {
 		background: rgba(0, 0, 0, 0.05);
 		border: 2rpx solid rgba(0, 0, 0, 0.08);
-		.action-btn__text--enter { color: $text-muted; }
-		.action-btn__arrow { color: $text-muted; }
+		.mc-btn-text { color: $text-muted; }
 	}
 
 	&--enter-active {
 		background: linear-gradient(135deg, #3388FF 0%, #1166DD 100%);
 		box-shadow: 0 4rpx 20rpx rgba(51, 136, 255, 0.35);
-		.action-btn__text--enter { color: #fff; }
-		.action-btn__arrow { color: rgba(255,255,255,0.8); }
+		.mc-btn-text { color: #fff; }
 	}
 
 	&--enter-progress {
 		background: linear-gradient(135deg, #10B981 0%, #059669 100%);
 		box-shadow: 0 4rpx 20rpx rgba(16, 185, 129, 0.35);
 		animation: btnPulse 2s ease-in-out infinite;
-		.action-btn__text--enter { color: #fff; }
-		.action-btn__arrow { color: rgba(255,255,255,0.8); }
+		.mc-btn-text { color: #fff; }
 	}
 }
 
-.action-btn__text {
+.mc-btn-text {
 	font-size: $font-size-sm;
 	font-weight: $font-weight-semibold;
 }
 
-.action-btn__text--enter {
-	font-size: $font-size-sm;
-	font-weight: $font-weight-semibold;
+.mc-hint {
+	display: block;
+	text-align: center;
+	font-size: $font-size-xs;
+	color: $text-muted;
+	margin-bottom: 16rpx;
 }
 
-.action-btn__arrow {
-	font-size: $font-size-sm;
-	font-weight: $font-weight-bold;
-}
-
-// 已完成/取消标记
-.card-finished {
+.mc-finished {
 	padding-top: $spacing-xs;
-	display: flex;
-	flex-direction: column;
-	gap: 4rpx;
-
-	&__text {
-		font-size: $font-size-xs;
-		color: $text-muted;
-	}
-
-	&__reason {
-		font-size: $font-size-xs;
-		color: $text-muted;
-		opacity: 0.7;
-	}
 }
+
+.mc-finished-text {
+	font-size: $font-size-xs;
+	color: $text-muted;
+}
+
+// 时间色彩辅助类
+.time--green  { color: #10B981; }
+.time--amber  { color: #F59E0B; }
+.time--red    { color: #EF4444; }
+.time--blue   { color: #3388FF; }
+.time--muted  { color: $text-muted; }
 
 // ============================================================
-// 历史记录卡片（对齐 appointment-card 风格）
+// 历史记录卡片
 // ============================================================
 .history-card {
-	background: #fff;
+	background: #F8FBFF;
 	border-radius: $radius-lg;
-	padding: $spacing-lg;
+	padding: 28rpx 32rpx;
 	margin-bottom: $spacing-md;
 	box-shadow: $shadow-sm;
 	opacity: 0;
@@ -1110,119 +1019,95 @@ export default {
 	&:active {
 		transform: scale(0.98);
 	}
-
-	&__header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: $spacing-md;
-		padding-bottom: $spacing-md;
-		border-bottom: 2rpx solid $border-color-light;
-	}
-
-	&__status {
-		font-size: $font-size-sm;
-		padding: 6rpx 16rpx;
-		border-radius: $radius-sm;
-		font-weight: $font-weight-medium;
-
-		&--completed {
-			background: rgba(16, 185, 129, 0.1);
-			color: $color-success;
-		}
-
-		&--cancelled {
-			background: rgba(156, 163, 175, 0.1);
-			color: $text-muted;
-		}
-	}
-
-	&__date {
-		font-size: $font-size-sm;
-		color: $text-secondary;
-	}
-
-	&__body {
-		display: flex;
-		flex-direction: column;
-		gap: $spacing-sm;
-	}
-
-	&__doctor-row {
-		display: flex;
-		align-items: center;
-		gap: $spacing-sm;
-	}
-
-
-	&__doctor-name {
-		font-size: $font-size-lg;
-		font-weight: $font-weight-semibold;
-		color: $text-primary;
-	}
-
-	&__info {
-		display: flex;
-		align-items: center;
-		gap: $spacing-md;
-	}
-
-	&__dept {
-		font-size: $font-size-base;
-		color: $color-primary;
-		background: rgba(30, 58, 95, 0.06);
-		padding: 4rpx 12rpx;
-		border-radius: $radius-xs;
-	}
-
-	&__title-tag {
-		font-size: $font-size-base;
-		color: $text-secondary;
-	}
-
-	&__time-row {
-		display: flex;
-		align-items: center;
-		gap: $spacing-xs;
-	}
-
-	&__time-text {
-		font-size: $font-size-sm;
-		color: $text-muted;
-	}
-
-	&__notes {
-		font-size: $font-size-xs;
-		color: $text-muted;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	&__reason {
-		font-size: $font-size-xs;
-		color: $text-muted;
-		font-style: italic;
-	}
 }
 
-.computer-icon {
-	width: 32rpx;
-	height: 32rpx;
-	margin-right: $spacing-sm;
+.hc-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 20rpx;
+}
+
+.hc-title {
+	font-size: $font-size-sm;
+	font-weight: $font-weight-semibold;
+	color: $text-primary;
+	flex: 1;
+	margin-right: 16rpx;
+}
+
+.hc-badge {
+	padding: 6rpx 18rpx;
+	border-radius: $radius-full;
+	font-size: 20rpx;
+	font-weight: $font-weight-medium;
 	flex-shrink: 0;
-	filter: invert(40%) sepia(80%) saturate(1800%) hue-rotate(200deg) brightness(100%) contrast(100%);
+
+	&-text { }
+
+	&--done {
+		background: rgba(16, 185, 129, 0.1);
+		color: #10B981;
+	}
+
+	&--cancelled {
+		background: rgba(148, 163, 184, 0.1);
+		color: $text-muted;
+	}
 }
 
-.history-time-icon {
+.hc-sep {
+	height: 1.5rpx;
+	background: rgba(0, 0, 0, 0.05);
+	margin: 0 0 20rpx;
+}
+
+.hc-doc-name {
+	font-size: 32rpx;
+	font-weight: $font-weight-semibold;
+	color: $text-primary;
+	display: block;
+	margin-bottom: 10rpx;
+}
+
+.hc-doc-secondary {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 12rpx;
+	margin-bottom: 20rpx;
+}
+
+.hc-dept-pill {
+	font-size: $font-size-xs;
+	color: $color-primary;
+	background: rgba(30, 58, 95, 0.06);
+	padding: 4rpx 12rpx;
+	border-radius: $radius-xs;
+}
+
+.hc-doc-secondary-text {
+	font-size: $font-size-sm;
+	color: $text-secondary;
+}
+
+.hc-time-row {
+	display: flex;
+	align-items: center;
+	gap: 10rpx;
+}
+
+.hc-time-icon {
 	width: 28rpx;
 	height: 28rpx;
 	flex-shrink: 0;
-	margin-right: $spacing-xs;
 	filter: invert(65%);
 }
 
-// ============================================================
+.hc-time-text {
+	font-size: $font-size-sm;
+	color: $text-muted;
+}
 // 骨架屏
 // ============================================================
 .skeleton-wrap {
@@ -1603,44 +1488,44 @@ export default {
 		&__sub    { color: $dark-text-muted; }
 	}
 
-	.meeting-card {
+	// 待复诊卡片深色模式
+	.mc {
 		background: $dark-bg-elevated;
-		box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.3), 0 6rpx 24rpx rgba(0, 0, 0, 0.4);
 		border-color: rgba(255, 255, 255, 0.06);
 
 		&--in_progress { border-color: rgba(16, 185, 129, 0.3); }
 		&--waiting     { border-color: rgba(99, 102, 241, 0.25); }
 	}
 
-	.meeting-card--in_progress .card-header-band {
-		background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0.05) 100%);
-	}
-	.meeting-card--imminent .card-header-band {
-		background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.04) 100%);
-	}
-	.meeting-card--waiting .card-header-band {
-		background: linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0.05) 100%);
-	}
-	.meeting-card--soon .card-header-band {
-		background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.04) 100%);
-	}
-	.meeting-card--scheduled .card-header-band {
-		background: linear-gradient(135deg, rgba(51, 136, 255, 0.12) 0%, rgba(51, 136, 255, 0.03) 100%);
-	}
+	.mc-title        { color: $dark-text-primary; }
+	.mc-sep          { background: rgba(255, 255, 255, 0.06); }
+	.mc-doc-name           { color: $dark-text-primary; }
+	.mc-doc-secondary-text { color: $dark-text-muted; }
+	.mc-dept-pill          { background: rgba(255, 255, 255, 0.08); }
+	.mc-time-text          { color: $dark-text-secondary; }
+	.mc-time-icon          { filter: invert(55%); }
+	.mc-finished-text      { color: $dark-text-muted; }
+	.mc-hint               { color: $dark-text-muted; }
 
-	.card-divider { background: rgba(255, 255, 255, 0.06); }
-
-	.doctor-name  { color: $dark-text-primary; }
-	.meta-text    { color: $dark-text-secondary; }
-	.meta-text--notes { color: $dark-text-muted; }
-
-	.action-btn--ghost {
+	.mc-btn--ghost {
 		border-color: rgba(255, 255, 255, 0.1);
-		.action-btn__text { color: $dark-text-muted; }
+		.mc-btn-text { color: $dark-text-muted; }
 	}
 
-	.card-finished__text,
-	.card-finished__reason { color: $dark-text-muted; }
+	.mc-status-bar--scheduled .mc-status-label { color: $dark-text-muted; }
+
+	// 历史记录卡片深色模式
+	.history-card    { background: $dark-bg-card; }
+	.hc-title        { color: $dark-text-primary; }
+	.hc-sep          { background: rgba(255, 255, 255, 0.06); }
+	.hc-doc-name           { color: $dark-text-primary; }
+	.hc-doc-secondary-text { color: $dark-text-muted; }
+	.hc-dept-pill          { background: rgba(255, 255, 255, 0.08); }
+	.hc-time-text    { color: $dark-text-muted; }
+	.hc-time-icon    { filter: invert(55%); }
+
+	.hc-badge--done      { background: rgba(16, 185, 129, 0.15); }
+	.hc-badge--cancelled { background: rgba(148, 163, 184, 0.08); color: $dark-text-muted; }
 
 	.empty-state__title { color: $dark-text-primary; }
 	.empty-state__desc  { color: $dark-text-muted; }
@@ -1683,28 +1568,8 @@ export default {
 		.sheet-btn__text { color: $dark-text-secondary; }
 	}
 
-	.history-card {
-		background: $dark-bg-card;
-
-		&__header        { border-bottom-color: $dark-border-color; }
-		&__date          { color: $dark-text-secondary; }
-		&__doctor-name   { color: $dark-text-primary; }
-		&__dept {
-			color: $dark-color-primary;
-			background: rgba(74, 144, 217, 0.1);
-		}
-		&__title-tag     { color: $dark-text-secondary; }
-		&__time-text     { color: $dark-text-muted; }
-		&__notes         { color: $dark-text-muted; }
-		&__reason        { color: $dark-text-muted; }
-	}
-
-	.computer-icon {
-		filter: invert(52%) sepia(94%) saturate(1095%) hue-rotate(176deg) brightness(98%) contrast(92%);
-	}
-
-	.history-time-icon {
-		filter: invert(55%);
-	}
+	.navbar { background: rgba(22, 27, 34, 0.92); }
+	.navbar__back-icon { border-color: $dark-text-primary; }
+	.navbar__title { color: $dark-text-primary; }
 }
 </style>

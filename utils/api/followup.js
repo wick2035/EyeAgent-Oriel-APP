@@ -16,10 +16,10 @@ export async function getMeetingList() {
 		if (res.code === 200 && Array.isArray(res.data)) {
 			res.data = res.data.map(m => ({
 				...m,
-				doctorName: m.doctorName || '主治医生',
-				doctorTitle: m.doctorTitle || '',
-				doctorDept: m.doctorDept || '',
-				doctorAvatar: m.doctorAvatar || '/static/temporary/male.jpg'
+				doctorName:     m.doctorName     || '主治医生',
+				doctorTitle:    m.doctorTitle    || '',
+				departmentName: m.departmentName || '',
+				hospitalName:   m.hospitalName   || ''
 			}))
 		}
 		return res

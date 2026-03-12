@@ -21,9 +21,6 @@
 			@clear="clearSearch"
 		/>
 
-		<!-- 自定义 Toast -->
-		<CustomToast ref="customToast" />
-
 		<!-- 消息列表 -->
 		<scroll-view
 			class="content"
@@ -137,15 +134,13 @@
 		<TabBar />
 
 		<!-- 顶部通知栏 -->
-		<TopNotificationBar />
+    <TopNotificationBar />
 	</view>
 </template>
 
 <script>
 import TabBar from '@/components/TabBar.vue'
-import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import SearchBar from '@/components/SearchBar.vue'
-import CustomToast from '@/components/CustomToast.vue'
 import { isDarkMode } from '@/store/theme.js'
 import {
 	fetchUnreadNotifications,
@@ -160,9 +155,7 @@ import { getMockDoctorConversations } from '@/utils/mock/doctorChat.js'
 export default {
 	components: {
 		TabBar,
-		TopNotificationBar,
-		SearchBar,
-		CustomToast
+		SearchBar
 	},
 	data() {
 		return {
@@ -334,7 +327,7 @@ export default {
 			try {
 				const success = await markAllAsRead()
 				if (success) {
-					this.$refs.customToast.success('已全部标记为已读')
+					this.$toast.success('已全部标记为已读')
 				}
 			} finally {
 				uni.hideLoading()

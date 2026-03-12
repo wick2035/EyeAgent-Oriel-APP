@@ -92,13 +92,12 @@
 		<TabBar />
 
 		<!-- 顶部通知栏 -->
-		<TopNotificationBar />
+    <TopNotificationBar />
 	</view>
 </template>
 
 <script>
 import TabBar from '@/components/TabBar.vue'
-import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import { isDarkMode, setTheme, THEME_LIGHT, THEME_DARK } from '@/store/theme.js'
 import { getUserInfo, isLoggedIn } from '@/store/user.js'
 import { getCurrentVersion } from '@/utils/version.js'
@@ -106,7 +105,6 @@ import { getCurrentVersion } from '@/utils/version.js'
 export default {
 	components: {
 		TabBar,
-		TopNotificationBar
 	},
 	data() {
 		return {

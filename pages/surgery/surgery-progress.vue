@@ -91,6 +91,7 @@
 			<!-- 底部安全区 -->
 			<view class="safe-area-bottom"></view>
 		</scroll-view>
+    <TopNotificationBar />
 	</view>
 </template>
 

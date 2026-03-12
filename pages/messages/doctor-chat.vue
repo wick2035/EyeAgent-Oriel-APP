@@ -64,6 +64,7 @@
 			<!-- 安全区 -->
 			<view class="input-bar__safe"></view>
 		</view>
+    <TopNotificationBar />
 	</view>
 </template>
 
