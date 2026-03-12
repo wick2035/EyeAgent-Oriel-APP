@@ -89,7 +89,6 @@
                 <text class="reply-item__name">{{ reply.nickname }}</text>
                 <template v-if="reply.replyToNickname">
                   <text class="reply-item__to"> 回复 </text>
-    <TopNotificationBar />
                   <text class="reply-item__to-name">@{{ reply.replyToNickname }}</text>
                 </template>
                 <text class="reply-item__colon">：</text>
@@ -192,6 +191,7 @@
       <!-- 安全区 -->
       <view class="input-bar__safe"></view>
     </view>
+    <TopNotificationBar />
   </view>
 </template>
 
@@ -200,7 +200,10 @@ import { getComments, postComment, likeComment, replyComment } from '@/utils/api
 import { isDarkMode } from '@/store/theme.js'
 import { isLoggedIn, getUserInfo } from '@/store/user.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
+	components: { TopNotificationBar },
   data() {
     return {
       statusBarHeight: 44,

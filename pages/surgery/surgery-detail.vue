@@ -162,7 +162,10 @@ import {
 	fetchSurgeryDetail
 } from '@/store/surgery.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
+	components: { TopNotificationBar },
 	data() {
 		return {
 			statusBarHeight: 44,

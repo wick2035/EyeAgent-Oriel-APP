@@ -71,7 +71,6 @@
 						:style="{ animationDelay: (index % 10) * 50 + 'ms' }"
 						@click="openNotification(item.data)"
 						@action="openNotificationAction(item.data)"
-    <TopNotificationBar />
 					/>
 				</template>
 
@@ -87,6 +86,7 @@
 			<!-- 底部安全区 -->
 			<view class="safe-bottom"></view>
 		</scroll-view>
+	  <TopNotificationBar />
 	</view>
 </template>
 
@@ -103,8 +103,11 @@ import {
 import { getReadNotifications } from '@/utils/api/notification.js'
 import { getReminderList, toggleReminderState } from '@/utils/api/medication.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
 	components: {
+		TopNotificationBar,
 		NotificationBubble,
 		MessageModal
 	},

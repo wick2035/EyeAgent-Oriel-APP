@@ -102,8 +102,11 @@ import { isDarkMode, setTheme, THEME_LIGHT, THEME_DARK } from '@/store/theme.js'
 import { getUserInfo, isLoggedIn } from '@/store/user.js'
 import { getCurrentVersion } from '@/utils/version.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
 	components: {
+		TopNotificationBar,
 		TabBar,
 	},
 	data() {

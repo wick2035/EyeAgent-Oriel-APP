@@ -96,8 +96,11 @@
 import { isDarkMode } from '@/store/theme.js'
 import { pageConversations } from '@/utils/api/chat.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
 	components: {
+		TopNotificationBar,
 	},
 	data() {
 		return {

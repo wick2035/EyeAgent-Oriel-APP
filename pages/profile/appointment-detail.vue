@@ -99,7 +99,6 @@
 				<view class="btn-primary" @click="handleNavigate">
 					<view class="nav-icon"></view>
 					<text>导航到医院</text>
-    <TopNotificationBar />
 				</view>
 			</template>
 			<template v-else-if="isPending || isInProgress">
@@ -143,6 +142,7 @@
 			class="qrcode-canvas"
 			:style="{ width: '300px', height: '300px' }"
 		/>
+	  <TopNotificationBar />
 	</view>
 </template>
 
@@ -152,8 +152,11 @@ import { cancelAppointment } from '@/utils/api/appointment.js'
 import { getAppointmentList } from '@/utils/api/medical.js'
 import uQRCode from '@/uni_modules/cc-defineNewQRCode/components/cc-defineNewQRCode/common/uqrcode.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
 	components: {
+		TopNotificationBar,
 	},
 	data() {
 		return {

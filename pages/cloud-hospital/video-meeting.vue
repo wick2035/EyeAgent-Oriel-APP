@@ -38,11 +38,13 @@
 		<!-- ── 会议结束全屏白色页（time up / 医生手动结束）── -->
 		<cover-view v-if="meetingEnded" class="vm-end-overlay">
 			<cover-view class="vm-end-inner">
-				<cover-view class="vm-end-check">✓</cover-view>
+				<cover-image class="vm-end-check" src="/static/check-success.svg"></cover-image>
 				<cover-view class="vm-end-title">本次复诊已结束</cover-view>
 				<cover-view class="vm-end-sub">感谢您使用远程就诊服务</cover-view>
 				<cover-view class="vm-end-countdown">{{ exitCountdown }} 秒后自动返回...</cover-view>
-				<cover-view class="vm-end-btn" @click="doExit">退出诊室</cover-view>
+				<cover-view class="vm-end-btn" @click="doExit">
+				<cover-view class="vm-end-btn__text">退出诊室</cover-view>
+			</cover-view>
 			</cover-view>
 		</cover-view>
 
@@ -57,7 +59,10 @@ function pad(n) {
 	return String(n).padStart(2, '0')
 }
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
+	components: { TopNotificationBar },
 	data() {
 		return {
 			statusBarHeight: 44,
@@ -438,16 +443,6 @@ export default {
 .vm-end-check {
 	width: 120rpx;
 	height: 120rpx;
-	border-radius: 60rpx;
-	background-color: #10B981;
-	color: #ffffff;
-	font-size: 56rpx;
-	font-weight: 700;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	text-align: center;
-	line-height: 120rpx;
 	margin-bottom: 48rpx;
 }
 
@@ -486,6 +481,14 @@ export default {
 	justify-content: center;
 	text-align: center;
 	line-height: 96rpx;
+}
+
+.vm-end-btn__text {
+	flex: 1;
+	text-align: center;
+	color: #ffffff;
+	font-size: 32rpx;
+	font-weight: 600;
 }
 
 // ── 连接中占位 ──────────────────────────────────────

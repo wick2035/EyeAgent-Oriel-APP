@@ -230,8 +230,11 @@ import {
 	READONLY_FIELDS
 } from '@/store/patient.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
 	components: {
+		TopNotificationBar,
 		EyeDataSection
 	},
 	data() {

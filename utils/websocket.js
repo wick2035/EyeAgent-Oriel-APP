@@ -43,6 +43,9 @@ let audioInitialized = false
 let pendingNotifications = []
 // 通知栏是否就绪
 let notificationBarReady = false
+// 当前正在显示的通知（用于页面切换时传递给新页面的通知栏）
+let activeNotification = null
+let activeNotificationExpiry = 0
 
 /**
  * 获取WebSocket连接地址
@@ -369,6 +372,10 @@ function showSystemNotification(notification) {
 
 	console.log('发送通知事件, 通知栏就绪状态:', notificationBarReady)
 
+	// 记录活跃通知，供页面切换时恢复
+	activeNotification = eventData
+	activeNotificationExpiry = Date.now() + (eventData.duration || 5000)
+
 	// 如果通知栏已就绪，直接发送事件
 	if (notificationBarReady) {
 		uni.$emit('show-notification', eventData)
@@ -404,6 +411,27 @@ function showSystemNotification(notification) {
 		console.warn('[Push] 创建系统通知失败:', e)
 	}
 	// #endif
+}
+
+/**
+ * 获取当前仍在显示的通知（用于页面切换时恢复）
+ * @returns {{ eventData: Object, remaining: number } | null}
+ */
+export function getActiveNotification() {
+	const remaining = activeNotificationExpiry - Date.now()
+	if (activeNotification && remaining > 500) {
+		return { eventData: activeNotification, remaining }
+	}
+	activeNotification = null
+	return null
+}
+
+/**
+ * 清除当前活跃通知（关闭/点击时调用）
+ */
+export function clearActiveNotification() {
+	activeNotification = null
+	activeNotificationExpiry = 0
 }
 
 /**
@@ -557,6 +585,8 @@ export default {
 	getMuted,
 	destroy,
 	setNotificationBarReady,
+	getActiveNotification,
+	clearActiveNotification,
 	handleTestNotification,
 	WS_STATUS
 }

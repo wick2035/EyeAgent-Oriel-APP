@@ -137,8 +137,11 @@ import { getUnreadCount } from "@/store/notification.js";
 import { getNewsList } from "@/utils/api/news.js";
 import { dismissUpdate } from "@/utils/version.js";
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
   components: {
+		TopNotificationBar,
     TabBar,
     EyeHealthSection,
     UpdateDialog,

@@ -152,8 +152,11 @@ import {
 } from '@/store/notification.js'
 import { getMockDoctorConversations } from '@/utils/mock/doctorChat.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
 	components: {
+		TopNotificationBar,
 		TabBar,
 		SearchBar
 	},

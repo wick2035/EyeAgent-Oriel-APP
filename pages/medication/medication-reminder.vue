@@ -71,7 +71,6 @@
 							@delete="handleDeleteClick"
 						/>
 					</view>
-    <TopNotificationBar />
 				</view>
 			</template>
 
@@ -164,6 +163,7 @@
 		</view>
 
 		<!-- 顶部通知栏 -->
+	  <TopNotificationBar />
 	</view>
 </template>
 
@@ -187,8 +187,11 @@ import {
 	clearEditingReminder
 } from '@/store/medication.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
 	components: {
+		TopNotificationBar,
 		ReminderCard,
 		EmptyState,
 		ReminderModal,

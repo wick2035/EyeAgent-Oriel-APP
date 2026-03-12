@@ -192,8 +192,11 @@ import { logout } from "@/utils/api/user.js";
 import { setMuted, getMuted } from "@/utils/websocket.js";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
   components: {
+		TopNotificationBar,
     ConfirmDialog,
   },
   data() {

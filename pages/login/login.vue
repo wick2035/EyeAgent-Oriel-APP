@@ -154,7 +154,10 @@
 
 <script>
 import { login, wxLogin, getWxLoginCode } from "@/utils/api/user.js";
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
+	components: { TopNotificationBar },
   data() {
     return {
       statusBarHeight: 44,

@@ -1,9 +1,8 @@
 <template>
 	<view class="page">
 		<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
-
 		<!-- Navbar -->
-		<view class="navbar" :class="{ 'navbar--visible': pageReady }">
+		<view class="navbar" :class="{ 'navbar--visible': pageReady }" :style="{ top: statusBarHeight + 'px' }">
 			<view class="navbar__back" @click="goBack">
 				<view class="back-icon"></view>
 			</view>
@@ -170,10 +169,12 @@ import EyeHealthCard from '@/components/eye-health/EyeHealthCard.vue'
 const ROW_HEIGHT_RPX  = 104
 const LEFT_BAR_W_RPX  = 40   // solid colored bar on far left
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
 	name: 'EyeHealthDetail',
 
-	components: { EyeHealthCard },
+	components: { TopNotificationBar, EyeHealthCard },
 
 	data() {
 		return {
@@ -362,7 +363,14 @@ export default {
 	background: #F0F4FA;
 }
 
-.status-bar { flex-shrink: 0; }
+.status-bar {
+	position: fixed;
+	top: 0; left: 0; right: 0;
+	z-index: 101;
+	background: rgba(250, 251, 253, 0.95);
+	backdrop-filter: blur(24px);
+	-webkit-backdrop-filter: blur(24px);
+}
 
 // ===== Navbar =====
 .navbar {

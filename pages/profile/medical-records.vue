@@ -86,7 +86,6 @@
               class="empty-state__icon empty-state__icon--appointment"
             ></view>
             <text class="empty-state__text">暂无预约记录</text>
-    <TopNotificationBar />
           </view>
         </template>
       </view>
@@ -249,6 +248,7 @@
     </scroll-view>
 
     <!-- 顶部通知栏 -->
+    <TopNotificationBar />
   </view>
 </template>
 
@@ -261,8 +261,11 @@ import {
   getDiagnosisList,
 } from "@/utils/api/medical.js";
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
   components: {
+		TopNotificationBar,
   },
   data() {
     return {

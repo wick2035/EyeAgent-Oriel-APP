@@ -125,8 +125,11 @@ import { isDarkMode } from "@/store/theme.js";
 import UpdateDialog from "@/components/UpdateDialog.vue";
 import { checkForUpdate } from "@/utils/version.js";
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
   components: {
+		TopNotificationBar,
     UpdateDialog,
   },
   data() {

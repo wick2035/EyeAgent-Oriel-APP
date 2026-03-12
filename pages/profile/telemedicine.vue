@@ -97,7 +97,10 @@
 <script>
 import { isDarkMode } from '@/store/theme.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
+	components: { TopNotificationBar },
 	data() {
 		return {
 			statusBarHeight: 44,

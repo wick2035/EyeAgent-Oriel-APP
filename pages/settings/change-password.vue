@@ -244,8 +244,11 @@ import { isDarkMode } from "@/store/theme.js";
 import { clearLoginState } from "@/store/user.js";
 import { changePassword } from "@/utils/api/user.js";
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
   components: {
+		TopNotificationBar,
   },
   data() {
     return {

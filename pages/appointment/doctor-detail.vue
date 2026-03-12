@@ -352,8 +352,11 @@ import {
   cancelAppointment,
 } from "@/utils/api/appointment.js";
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
   components: {
+		TopNotificationBar,
   },
   data() {
     return {

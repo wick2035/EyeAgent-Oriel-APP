@@ -36,7 +36,7 @@
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
-import { setNotificationBarReady } from '@/utils/websocket.js'
+import { setNotificationBarReady, getActiveNotification, clearActiveNotification } from '@/utils/websocket.js'
 import { navigateByNotification } from '@/utils/notificationNavigate.js'
 
 export default {
@@ -66,6 +66,12 @@ export default {
 		uni.$on('show-notification', this.show)
 		// 通知WebSocket模块，通知栏已就绪
 		setNotificationBarReady()
+
+		// 检查是否有正在显示的通知（页面切换时恢复）
+		const active = getActiveNotification()
+		if (active) {
+			this.show({ ...active.eventData, duration: active.remaining })
+		}
 	},
 	beforeDestroy() {
 		uni.$off('show-notification', this.show)
@@ -112,6 +118,8 @@ export default {
 				this.visible = false
 			}, 300)
 			this.clearTimer()
+			// 清除全局活跃通知状态
+			clearActiveNotification()
 		},
 
 		clearTimer() {
@@ -142,7 +150,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 // 外层透明容器：仅负责动画（transform / opacity），固定在顶部全宽
 // paddingTop 由 :style 动态注入（= statusBarHeight px），形成状态栏下方的透明间距
 // top: 0 保证 iOS App-plus 的 translateY(-100%) 动画正常工作

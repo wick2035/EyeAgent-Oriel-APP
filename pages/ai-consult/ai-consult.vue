@@ -92,7 +92,6 @@
             :uiPending="msg.uiPending"
             @optionClick="handleOptionClick"
             @productAction="handleProductAction"
-    <TopNotificationBar />
           />
         </template>
       </view>
@@ -136,6 +135,7 @@
       icon="warning"
       @confirm="handleExitConfirm"
     />
+    <TopNotificationBar />
   </view>
 </template>
 
@@ -154,8 +154,11 @@ import {
   getMessages,
 } from "@/utils/api/chat.js";
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
   components: {
+		TopNotificationBar,
     TabBar,
     ChatInput,
     QuickPrompt,

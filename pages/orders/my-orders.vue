@@ -132,7 +132,6 @@
 								</view>
 								<view class="action-btn action-btn--primary" @click.stop="handlePay(order)">
 									立即付款
-    <TopNotificationBar />
 								</view>
 							</template>
 
@@ -319,6 +318,7 @@
 		</view>
 
 		<!-- ⑤顶部通知栏 -->
+	  <TopNotificationBar />
 	</view>
 </template>
 
@@ -340,7 +340,10 @@ import {
 } from '@/store/cart.js'
 import { getOrderList, cancelOrder } from '@/utils/api/order.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
+	components: { TopNotificationBar },
 	data() {
 		return {
 			statusBarHeight: 44,

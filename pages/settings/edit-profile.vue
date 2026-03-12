@@ -210,8 +210,11 @@ import { isDarkMode } from "@/store/theme.js";
 import { getPatientInfo, modifyPatientInfo } from "@/utils/api/patient.js";
 import { maskIdNumber } from "@/store/patient.js";
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
   components: {
+		TopNotificationBar,
   },
   data() {
     return {

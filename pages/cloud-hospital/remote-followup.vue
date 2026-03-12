@@ -251,7 +251,10 @@ function pad(n) {
 	return String(n).padStart(2, '0')
 }
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
+	components: { TopNotificationBar },
 	data() {
 		return {
 			statusBarHeight: 44,

@@ -68,8 +68,11 @@ import { isDarkMode } from '@/store/theme.js'
 import { getFileDownloadUrl } from '@/utils/api/medical.js'
 import config from '@/utils/config.js'
 
+import TopNotificationBar from '@/components/TopNotificationBar.vue'
+
 export default {
 	components: {
+		TopNotificationBar,
 	},
 	data() {
 		return {
