@@ -253,8 +253,10 @@ export default {
 		},
 
 		hasActionLink(notification) {
-			return (notification.reminderType === 'RESERVE' && notification.appointmentId) ||
+			return !!(
+				(notification.reminderType === 'RESERVE' && notification.appointmentId) ||
 				(notification.reminderType === 'MEDICATION' && notification.prescriptionId)
+			)
 		},
 
 		async openNotification(notification) {

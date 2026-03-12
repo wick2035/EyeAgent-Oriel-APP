@@ -14,15 +14,8 @@
       </view>
     </view>
 
-    <!-- 内容区 -->
-    <view class="content">
-      <!-- 状态栏占位 -->
-      <view
-        class="status-bar"
-        :style="{ height: statusBarHeight + 'px' }"
-      ></view>
-
-      <!-- 导航栏 -->
+    <!-- 固定顶部栏 -->
+    <view class="fixed-top" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="navbar" :class="{ 'navbar--visible': pageReady }">
         <view class="navbar__back" @click="goBack">
           <view class="back-icon"></view>
@@ -30,7 +23,13 @@
         <text class="navbar__title">帮助中心</text>
         <view class="navbar__placeholder"></view>
       </view>
+    </view>
 
+    <!-- 顶部占位 -->
+    <view class="fixed-top-placeholder" :style="{ height: topBarHeight + 'px' }"></view>
+
+    <!-- 内容区 -->
+    <view class="content">
       <!-- 滚动区域 -->
       <scroll-view class="scroll-area" scroll-y>
         <!-- 搜索区域 -->
@@ -279,6 +278,7 @@ export default {
   data() {
     return {
       statusBarHeight: 44,
+      topBarHeight: 0,
       pageReady: false,
       searchKeyword: "",
       searchFocused: false,
@@ -465,6 +465,14 @@ export default {
         }))
         .filter((cat) => cat.items.length > 0);
     },
+  },
+  onReady() {
+    const query = uni.createSelectorQuery().in(this);
+    query.select('.fixed-top').boundingClientRect((rect) => {
+      if (rect) {
+        this.topBarHeight = rect.height;
+      }
+    }).exec();
   },
   onLoad() {
     this.getStatusBarHeight();
@@ -698,16 +706,25 @@ $accent-yellow: #f59e0b;
 }
 
 // ==================== 内容区 ====================
+.fixed-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: linear-gradient(180deg, #e8f4fd 0%, $bg-base 100%);
+}
+
+.fixed-top-placeholder {
+  flex-shrink: 0;
+}
+
 .content {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-}
-
-.status-bar {
-  flex-shrink: 0;
+  flex: 1;
 }
 
 // 导航栏
@@ -759,7 +776,7 @@ $accent-yellow: #f59e0b;
 // 滚动区域
 .scroll-area {
   flex: 1;
-  padding: 0 32rpx;
+  padding: 24rpx 32rpx 0;
   box-sizing: border-box;
   width: 100%;
 }

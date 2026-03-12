@@ -148,6 +148,7 @@
       </view>
     </view>
 
+    <CustomToast ref="customToast" />
     <TopNotificationBar />
   </view>
 </template>
@@ -155,9 +156,11 @@
 <script>
 import { login, wxLogin, getWxLoginCode } from "@/utils/api/user.js";
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
+import CustomToast from "@/components/CustomToast.vue";
+import { setToastInstance } from "@/utils/toast.js";
 
 export default {
-	components: { TopNotificationBar },
+	components: { TopNotificationBar, CustomToast },
   data() {
     return {
       statusBarHeight: 44,
@@ -181,6 +184,9 @@ export default {
     canLogin() {
       return this.username.trim() && this.password.trim() && this.agreedTerms;
     },
+  },
+  onReady() {
+    setToastInstance(this.$refs.customToast);
   },
   onLoad() {
     this.getStatusBarHeight();

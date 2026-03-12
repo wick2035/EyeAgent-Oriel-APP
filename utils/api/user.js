@@ -77,7 +77,7 @@ export async function login(username, password) {
 
 		return {
 			success: false,
-			message: response.msg || '登录失败'
+			message: '账号或密码错误'
 		}
 	} catch (error) {
 		return {

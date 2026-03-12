@@ -134,6 +134,7 @@
 		<TabBar />
 
 		<!-- 顶部通知栏 -->
+    <CustomToast ref="customToast" />
     <TopNotificationBar />
 	</view>
 </template>
@@ -153,12 +154,15 @@ import {
 import { getMockDoctorConversations } from '@/utils/mock/doctorChat.js'
 
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
+import CustomToast from "@/components/CustomToast.vue"
+import { setToastInstance } from "@/utils/toast.js"
 
 export default {
 	components: {
 		TopNotificationBar,
 		TabBar,
-		SearchBar
+		SearchBar,
+		CustomToast
 	},
 	data() {
 		return {
@@ -232,6 +236,7 @@ export default {
 		uni.$on('notification-received', this.onNotificationReceived)
 	},
 	onReady() {
+		setToastInstance(this.$refs.customToast)
 		this.measureTopBar()
 	},
 	onUnload() {

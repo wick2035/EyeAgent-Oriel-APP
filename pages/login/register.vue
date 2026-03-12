@@ -376,6 +376,7 @@
       </view>
     </view>
 
+    <CustomToast ref="customToast" />
     <TopNotificationBar />
   </view>
 </template>
@@ -383,9 +384,11 @@
 <script>
 import { sendEmailCode, register } from "@/utils/api/user.js";
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
+import CustomToast from "@/components/CustomToast.vue";
+import { setToastInstance } from "@/utils/toast.js";
 
 export default {
-	components: { TopNotificationBar },
+	components: { TopNotificationBar, CustomToast },
   data() {
     return {
       statusBarHeight: 44,
@@ -498,6 +501,9 @@ export default {
         this.agreedTerms
       );
     },
+  },
+  onReady() {
+    setToastInstance(this.$refs.customToast);
   },
   onLoad() {
     this.getStatusBarHeight();

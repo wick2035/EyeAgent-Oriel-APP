@@ -3,15 +3,8 @@
     <!-- 背景层 -->
     <view class="bg-layer"></view>
 
-    <!-- 内容区 -->
-    <view class="content">
-      <!-- 状态栏占位 -->
-      <view
-        class="status-bar"
-        :style="{ height: statusBarHeight + 'px' }"
-      ></view>
-
-      <!-- 导航栏 -->
+    <!-- 固定顶部栏 -->
+    <view class="fixed-top" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="navbar">
         <view class="navbar__back" @click="goBack">
           <view class="back-icon"></view>
@@ -19,7 +12,13 @@
         <text class="navbar__title">隐私政策</text>
         <view class="navbar__placeholder"></view>
       </view>
+    </view>
 
+    <!-- 顶部占位 -->
+    <view class="fixed-top-placeholder" :style="{ height: topBarHeight + 'px' }"></view>
+
+    <!-- 内容区 -->
+    <view class="content">
       <!-- 滚动内容 -->
       <scroll-view class="scroll-area" scroll-y>
         <view class="article">
@@ -266,10 +265,19 @@ export default {
   data() {
     return {
       statusBarHeight: 44,
+      topBarHeight: 0,
     };
   },
   onLoad() {
     this.getStatusBarHeight();
+  },
+  onReady() {
+    const query = uni.createSelectorQuery().in(this);
+    query.select('.fixed-top').boundingClientRect((rect) => {
+      if (rect) {
+        this.topBarHeight = rect.height;
+      }
+    }).exec();
   },
   methods: {
     getStatusBarHeight() {
@@ -307,18 +315,27 @@ $color-primary: #1e3a5f;
   z-index: 0;
 }
 
+.fixed-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: linear-gradient(180deg, #e8f4fd 0%, $bg-base 100%);
+}
+
+.fixed-top-placeholder {
+  flex-shrink: 0;
+}
+
 .content {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  flex: 1;
   width: 100%;
   overflow: hidden;
-}
-
-.status-bar {
-  flex-shrink: 0;
 }
 
 // 导航栏
@@ -362,7 +379,7 @@ $color-primary: #1e3a5f;
 // 滚动区域
 .scroll-area {
   flex: 1;
-  padding: 0 32rpx;
+  padding: 24rpx 32rpx 0;
   box-sizing: border-box;
   width: 100%;
 }

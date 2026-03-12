@@ -24,6 +24,8 @@ app.$mount()
 import { createSSRApp } from 'vue'
 export function createApp() {
   const app = createSSRApp(App)
+  // 挂载全局 Toast 工具
+  app.config.globalProperties.$toast = toast
   return {
     app
   }

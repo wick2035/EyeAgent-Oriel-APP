@@ -24,8 +24,11 @@ export default {
 
     // 检查登录状态
     if (isLoggedIn()) {
-      // 验证token有效性
+      // 验证token有效性（splash保持显示，验证完成后再关闭）
       this.verifyTokenAndEnter();
+    } else {
+      // 未登录，已在登录页，直接关闭splash
+      this.closeSplash();
     }
 
     // #ifdef APP-PLUS
@@ -92,12 +95,18 @@ export default {
             this.checkAppUpdate();
           }, 1000);
 
-          // 立即进入首页
+          // 立即进入首页，然后关闭splash
           uni.switchTab({
             url: "/pages/index/index",
+            success: () => {
+              this.closeSplash();
+            },
+            fail: () => {
+              this.closeSplash();
+            },
           });
         } else {
-          // Token无效（401）
+          // Token无效（401），直接跳转登录页后关闭splash
           console.log("Token验证失败");
           this.handleTokenInvalid();
         }
@@ -113,23 +122,35 @@ export default {
      */
     handleTokenInvalid() {
       clearLoginState();
-      uni.showToast({
-        title: "登录已过期，请重新登录",
-        icon: "none",
-        duration: 1500,
+      // 直接跳转登录页，关闭splash后再提示
+      uni.reLaunch({
+        url: "/pages/login/login",
+        complete: () => {
+          this.closeSplash();
+          uni.showToast({
+            title: "登录已过期，请重新登录",
+            icon: "none",
+            duration: 1500,
+          });
+        },
       });
-
-      setTimeout(() => {
-        uni.reLaunch({
-          url: "/pages/login/login",
-        });
-      }, 1500);
     },
 
     /**
      * 处理网络错误
      */
+    /**
+     * 关闭启动画面
+     */
+    closeSplash() {
+      // #ifdef APP-PLUS
+      plus.navigator.closeSplashscreen();
+      // #endif
+    },
+
     handleNetworkError() {
+      // 网络错误时先关闭splash，再显示弹窗
+      this.closeSplash();
       uni.showModal({
         title: "网络连接失败",
         content: "无法验证登录状态，请检查网络连接",

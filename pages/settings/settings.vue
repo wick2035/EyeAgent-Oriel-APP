@@ -148,7 +148,7 @@
             <view class="menu-item menu-item--no-border">
               <view class="menu-item__icon menu-item__icon--version"></view>
               <text class="menu-item__text">版本号</text>
-              <text class="menu-item__value">v1.0.0</text>
+              <text class="menu-item__value">v{{ appVersion }}</text>
             </view>
           </view>
         </view>
@@ -190,6 +190,7 @@ import { getUserInfo, clearLoginState } from "@/store/user.js";
 import { isDarkMode, getBubbleTheme, setBubbleTheme } from "@/store/theme.js";
 import { logout } from "@/utils/api/user.js";
 import { setMuted, getMuted } from "@/utils/websocket.js";
+import { getCurrentVersion } from "@/utils/version.js";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
@@ -205,6 +206,7 @@ export default {
       pageReady: false,
       notifyEnabled: true,
       cacheSize: "12.5 MB",
+      appVersion: '',
     };
   },
   computed: {
@@ -226,6 +228,7 @@ export default {
     this.getStatusBarHeight();
     this.calculateCacheSize();
     this.loadNotifySetting();
+    this.appVersion = getCurrentVersion();
     setTimeout(() => {
       this.pageReady = true;
     }, 100);
