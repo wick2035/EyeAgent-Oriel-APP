@@ -191,7 +191,7 @@ export default {
 				department: session.doctorDepartment || '',
 				avatar: session.doctorAvatar || '',
 				online: false,
-				lastMessage: session.lastDecryptedPreview || '加密消息',
+				lastMessage: session.lastDecryptedPreview || ' ',
 				lastMessageTime: session.lastMessageAt,
 				unreadCount: session.unreadCount || 0
 			}))

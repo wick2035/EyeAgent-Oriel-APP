@@ -150,6 +150,50 @@ function adaptSchedule(apiData) {
 }
 
 /**
+ * 获取单个医生今日可预约号源数（轻量级，不走adaptSchedule）
+ * @param {string} doctorId
+ * @returns {Promise<number>}
+ */
+async function getTodayAvailableCount(doctorId) {
+	try {
+		const res = await get('/api/app/base/doctor-free-time', { doctorId })
+		if (res.code !== 200 || !Array.isArray(res.data)) {
+			return 0
+		}
+
+		const now = new Date()
+		const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+		const todayData = res.data.find(d => d.date === todayStr)
+		if (!todayData) {
+			return 0
+		}
+
+		const slots = todayData.slots || todayData.hourlySlots || []
+		let count = 0
+
+		for (const slot of slots) {
+			if (slot.canReserve === false || slot.capacity === 0) {
+				continue
+			}
+			// 跳过已过时间的时段
+			const [hours, minutes] = slot.startTime.split(':').map(Number)
+			const slotTime = new Date()
+			slotTime.setHours(hours, minutes, 0, 0)
+			if (now > slotTime) {
+				continue
+			}
+			count += slot.capacity
+		}
+
+		return count
+	} catch (e) {
+		console.warn(`获取医生${doctorId}今日可预约数失败:`, e)
+		return 0
+	}
+}
+
+/**
  * 适配预约列表数据
  */
 function adaptReservation(apiData) {
@@ -232,6 +276,18 @@ export async function getDepartmentList(hospitalId) {
 
 	if (res.code === 200) {
 		const doctors = res.data || []
+
+		// 并行获取每位医生今日可预约号源数
+		const results = await Promise.allSettled(
+			doctors.map(d => getTodayAvailableCount(d.id).then(count => ({ id: d.id, count })))
+		)
+		const availMap = new Map()
+		results.forEach(r => {
+			if (r.status === 'fulfilled') {
+				availMap.set(r.value.id, r.value.count)
+			}
+		})
+
 		const deptSet = new Set()
 		const departments = []
 
@@ -240,6 +296,7 @@ export async function getDepartmentList(hospitalId) {
 			if (deptName && !deptSet.has(deptName)) {
 				deptSet.add(deptName)
 				const deptDoctors = doctors.filter(doc => doc.hospitalArea === deptName)
+				const todayAvailable = deptDoctors.reduce((sum, doc) => sum + (availMap.get(doc.id) || 0), 0)
 				departments.push({
 					id: deptName,
 					hospitalId,
@@ -247,7 +304,7 @@ export async function getDepartmentList(hospitalId) {
 					icon: 'default',
 					description: `${deptName}门诊`,
 					doctorCount: deptDoctors.length,
-					todayAvailable: deptDoctors.length * 5, // 估算值
+					todayAvailable,
 					diseases: [],
 					isHot: deptDoctors.length >= 3,
 					sortOrder: departments.length + 1

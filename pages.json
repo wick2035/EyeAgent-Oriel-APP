@@ -86,7 +86,7 @@
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "医生对话",
 				"app-plus": {
-					"softinputMode": "adjustResize"
+					"softinputMode": "adjustPan"
 				}
 			}
 		},
@@ -200,6 +200,13 @@
 			"style": {
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "关于我们"
+			}
+		},
+		{
+			"path": "pages/settings/chat-backup",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "聊天数据迁移"
 			}
 		},
 		{

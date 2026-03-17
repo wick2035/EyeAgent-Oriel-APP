@@ -50,7 +50,7 @@
 					</view>
 					<!-- 已发送/已读 -->
 					<view v-else class="bubble__check">
-						<text class="bubble__check-text" :class="message.readStatus === 1 ? 'bubble__check-text--read' : ''">{{ message.readStatus === 1 ? '✓✓' : '✓' }}</text>
+						<text class="bubble__read-text" :class="message.readStatus === 1 ? 'bubble__read-text--read' : ''">{{ message.readStatus === 1 ? '已读' : '未读' }}</text>
 					</view>
 				</view>
 			</view>
@@ -185,26 +185,28 @@ export default {
 
 	// 气泡体
 	&__body {
-		padding: $spacing-md $spacing-lg;
-		border-radius: 24rpx;
+		padding: $spacing-sm $spacing-md;
+		border-radius: 20rpx;
 		word-break: break-all;
 
 		&--left {
-			background: $bg-card;
-			border-top-left-radius: 8rpx;
-			box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+			background: #FFFFFF;
+			border: 1rpx solid rgba(102, 126, 234, 0.1);
+			border-top-left-radius: 6rpx;
+			box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 		}
 
 		&--right {
-			background: linear-gradient(135deg, #3388ff 0%, #5EAAFF 100%);
-			border-top-right-radius: 8rpx;
-			box-shadow: 0 2rpx 12rpx rgba(51, 136, 255, 0.25);
+			background: #D7E5FD;
+			border-top-right-radius: 6rpx;
+			box-shadow: 0 2rpx 12rpx rgba(22, 80, 180, 0.12);
 		}
 
 		&--image {
 			padding: 6rpx;
 			border-radius: 16rpx;
-			background: $bg-card;
+			background: #FFFFFF;
+			border: 1rpx solid rgba(102, 126, 234, 0.1);
 			box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
 		}
 
@@ -220,11 +222,11 @@ export default {
 	// 文本
 	&__text {
 		font-size: $font-size-base;
-		color: $text-primary;
-		line-height: 1.6;
+		color: #374151;
+		line-height: $line-height-relaxed;
 
 		&--right {
-			color: #FFFFFF;
+			color: #1A1A1A;
 		}
 	}
 
@@ -257,7 +259,7 @@ export default {
 		width: 28rpx;
 		height: 28rpx;
 		border: 3rpx solid $text-muted;
-		border-top-color: $color-primary;
+		border-top-color: #4A90E2;
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 	}
@@ -282,13 +284,12 @@ export default {
 		margin-bottom: 4rpx;
 	}
 
-	&__check-text {
-		font-size: 22rpx;
+	&__read-text {
+		font-size: $font-size-xs;
 		color: $text-muted;
-		letter-spacing: -2rpx;
 
 		&--read {
-			color: $color-primary;
+			color: #4A90E2;
 		}
 	}
 }
@@ -306,22 +307,25 @@ export default {
 
 	.bubble__body--left {
 		background: $dark-bg-card;
+		border-color: rgba(102, 126, 234, 0.15);
 		box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
 	}
 
 	.bubble__body--right {
-		background: linear-gradient(135deg, #2277ee 0%, #4499ff 100%);
+		background: rgba(74, 144, 217, 0.18);
+		box-shadow: 0 2rpx 12rpx rgba(22, 80, 180, 0.08);
 	}
 
 	.bubble__body--image {
 		background: $dark-bg-card;
+		border-color: rgba(102, 126, 234, 0.15);
 	}
 
 	.bubble__text {
 		color: $dark-text-primary;
 
 		&--right {
-			color: #FFFFFF;
+			color: $dark-text-primary;
 		}
 	}
 
@@ -330,7 +334,7 @@ export default {
 		border-top-color: $dark-color-primary;
 	}
 
-	.bubble__check-text {
+	.bubble__read-text {
 		color: $dark-text-muted;
 
 		&--read {

@@ -113,6 +113,11 @@
                 </view>
               </view>
             </view>
+            <view class="menu-item" @click="handleMenu('chatBackup')">
+              <view class="menu-item__icon menu-item__icon--migrate"></view>
+              <text class="menu-item__text">聊天数据迁移</text>
+              <view class="menu-item__arrow"></view>
+            </view>
             <view class="menu-item menu-item--no-border" @click="clearCache">
               <view class="menu-item__icon menu-item__icon--trash"></view>
               <text class="menu-item__text">清除缓存</text>
@@ -255,6 +260,7 @@ export default {
         agreement: "/pages/settings/user-agreement",
         privacy: "/pages/settings/privacy-policy",
         about: "/pages/settings/about",
+        chatBackup: "/pages/settings/chat-backup",
       };
       if (routes[type]) {
         uni.navigateTo({ url: routes[type] });
@@ -318,6 +324,10 @@ export default {
               const bubbleTheme = uni.getStorageSync("chat_bubble_theme");
               const notificationMuted =
                 uni.getStorageSync("notification_muted");
+              // 保留 E2EE 加密密钥
+              const e2eePrivate = uni.getStorageSync("e2ee_private_key");
+              const e2eePublic = uni.getStorageSync("e2ee_public_key");
+              const e2eeVersion = uni.getStorageSync("e2ee_key_version");
 
               uni.clearStorageSync();
 
@@ -329,6 +339,10 @@ export default {
               if (notificationMuted !== undefined && notificationMuted !== "") {
                 uni.setStorageSync("notification_muted", notificationMuted);
               }
+              // 恢复 E2EE 密钥
+              if (e2eePrivate) uni.setStorageSync("e2ee_private_key", e2eePrivate);
+              if (e2eePublic) uni.setStorageSync("e2ee_public_key", e2eePublic);
+              if (e2eeVersion) uni.setStorageSync("e2ee_key_version", e2eeVersion);
 
               this.cacheSize = "0 KB";
               uni.hideLoading();
@@ -867,33 +881,53 @@ $accent-coral-light: #ff8a7a;
       border-radius: 50%;
     }
 
-    // 调色盘图标
+    // 主题切换图标（半黑半白）
     &--palette {
-      border: 2rpx solid #667eea;
-      border-radius: 50%;
       width: 32rpx;
       height: 32rpx;
+      border: 2rpx solid #667eea;
+      border-radius: 50%;
+      overflow: hidden;
     }
     &--palette::before {
       content: "";
-      width: 12rpx;
-      height: 12rpx;
-      border-radius: 50%;
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: 100%;
       background: #667eea;
+      border-radius: 0 16rpx 16rpx 0;
+    }
+
+    // 迁移图标（双向箭头）
+    &--migrate {
+      border: 2rpx solid #06b6d4;
+      border-radius: 8rpx;
+      width: 28rpx;
+      height: 34rpx;
+    }
+    &--migrate::before {
+      content: "";
+      width: 0;
+      height: 0;
+      border-left: 6rpx solid transparent;
+      border-right: 6rpx solid transparent;
+      border-bottom: 8rpx solid #06b6d4;
       position: absolute;
       top: 5rpx;
-      left: 7rpx;
+      left: 6rpx;
     }
-    &--palette::after {
+    &--migrate::after {
       content: "";
-      width: 18rpx;
-      height: 8rpx;
-      border: 2rpx solid #667eea;
-      border-radius: 0 0 10rpx 10rpx;
-      border-top: none;
+      width: 0;
+      height: 0;
+      border-left: 6rpx solid transparent;
+      border-right: 6rpx solid transparent;
+      border-top: 8rpx solid #06b6d4;
       position: absolute;
-      bottom: 4rpx;
-      left: 5rpx;
+      bottom: 5rpx;
+      left: 6rpx;
     }
 
     // 版本图标

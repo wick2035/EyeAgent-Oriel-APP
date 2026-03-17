@@ -1,5 +1,5 @@
 <template>
-	<view class="page" :class="{ 'page--dark': isDark }">
+	<view class="page" :class="{ 'page--dark': isDark }" :style="{ paddingBottom: keyboardHeight + 'px' }">
 		<!-- 状态栏占位 -->
 		<view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
 
@@ -57,31 +57,36 @@
 		<!-- 底部输入栏 -->
 		<view class="input-bar" v-if="!sessionClosed">
 			<view class="input-bar__inner">
-				<!-- 图片选择 -->
-				<view class="input-bar__action" @click="chooseImage">
-					<view class="input-bar__action-icon input-bar__action-icon--image"></view>
+				<!-- 图片按钮 -->
+				<view class="input-bar__photo" @click="chooseImage">
+					<image class="input-bar__photo-icon" src="@/static/photo.svg" mode="aspectFit" />
 				</view>
 
-				<!-- 文本输入 -->
-				<input
+				<!-- 输入框 -->
+				<textarea
 					class="input-bar__input"
-					type="text"
 					v-model="inputText"
+					:auto-height="true"
+					:maxlength="-1"
+					:focus="inputFocused"
+					:confirm-hold="true"
 					:placeholder="inputPlaceholder"
-					:placeholder-style="isDark ? 'color: #484F58' : 'color: #9AABBF'"
+					:placeholder-style="isDark ? 'color: #484F58' : 'color: #B0B8C1'"
 					:confirm-type="'send'"
 					:adjust-position="false"
 					@input="onInput"
 					@confirm="handleSend"
+					@focus="inputFocused = true"
+					@blur="onInputBlur"
 				/>
 
 				<!-- 发送按钮 -->
 				<view
 					class="input-bar__send"
 					:class="{ 'input-bar__send--active': inputText.trim() }"
-					@click="handleSend"
+					@touchstart.prevent="handleSend"
 				>
-					<view class="input-bar__send-icon"></view>
+					<text class="input-bar__send-text">发送</text>
 				</view>
 			</view>
 			<!-- 安全区 -->
@@ -140,7 +145,10 @@ export default {
 			loadingMore: false,
 			initLoading: true,
 			sessionClosed: false,
-			typingDebounce: null
+			typingDebounce: null,
+			inputFocused: false,
+			preventBlur: false,
+			keyboardHeight: 0
 		}
 	},
 	computed: {
@@ -210,6 +218,8 @@ export default {
 		uni.$on(`chat-new-message-${this.sessionId}`, this.onNewMessage)
 		// 监听已读回执
 		uni.$on(`chat-read-receipt-${this.sessionId}`, this.onReadReceipt)
+		// 键盘弹出时滚动到底部
+		uni.onKeyboardHeightChange(this.onKeyboardChange)
 	},
 	onShow() {
 		if (this.sessionId) {
@@ -233,6 +243,7 @@ export default {
 		// 取消事件监听
 		uni.$off(`chat-new-message-${this.sessionId}`, this.onNewMessage)
 		uni.$off(`chat-read-receipt-${this.sessionId}`, this.onReadReceipt)
+		uni.offKeyboardHeightChange(this.onKeyboardChange)
 	},
 	methods: {
 		getStatusBarHeight() {
@@ -249,7 +260,15 @@ export default {
 			const text = this.inputText.trim()
 			if (!text) return
 
+			// 标记：阻止接下来的 blur 关闭键盘
+			this.preventBlur = true
 			this.inputText = ''
+
+			// 确保 focus 保持
+			this.$nextTick(() => {
+				this.inputFocused = true
+				setTimeout(() => { this.preventBlur = false }, 300)
+			})
 
 			try {
 				await sendTextMessage(this.sessionId, text)
@@ -257,6 +276,13 @@ export default {
 			} catch (err) {
 				uni.showToast({ title: '发送失败', icon: 'none' })
 			}
+		},
+
+		// 输入框失焦
+		onInputBlur() {
+			// 发送中不关闭键盘
+			if (this.preventBlur) return
+			this.inputFocused = false
 		},
 
 		// 选择并发送图片
@@ -311,6 +337,14 @@ export default {
 				this.$nextTick(() => this.scrollToBottom())
 			} catch (err) {
 				uni.showToast({ title: '重试失败', icon: 'none' })
+			}
+		},
+
+		// 键盘高度变化
+		onKeyboardChange(res) {
+			this.keyboardHeight = res.height || 0
+			if (res.height > 0) {
+				this.$nextTick(() => this.scrollToBottom())
 			}
 		},
 
@@ -446,6 +480,7 @@ export default {
 .chat-area {
 	flex: 1;
 	overflow: hidden;
+	transition: height 0.2s ease;
 }
 
 // 加载更多
@@ -477,104 +512,79 @@ export default {
 // 底部输入栏
 .input-bar {
 	flex-shrink: 0;
-	background: $bg-card;
+	background: $bg-base;
 	border-top: 1rpx solid $border-color-light;
-	padding: $spacing-sm $spacing-lg;
+	padding: 14rpx $spacing-md;
 
 	&__inner {
 		display: flex;
-		align-items: center;
-		gap: $spacing-sm;
+		align-items: flex-end;
+		gap: 12rpx;
 	}
 
-	&__action {
-		width: 64rpx;
-		height: 64rpx;
+	&__photo {
+		width: 56rpx;
+		height: 56rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 50%;
 		flex-shrink: 0;
+		border-radius: 50%;
+		margin-bottom: 2rpx;
+		transition: background $transition-fast;
 
 		&:active {
 			background: $bg-elevated;
 		}
 	}
 
-	&__action-icon {
-		width: 40rpx;
-		height: 40rpx;
-
-		&--image {
-			border: 3rpx solid $text-muted;
-			border-radius: 6rpx;
-			position: relative;
-
-			&::before {
-				content: '';
-				position: absolute;
-				top: 8rpx;
-				right: 8rpx;
-				width: 10rpx;
-				height: 10rpx;
-				border-radius: 50%;
-				background: $text-muted;
-			}
-
-			&::after {
-				content: '';
-				position: absolute;
-				bottom: 6rpx;
-				left: 4rpx;
-				width: 0;
-				height: 0;
-				border-left: 12rpx solid transparent;
-				border-right: 12rpx solid transparent;
-				border-bottom: 12rpx solid $text-muted;
-			}
-		}
+	&__photo-icon {
+		width: 44rpx;
+		height: 44rpx;
+		opacity: 0.55;
 	}
 
 	&__input {
 		flex: 1;
-		height: 72rpx;
-		background: $bg-elevated;
-		border-radius: $radius-full;
-		padding: 0 $spacing-md;
+		height: auto;
+		min-height: 36rpx;
+		max-height: 200rpx;
+		background: #FFFFFF;
+		border: 1rpx solid $border-color;
+		border-radius: $radius-md;
+		padding: 12rpx $spacing-md;
 		font-size: $font-size-base;
+		line-height: 1.4;
 		color: $text-primary;
+		box-sizing: border-box;
 	}
 
 	&__send {
-		width: 64rpx;
 		height: 64rpx;
-		border-radius: 50%;
+		padding: 0 28rpx;
+		border-radius: $radius-md;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		background: $bg-elevated;
 		flex-shrink: 0;
-		opacity: 0.4;
+		margin-bottom: 2rpx;
 		transition: all 0.2s ease;
 
 		&--active {
-			background: linear-gradient(135deg, #3388ff 0%, #5EAAFF 100%);
-			opacity: 1;
-			box-shadow: 0 4rpx 12rpx rgba(51, 136, 255, 0.3);
+			background: #4A90E2;
 		}
 	}
 
-	&__send-icon {
-		width: 0;
-		height: 0;
-		border-left: 16rpx solid $text-muted;
-		border-top: 10rpx solid transparent;
-		border-bottom: 10rpx solid transparent;
-		margin-left: 4rpx;
+	&__send-text {
+		font-size: $font-size-base;
+		font-weight: $font-weight-medium;
+		color: $text-muted;
+		white-space: nowrap;
 	}
 
-	&__send--active &__send-icon {
-		border-left-color: #FFFFFF;
+	&__send--active &__send-text {
+		color: #FFFFFF;
 	}
 
 	&__safe {
@@ -624,28 +634,21 @@ export default {
 	}
 
 	.input-bar {
-		background: $dark-bg-card;
+		background: $dark-bg-base;
 		border-top-color: $dark-border-color;
 	}
 
-	.input-bar__action:active {
+	.input-bar__photo:active {
 		background: $dark-bg-elevated;
 	}
 
-	.input-bar__action-icon--image {
-		border-color: $dark-text-muted;
-
-		&::before {
-			background: $dark-text-muted;
-		}
-
-		&::after {
-			border-bottom-color: $dark-text-muted;
-		}
+	.input-bar__photo-icon {
+		filter: brightness(0) invert(0.7);
 	}
 
 	.input-bar__input {
 		background: $dark-bg-elevated;
+		border-color: $dark-border-color;
 		color: $dark-text-primary;
 	}
 
@@ -653,15 +656,15 @@ export default {
 		background: $dark-bg-elevated;
 	}
 
-	.input-bar__send-icon {
-		border-left-color: $dark-text-muted;
+	.input-bar__send-text {
+		color: $dark-text-muted;
 	}
 
 	.input-bar__send--active {
-		background: linear-gradient(135deg, #2277ee 0%, #4499ff 100%);
+		background: #3B82F6;
 
-		.input-bar__send-icon {
-			border-left-color: #FFFFFF;
+		.input-bar__send-text {
+			color: #FFFFFF;
 		}
 	}
 }

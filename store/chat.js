@@ -67,7 +67,7 @@ export async function fetchSessions() {
 		sessions.forEach(session => {
 			chatState.sessions[session.id] = {
 				...session,
-				lastDecryptedPreview: null // 稍后填充
+				lastDecryptedPreview: null
 			}
 			chatState.sessionOrder.push(session.id)
 		})
@@ -79,6 +79,9 @@ export async function fetchSessions() {
 			return timeB.localeCompare(timeA)
 		})
 
+		// 后台解密每个会话的最新消息作为预览（不阻塞）
+		refreshSessionPreviews()
+
 		return sessions
 	} catch (err) {
 		console.error('获取会话列表失败:', err)
@@ -86,6 +89,54 @@ export async function fetchSessions() {
 	} finally {
 		chatState.sessionsLoading = false
 	}
+}
+
+/**
+ * 后台刷新所有会话的消息预览（解密最新一条）
+ */
+async function refreshSessionPreviews() {
+	for (const sessionId of chatState.sessionOrder) {
+		try {
+			const session = chatState.sessions[sessionId]
+			if (!session || !session.lastMessageAt) continue
+
+			const userInfo = getUserInfo()
+			let peerUserType, peerUserId
+			if (session.doctorId && session.doctorId !== userInfo.id) {
+				peerUserType = 'DOCTOR'
+				peerUserId = session.doctorId
+			} else {
+				peerUserType = 'PATIENT'
+				peerUserId = session.patientId
+			}
+
+			const res = await getMessages(sessionId, 1, 1)
+			const records = (res.data && res.data.records) || []
+			if (records.length === 0) continue
+
+			const msg = records[0]
+			let preview = '[加密消息]'
+			if (msg.encryptedContent && msg.iv) {
+				try {
+					const sessionKey = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId)
+					const text = decryptMessage(sessionKey, msg.encryptedContent, msg.iv)
+					if (msg.messageType === 'IMAGE') {
+						preview = '[图片]'
+					} else {
+						preview = text || '[加密消息]'
+					}
+				} catch (e) {
+					// 解密失败，保持默认
+				}
+			}
+
+			updateSession(sessionId, { lastDecryptedPreview: preview })
+		} catch (e) {
+			// 单个会话失败不影响其他
+		}
+	}
+	// 通知 UI 更新
+	uni.$emit('chat-sessions-updated')
 }
 
 /**
