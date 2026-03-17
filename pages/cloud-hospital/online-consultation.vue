@@ -107,6 +107,14 @@
 						</view>
 					</view>
 				</view>
+			<!-- 加载更多 -->
+				<view v-if="page < totalPages" class="load-more" @click="loadMore">
+					<view v-if="loadingMore" class="load-more__spinner"></view>
+					<text v-else class="load-more__text">加载更多</text>
+				</view>
+				<view v-else-if="doctors.length > 0" class="load-more">
+					<text class="load-more__text">已加载全部医生</text>
+				</view>
 			</view>
 		</view>
     <TopNotificationBar />
@@ -114,7 +122,10 @@
 </template>
 
 <script>
+import { getE2EEDoctors, createOrGetSession } from '@/utils/api/e2eeChat.js'
 import { getMockDoctorConversations } from '@/utils/mock/doctorChat.js'
+import { ensureE2EEReady } from '@/utils/crypto/e2eeCrypto.js'
+import { fetchSessions } from '@/store/chat.js'
 import { isDarkMode } from '@/store/theme.js'
 
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
@@ -125,7 +136,11 @@ export default {
 		return {
 			statusBarHeight: 44,
 			doctors: [],
-			animationReady: false
+			animationReady: false,
+			loading: false,
+			page: 1,
+			totalPages: 1,
+			loadingMore: false
 		}
 	},
 	computed: {
@@ -135,10 +150,10 @@ export default {
 	},
 	onLoad() {
 		this.getStatusBarHeight()
-		this.doctors = getMockDoctorConversations()
-		setTimeout(() => {
-			this.animationReady = true
-		}, 100)
+		this.loadDoctors()
+	},
+	onReachBottom() {
+		this.loadMore()
 	},
 	methods: {
 		getStatusBarHeight() {
@@ -148,11 +163,124 @@ export default {
 		goBack() {
 			uni.navigateBack()
 		},
-		goTextConsult(doctor) {
-			uni.navigateTo({
-				url: `/pages/messages/doctor-chat?id=${doctor.id}&name=${doctor.name}&department=${doctor.department}&type=text`
+
+		async loadDoctors() {
+			this.loading = true
+			try {
+				const res = await getE2EEDoctors(1, 10)
+				const pageData = res.data || {}
+				const apiDoctors = pageData.records || []
+
+				// 保存分页信息
+				this.page = pageData.current || 1
+				this.totalPages = pageData.pages || 1
+
+				if (apiDoctors.length === 0) {
+					// API 返回空列表时使用演示数据
+					this.doctors = getMockDoctorConversations()
+					return
+				}
+
+				// 映射 API 字段到 UI 所需格式，缺少的字段用默认值兜底
+				this.doctors = this.mapDoctors(apiDoctors)
+			} catch (err) {
+				console.warn('获取E2EE医生列表失败，使用兜底数据:', err)
+				// API 失败时使用 mock 数据兜底
+				this.doctors = getMockDoctorConversations()
+			} finally {
+				this.loading = false
+				setTimeout(() => {
+					this.animationReady = true
+				}, 100)
+			}
+		},
+
+		mapDoctors(apiDoctors) {
+			return apiDoctors.map(d => {
+				const defaultAvatar = d.gender === 'female'
+					? '/static/temporary/women.jpg'
+					: '/static/temporary/male.jpg'
+				return {
+					id: d.doctorId,
+					name: d.name || '医生',
+					title: d.title || '',
+					department: d.departmentName || d.hospitalName || '',
+					hospitalName: d.hospitalName || '',
+					avatar: d.avatarUrl || defaultAvatar,
+					online: false,
+					rating: '-',
+					consultCount: '-',
+					experience: '-',
+					specialties: d.specialty ? d.specialty.split(/[、，,]/).map(s => s.trim()).filter(Boolean) : [],
+					introduction: d.consultationRoom ? `就诊室：${d.consultationRoom}` : '',
+					keyVersion: d.keyVersion
+				}
 			})
 		},
+
+		async loadMore() {
+			if (this.loadingMore || this.page >= this.totalPages) return
+			this.loadingMore = true
+			try {
+				const res = await getE2EEDoctors(this.page + 1, 10)
+				const pageData = res.data || {}
+				const apiDoctors = pageData.records || []
+
+				this.page = pageData.current || this.page + 1
+				this.totalPages = pageData.pages || this.totalPages
+
+				if (apiDoctors.length > 0) {
+					this.doctors = [...this.doctors, ...this.mapDoctors(apiDoctors)]
+				}
+			} catch (err) {
+				console.warn('加载更多医生失败:', err)
+			} finally {
+				this.loadingMore = false
+			}
+		},
+
+		async goTextConsult(doctor) {
+			try {
+				uni.showLoading({ title: '正在建立安全连接...' })
+
+				// 确保 E2EE 密钥就绪
+				await ensureE2EEReady()
+
+				// 创建或获取已有会话
+				const session = await createOrGetSession(doctor.id, 'DOCTOR')
+
+				if (session._isNew) {
+					// 新建会话 → 刷新 store，确保 doctor-chat 能正确识别 peer 身份
+					await fetchSessions()
+				}
+
+				uni.hideLoading()
+
+				if (!session._isNew) {
+					// 已有进行中的对话 → 提示后跳转
+					uni.showToast({ title: '已有进行中的对话，正在跳转...', icon: 'none', duration: 1500 })
+				}
+
+				// 跳转到聊天页
+				uni.navigateTo({
+					url: `/pages/messages/doctor-chat?sessionId=${session.id}&name=${doctor.name}&department=${doctor.department || ''}&avatar=${encodeURIComponent(doctor.avatar || '')}`
+				})
+			} catch (err) {
+				uni.hideLoading()
+				console.error('创建会话失败:', err)
+
+				// 处理特定错误码
+				const code = err.code || (err.data && err.data.code)
+				if (code === 40401) {
+					uni.showToast({ title: '医生尚未开启加密聊天', icon: 'none', duration: 2000 })
+				} else if (code === 40403) {
+					uni.showToast({ title: '医生不存在', icon: 'none', duration: 2000 })
+				} else {
+					uni.showToast({ title: '创建会话失败，请稍后重试', icon: 'none', duration: 2000 })
+				}
+			}
+		},
+
 		goVideoConsult() {
 			uni.showToast({
 				title: '视频问诊即将开通',
@@ -510,6 +638,32 @@ export default {
 			color: #fff;
 		}
 	}
+}
+
+// 加载更多
+.load-more {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: $spacing-lg 0;
+
+	&__text {
+		font-size: $font-size-sm;
+		color: $text-muted;
+	}
+
+	&__spinner {
+		width: 36rpx;
+		height: 36rpx;
+		border: 3rpx solid $border-color-light;
+		border-top-color: $color-primary;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
 }
 
 @keyframes cardFadeIn {

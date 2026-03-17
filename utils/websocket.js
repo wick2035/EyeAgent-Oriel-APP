@@ -15,6 +15,9 @@ const WS_STATUS = {
 	AUTHENTICATED: 'AUTHENTICATED'
 }
 
+// 消息处理器注册表（type -> handler）
+const messageHandlers = {}
+
 // WebSocket实例
 let socketTask = null
 // 心跳定时器
@@ -268,7 +271,12 @@ function handleMessage(data) {
 				break
 
 			default:
-				console.log('未知消息类型:', message.type)
+				// 检查注册的处理器
+				if (messageHandlers[message.type]) {
+					messageHandlers[message.type](message)
+				} else {
+					console.log('未知消息类型:', message.type)
+				}
 		}
 	} catch (err) {
 		console.error('解析WebSocket消息失败:', err)
@@ -575,6 +583,41 @@ export function handleTestNotification(notification) {
 	handleNotification(notification)
 }
 
+/**
+ * 注册消息处理器
+ * @param {string} type - 消息类型（如 CHAT_MESSAGE）
+ * @param {Function} handler - 处理函数
+ */
+export function registerHandler(type, handler) {
+	messageHandlers[type] = handler
+}
+
+/**
+ * 注销消息处理器
+ * @param {string} type - 消息类型
+ */
+export function unregisterHandler(type) {
+	delete messageHandlers[type]
+}
+
+/**
+ * 发送 WebSocket 消息
+ * @param {Object|string} data - 要发送的数据
+ * @returns {boolean} 是否发送成功
+ */
+export function send(data) {
+	if (socketTask && currentStatus === WS_STATUS.AUTHENTICATED) {
+		socketTask.send({
+			data: typeof data === 'string' ? data : JSON.stringify(data),
+			fail: (err) => {
+				console.error('发送WebSocket消息失败:', err)
+			}
+		})
+		return true
+	}
+	return false
+}
+
 export default {
 	connect,
 	disconnect,
@@ -588,5 +631,8 @@ export default {
 	getActiveNotification,
 	clearActiveNotification,
 	handleTestNotification,
+	registerHandler,
+	unregisterHandler,
+	send,
 	WS_STATUS
 }

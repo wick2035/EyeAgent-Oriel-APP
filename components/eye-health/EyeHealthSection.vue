@@ -32,7 +32,8 @@
 <script>
 import EyeHealthCard from "./EyeHealthCard.vue";
 import { isDarkMode } from "@/store/theme.js";
-import { getUserInfo } from "@/store/user.js";
+import { getUserInfo, updateUserInfo } from "@/store/user.js";
+import { getPatientInfo } from "@/utils/api/patient.js";
 import { getHealthDataByGroup } from "@/store/eyeHealth.js";
 import { calculateAge, getAgeGroup, getAgeGroupLabel } from "@/utils/age.js";
 
@@ -71,6 +72,16 @@ export default {
       },
       immediate: true,
     },
+  },
+  async created() {
+    if (!this.userBirthday) {
+      try {
+        const response = await getPatientInfo();
+        if (response.code === 200 && response.data?.dateOfBirth) {
+          updateUserInfo({ birthday: response.data.dateOfBirth.split("T")[0] });
+        }
+      } catch (e) { /* silent */ }
+    }
   },
   methods: {
     loadHealthData(group) {

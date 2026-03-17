@@ -48,6 +48,7 @@
 <script>
 import { isDarkMode } from '@/store/theme.js'
 import { getUnreadCount } from '@/store/notification.js'
+import { getTotalUnreadCount } from '@/store/chat.js'
 
 export default {
 	name: 'TabBar',
@@ -67,9 +68,9 @@ export default {
 		isDark() {
 			return isDarkMode()
 		},
-		// 消息未读数量
+		// 消息未读数量（通知 + 聊天）
 		messageUnreadCount() {
-			return getUnreadCount()
+			return getUnreadCount() + getTotalUnreadCount()
 		},
 		// 格式化未读数量显示
 		messageUnreadText() {

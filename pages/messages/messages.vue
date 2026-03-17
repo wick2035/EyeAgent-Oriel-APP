@@ -151,7 +151,11 @@ import {
 	getUnreadCountByType,
 	getLatestByType
 } from '@/store/notification.js'
-import { getMockDoctorConversations } from '@/utils/mock/doctorChat.js'
+import {
+	fetchSessions,
+	getSessionList,
+	getTotalUnreadCount
+} from '@/store/chat.js'
 
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
 import CustomToast from "@/components/CustomToast.vue"
@@ -170,8 +174,7 @@ export default {
 			topBarHeight: 0,
 			loading: false,
 			isRefreshing: false,
-			searchKeyword: '',
-			doctorConversations: []
+			searchKeyword: ''
 		}
 	},
 	computed: {
@@ -179,7 +182,19 @@ export default {
 			return isDarkMode()
 		},
 		hasUnread() {
-			return getUnreadCount() > 0
+			return getUnreadCount() > 0 || getTotalUnreadCount() > 0
+		},
+		doctorConversations() {
+			return getSessionList().map(session => ({
+				id: session.id,
+				name: session.doctorName || '医生',
+				department: session.doctorDepartment || '',
+				avatar: session.doctorAvatar || '',
+				online: false,
+				lastMessage: session.lastDecryptedPreview || '加密消息',
+				lastMessageTime: session.lastMessageAt,
+				unreadCount: session.unreadCount || 0
+			}))
 		},
 		serviceEntries() {
 			return [
@@ -223,17 +238,17 @@ export default {
 			if (!this.searchKeyword) return this.doctorConversations
 			const kw = this.searchKeyword.toLowerCase()
 			return this.doctorConversations.filter(d =>
-				d.name.toLowerCase().includes(kw) ||
-				d.lastMessage.toLowerCase().includes(kw) ||
-				d.department.toLowerCase().includes(kw)
+				(d.name && d.name.toLowerCase().includes(kw)) ||
+				(d.lastMessage && d.lastMessage.toLowerCase().includes(kw)) ||
+				(d.department && d.department.toLowerCase().includes(kw))
 			)
 		}
 	},
 	onLoad() {
 		this.getStatusBarHeight()
-		this.doctorConversations = getMockDoctorConversations()
 		this.loadData()
 		uni.$on('notification-received', this.onNotificationReceived)
+		uni.$on('chat-sessions-updated', this.onChatSessionsUpdated)
 	},
 	onReady() {
 		setToastInstance(this.$refs.customToast)
@@ -241,6 +256,7 @@ export default {
 	},
 	onUnload() {
 		uni.$off('notification-received', this.onNotificationReceived)
+		uni.$off('chat-sessions-updated', this.onChatSessionsUpdated)
 	},
 	onShow() {
 		// #ifdef APP-PLUS
@@ -251,6 +267,10 @@ export default {
 	methods: {
 		onNotificationReceived() {
 			this.refreshUnread()
+		},
+
+		onChatSessionsUpdated() {
+			// 聊天会话列表已通过 computed 自动更新，无需额外操作
 		},
 
 		getStatusBarHeight() {
@@ -276,7 +296,10 @@ export default {
 		},
 
 		async refreshUnread() {
-			await fetchUnreadNotifications()
+			await Promise.all([
+				fetchUnreadNotifications(),
+				fetchSessions().catch(e => console.warn('获取聊天会话失败:', e))
+			])
 		},
 
 		async onRefresh() {
@@ -326,7 +349,7 @@ export default {
 
 		openDoctorChat(doctor) {
 			uni.navigateTo({
-				url: `/pages/messages/doctor-chat?id=${doctor.id}&name=${doctor.name}&department=${doctor.department}`
+				url: `/pages/messages/doctor-chat?sessionId=${doctor.id}&name=${doctor.name}&department=${doctor.department}&avatar=${encodeURIComponent(doctor.avatar || '')}`
 			})
 		},
 

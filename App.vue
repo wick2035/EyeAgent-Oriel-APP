@@ -9,6 +9,7 @@ import { fetchUnreadNotifications } from "@/store/notification.js";
 import { checkTokenValid } from "@/utils/api/user.js";
 import { checkForUpdate, isUpdateDismissed } from "@/utils/version.js";
 import { navigateByNotification } from "@/utils/notificationNavigate.js";
+import { initChatWebSocket } from "@/utils/chatWebSocket.js";
 
 export default {
   onLaunch: function (options) {
@@ -21,6 +22,9 @@ export default {
     initTheme();
     // 初始化用户状态
     initUserState();
+
+    // 初始化聊天 WebSocket 事件处理器
+    initChatWebSocket();
 
     // 检查登录状态
     if (isLoggedIn()) {

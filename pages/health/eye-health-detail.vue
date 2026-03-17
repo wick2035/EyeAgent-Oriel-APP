@@ -81,10 +81,6 @@
 						>
 							<view class="left-bar" :style="{ background: node.color }"></view>
 							<view class="left-content">
-								<view
-									class="left-tag"
-									:style="{ background: hexToRgba(node.color, 0.15), color: node.color }"
-								>{{ node.tag }}</view>
 								<text class="left-label">{{ node.label }}</text>
 								<text class="left-value" :style="{ color: node.color }">{{ node.value }}</text>
 							</view>

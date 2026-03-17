@@ -8,8 +8,9 @@ import * as appointment from './appointment.js'
 import * as medical from './medical.js'
 import * as notification from './notification.js'
 import * as surgery from './surgery.js'
+import * as e2eeChat from './e2eeChat.js'
 
-export { request, chat, user, appointment, medical, notification, surgery }
+export { request, chat, user, appointment, medical, notification, surgery, e2eeChat }
 
 export default {
 	request,
@@ -18,5 +19,6 @@ export default {
 	appointment,
 	medical,
 	notification,
-	surgery
+	surgery,
+	e2eeChat
 }

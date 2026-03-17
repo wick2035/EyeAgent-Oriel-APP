@@ -84,7 +84,10 @@
 			"path": "pages/messages/doctor-chat",
 			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText": "医生对话"
+				"navigationBarTitleText": "医生对话",
+				"app-plus": {
+					"softinputMode": "adjustResize"
+				}
 			}
 		},
 		{

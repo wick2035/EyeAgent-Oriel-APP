@@ -35,6 +35,9 @@ export default {
 		sessionId: 'session_id',
 		theme: 'app_theme',
 		bubbleTheme: 'chat_bubble_theme',
-		dismissedUpdateVersion: 'dismissed_update_version'
+		dismissedUpdateVersion: 'dismissed_update_version',
+		e2eePrivateKey: 'e2ee_private_key',
+		e2eePublicKey: 'e2ee_public_key',
+		e2eeKeyVersion: 'e2ee_key_version'
 	}
 }

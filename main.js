@@ -1,3 +1,4 @@
+import './utils/crypto/cryptoPolyfill.js'
 import App from './App'
 import toast from './utils/toast.js'
 import { initRouteGuard } from './utils/routeGuard.js'

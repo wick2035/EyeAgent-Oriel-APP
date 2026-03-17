@@ -46,7 +46,7 @@ export function getAgeGroup(age) {
 export function getAgeGroupLabel(group) {
 	const labels = {
 		child: '儿童版',
-		student: '学生版',
+		student: '青年版',
 		adult: '成人版'
 	}
 	return labels[group] || '成人版'
