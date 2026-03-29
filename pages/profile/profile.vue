@@ -60,7 +60,7 @@
 						<image v-else-if="item.icon === 'medicine'" class="menu-icon menu-icon--medicine" src="@/static/medicine.svg" mode="aspectFit" />
 						<image v-else-if="item.icon === 'telemedicine'" class="menu-icon menu-icon--telemedicine" src="@/static/cloud.svg" mode="aspectFit" />
 						<view v-else-if="item.icon === 'surgery'" class="menu-icon menu-icon--surgery"></view>
-						<view v-else-if="item.icon === 'eye-exercise'" class="menu-icon menu-icon--eye-exercise"></view>
+						<image v-else-if="item.icon === 'eye-exercise'" class="menu-icon menu-icon--eye-exercise" src="@/static/coffee.svg" mode="aspectFit" />
 						<view v-else class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
 					</view>
 					<text class="menu-item__text">{{ item.title }}</text>
@@ -686,39 +686,12 @@ export default {
 	}
 
 	&--eye-exercise {
-		// 眼睛外轮廓
 		width: 36rpx;
-		height: 20rpx;
-		border: 3rpx solid #10B981;
-		border-radius: 70% 70% 70% 70% / 100% 100% 100% 100%;
-		position: relative;
-
-		// 瞳孔
-		&::before {
-			content: '';
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			width: 10rpx;
-			height: 10rpx;
-			background: #10B981;
-			border-radius: 50%;
-		}
-
-		// 运动弧线
-		&::after {
-			content: '';
-			position: absolute;
-			top: -8rpx;
-			right: -10rpx;
-			width: 24rpx;
-			height: 24rpx;
-			border: 2rpx solid transparent;
-			border-top-color: #10B981;
-			border-radius: 50%;
-			transform: rotate(30deg);
-		}
+		height: 36rpx;
+		border: none;
+		border-radius: 0;
+		// 将黑色SVG转为绿色 #10B981
+		filter: invert(56%) sepia(52%) saturate(552%) hue-rotate(118deg) brightness(92%) contrast(94%);
 	}
 }
 
@@ -776,17 +749,6 @@ export default {
 		border-color: #FF8A7A;
 		&::before {
 			background: #FF8A7A;
-		}
-	}
-
-	// 护眼锻炼图标深色模式适配
-	.menu-icon--eye-exercise {
-		border-color: #34D399;
-		&::before {
-			background: #34D399;
-		}
-		&::after {
-			border-top-color: #34D399;
 		}
 	}
 

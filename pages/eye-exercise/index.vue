@@ -187,7 +187,7 @@
         <view class="reminder-card">
           <view class="reminder-item">
             <view class="reminder-item__left">
-              <view class="reminder-icon reminder-icon--bell"></view>
+              <image class="reminder-svg" src="/static/fed.svg" mode="aspectFit"></image>
               <text class="reminder-item__text">每日提醒</text>
             </view>
             <switch
@@ -223,7 +223,7 @@
         <view class="reminder-card">
           <view class="reminder-item">
             <view class="reminder-item__left">
-              <view class="reminder-icon reminder-icon--sound"></view>
+              <image class="reminder-svg" src="/static/tishiyin.svg" mode="aspectFit"></image>
               <text class="reminder-item__text">语音提示</text>
             </view>
             <switch
@@ -235,7 +235,7 @@
           </view>
           <view class="reminder-item reminder-item--time">
             <view class="reminder-item__left">
-              <view class="reminder-icon reminder-icon--vibrate"></view>
+              <image class="reminder-svg" src="/static/zhengdong.svg" mode="aspectFit"></image>
               <text class="reminder-item__text">震动反馈</text>
             </view>
             <switch
@@ -1293,6 +1293,15 @@ export default {
   &__text {
     color: $dark-text-primary;
   }
+}
+
+.reminder-svg {
+  width: 36rpx;
+  height: 36rpx;
+}
+.page--dark .reminder-svg {
+  filter: brightness(0) invert(1);
+  opacity: 0.85;
 }
 
 .reminder-icon {

@@ -547,17 +547,17 @@ export default {
 	height: 100vh;
 	position: relative;
 	overflow: hidden;
-	background: #1C2E3E;
+	background: #FFFDF7;
 
 	&--dark {
-		background: #141F2B;
+		background: #1C2E3E;
 	}
 
 	&__bg {
 		position: absolute;
 		top: 0; left: 0; right: 0; bottom: 0;
-		background: radial-gradient(ellipse at 30% 40%, rgba(107, 181, 212, 0.03) 0%, transparent 60%),
-		            radial-gradient(ellipse at 70% 60%, rgba(107, 181, 212, 0.02) 0%, transparent 60%);
+		background: radial-gradient(ellipse at 30% 40%, rgba(16, 185, 129, 0.04) 0%, transparent 60%),
+		            radial-gradient(ellipse at 70% 60%, rgba(14, 165, 233, 0.03) 0%, transparent 60%);
 		animation: bgDrift 60s ease-in-out infinite alternate;
 	}
 }
@@ -585,7 +585,7 @@ export default {
 
 	&__title {
 		font-size: $font-size-xl;
-		color: rgba(107, 181, 212, 0.6);
+		color: $text-secondary;
 		opacity: 0;
 		transform: translateY(20rpx);
 		transition: all 500ms ease;
@@ -595,14 +595,14 @@ export default {
 	&__count {
 		font-size: 160rpx;
 		font-weight: $font-weight-bold;
-		color: #6BB5D4;
+		color: #10B981;
 		line-height: 1;
 		animation: countPop 0.8s ease-out;
 	}
 
 	&__hint {
 		font-size: $font-size-base;
-		color: rgba(107, 181, 212, 0.4);
+		color: $text-muted;
 		margin-top: $spacing-xl;
 		opacity: 0;
 		transform: translateY(20rpx);
@@ -611,8 +611,9 @@ export default {
 }
 
 .training--dark .ready-phase {
-	&__title { color: rgba(124, 197, 221, 0.5); }
-	&__hint { color: rgba(124, 197, 221, 0.35); }
+	&__title { color: rgba(107, 181, 212, 0.6); }
+	&__count { color: #6BB5D4; }
+	&__hint { color: rgba(107, 181, 212, 0.4); }
 }
 
 .fade-in {
@@ -705,7 +706,7 @@ export default {
 	&__text {
 		font-size: 52rpx;
 		font-weight: $font-weight-medium;
-		color: rgba(16, 185, 129, 0.7);
+		color: $text-secondary;
 		text-align: center;
 		line-height: 1.6;
 		letter-spacing: 6rpx;
@@ -713,7 +714,7 @@ export default {
 }
 
 .training--dark .eye-rest__text {
-	color: rgba(52, 211, 153, 0.6);
+	color: rgba(16, 185, 129, 0.7);
 }
 
 /* 底部提示文字 */
@@ -729,13 +730,13 @@ export default {
 
 	&__text {
 		font-size: $font-size-base;
-		color: rgba(16, 185, 129, 0.5);
+		color: $text-muted;
 		text-align: center;
 	}
 }
 
 .training--dark .arrow-hint__text {
-	color: rgba(52, 211, 153, 0.4);
+	color: rgba(16, 185, 129, 0.5);
 }
 
 /* ==================== 眨眼练习 ==================== */
@@ -757,7 +758,7 @@ export default {
 	&__outer {
 		width: 100%;
 		height: 100%;
-		border: 4rpx solid #6BB5D4;
+		border: 4rpx solid $color-primary;
 		border-radius: 70% 70% 70% 70% / 100% 100% 100% 100%;
 		display: flex;
 		align-items: center;
@@ -770,7 +771,7 @@ export default {
 		width: 80rpx;
 		height: 80rpx;
 		border-radius: 50%;
-		background: radial-gradient(circle, #3A6E85 30%, #5BA8C9 60%, #6BB5D4 100%);
+		background: radial-gradient(circle, $color-primary 30%, $color-primary-light 60%, #4A90D9 100%);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -837,19 +838,20 @@ export default {
 	}
 }
 
-.css-eye__lid { background: #1C2E3E; }
+.css-eye__lid { background: #FFFDF7; }
 
 .training--dark .css-eye {
-	&__outer { border-color: #4A90D9; }
-	&__lid { background: #141F2B; }
+	&__outer { border-color: #6BB5D4; }
+	&__iris { background: radial-gradient(circle, #3A6E85 30%, #5BA8C9 60%, #6BB5D4 100%); }
+	&__lid { background: #1C2E3E; }
 }
 
 .blink-hint {
 	font-size: $font-size-xl;
-	color: rgba(107, 181, 212, 0.7);
+	color: $text-secondary;
 	animation: hintFade 0.5s ease;
 }
-.training--dark .blink-hint { color: rgba(124, 197, 221, 0.6); }
+.training--dark .blink-hint { color: rgba(107, 181, 212, 0.7); }
 
 @keyframes hintFade {
 	0% { opacity: 0; transform: translateY(10rpx); }
@@ -906,11 +908,11 @@ export default {
 	position: absolute;
 	bottom: 280rpx;
 	font-size: $font-size-xl;
-	color: rgba(107, 181, 212, 0.7);
+	color: $text-secondary;
 	z-index: 3;
 	animation: hintFade 0.5s ease;
 }
-.training--dark .focus-hint { color: rgba(124, 197, 221, 0.6); }
+.training--dark .focus-hint { color: rgba(107, 181, 212, 0.7); }
 
 /* ==================== 20-20-20 ==================== */
 .twenty-area {
@@ -925,11 +927,11 @@ export default {
 .twenty-title {
 	font-size: $font-size-2xl;
 	font-weight: $font-weight-semibold;
-	color: rgba(107, 181, 212, 0.8);
+	color: $text-primary;
 	margin-bottom: $spacing-xl;
 	letter-spacing: 4rpx;
 }
-.training--dark .twenty-title { color: rgba(124, 197, 221, 0.7); }
+.training--dark .twenty-title { color: rgba(107, 181, 212, 0.8); }
 
 .twenty-ring {
 	width: 300rpx;
@@ -982,16 +984,16 @@ export default {
 
 .twenty-desc {
 	font-size: $font-size-base;
-	color: rgba(107, 181, 212, 0.6);
+	color: $text-secondary;
 	margin-bottom: $spacing-xs;
 }
 .twenty-subdesc {
 	font-size: $font-size-sm;
-	color: rgba(107, 181, 212, 0.4);
+	color: $text-muted;
 }
 .training--dark {
-	.twenty-desc { color: rgba(124, 197, 221, 0.5); }
-	.twenty-subdesc { color: rgba(124, 197, 221, 0.35); }
+	.twenty-desc { color: rgba(107, 181, 212, 0.6); }
+	.twenty-subdesc { color: rgba(107, 181, 212, 0.4); }
 }
 
 /* ==================== 完成庆祝 ==================== */
@@ -1033,7 +1035,7 @@ export default {
 .done-text {
 	font-size: $font-size-xl;
 	font-weight: $font-weight-semibold;
-	color: rgba(107, 181, 212, 0.9);
+	color: $text-primary;
 	margin-top: $spacing-xl;
 	opacity: 0;
 	transform: translateY(20rpx);
@@ -1079,7 +1081,7 @@ export default {
 }
 
 .training--dark {
-	.done-text { color: rgba(124, 197, 221, 0.85); }
+	.done-text { color: rgba(107, 181, 212, 0.9); }
 	.done-stats__item { background: rgba(16, 185, 129, 0.12); color: #34D399; }
 }
 
@@ -1135,11 +1137,11 @@ export default {
 .controls__time {
 	font-size: $font-size-xl;
 	font-weight: $font-weight-medium;
-	color: rgba(107, 181, 212, 0.4);
+	color: $text-muted;
 	font-variant-numeric: tabular-nums;
 	min-width: 120rpx;
 }
-.training--dark .controls__time { color: rgba(124, 197, 221, 0.35); }
+.training--dark .controls__time { color: rgba(107, 181, 212, 0.4); }
 
 .controls__step {
 	flex: 1;
@@ -1147,10 +1149,10 @@ export default {
 
 	&-text {
 		font-size: $font-size-sm;
-		color: rgba(107, 181, 212, 0.35);
+		color: $text-muted;
 	}
 }
-.training--dark .controls__step-text { color: rgba(124, 197, 221, 0.3); }
+.training--dark .controls__step-text { color: rgba(107, 181, 212, 0.35); }
 
 .controls__btns {
 	display: flex;
@@ -1170,17 +1172,32 @@ export default {
 		background: rgba(239, 68, 68, 0.08);
 	}
 
+	&--off {
+		opacity: 0.35;
+	}
+
 	&:active {
 		transform: scale(0.9);
 	}
+}
+
+.ctrl-svg {
+	width: 36rpx;
+	height: 36rpx;
+	filter: brightness(0);
+	opacity: 0.3;
+}
+.training--dark .ctrl-svg {
+	filter: brightness(0) invert(1);
+	opacity: 0.5;
 }
 
 .ctrl-icon {
 	&--pause {
 		width: 16rpx;
 		height: 20rpx;
-		border-left: 4rpx solid rgba(107, 181, 212, 0.5);
-		border-right: 4rpx solid rgba(107, 181, 212, 0.5);
+		border-left: 4rpx solid $text-muted;
+		border-right: 4rpx solid $text-muted;
 	}
 
 	&--play {
@@ -1208,7 +1225,7 @@ export default {
 	}
 }
 
-.training--dark .ctrl-icon--pause { border-color: rgba(124, 197, 221, 0.4); }
+.training--dark .ctrl-icon--pause { border-color: rgba(107, 181, 212, 0.5); }
 
 /* ==================== 退出弹窗 ==================== */
 .exit-modal {
