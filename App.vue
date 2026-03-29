@@ -256,6 +256,14 @@ export default {
 </script>
 
 <style lang="scss">
+/* 字体注册 */
+@font-face {
+  font-family: 'youshe';
+  src: url('/static/youshe.TTF') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 /* AI医问通 - 全局公共样式 */
 
 /* 重置默认样式 */

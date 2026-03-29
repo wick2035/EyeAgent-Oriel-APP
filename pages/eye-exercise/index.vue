@@ -21,43 +21,51 @@
     ></view>
 
     <scroll-view class="content" scroll-y :style="{ height: scrollViewHeight }">
-      <!-- 英雄统计卡片 -->
+      <!-- 虹膜卡片 -->
       <view
         class="hero-card"
         :class="{
           'hero-card--appear': appeared && !animDone,
           'hero-card--settled': animDone,
         }"
+        :style="{ '--progress': todayCompleted / totalTypes }"
       >
-        <view class="hero-card__glow"></view>
-        <view class="hero-card__inner">
-          <!-- 环形进度 -->
-          <view class="progress-ring">
-            <view class="progress-ring__svg">
-              <canvas
-                canvas-id="progressCanvas"
-                class="progress-ring__canvas"
-              ></canvas>
-            </view>
-            <view class="progress-ring__center">
-              <text class="progress-ring__num">{{ todayCompleted }}</text>
-              <text class="progress-ring__sep">/</text>
-              <text class="progress-ring__total">{{ totalTypes }}</text>
+        <!-- 左侧：文字信息 -->
+        <view class="hero-card__left">
+          <view class="hero-card__number-row">
+            <text class="hero-card__num">{{ todayCompleted }}</text>
+            <view class="hero-card__fraction">
+              <text class="hero-card__slash">/</text>
+              <text class="hero-card__total">{{ totalTypes }}</text>
             </view>
           </view>
           <text class="hero-card__label">今日已完成</text>
-
-          <!-- 底部标签 -->
-          <view class="hero-card__tags">
-            <view class="hero-tag">
-              <view class="hero-tag__icon hero-tag__icon--cal"></view>
-              <text class="hero-tag__text">本周第{{ weekDayNum }}天</text>
+          <!-- 元数据 -->
+          <view class="hero-card__meta">
+            <view class="hero-card__meta-item">
+              <text class="hero-card__meta-value">第{{ weekDayNum }}天</text>
+              <text class="hero-card__meta-key">本周</text>
             </view>
-            <view class="hero-tag__divider"></view>
-            <view class="hero-tag">
-              <view class="hero-tag__icon hero-tag__icon--time"></view>
-              <text class="hero-tag__text">共{{ todayMinutes }}</text>
+            <view class="hero-card__meta-dot"></view>
+            <view class="hero-card__meta-item">
+              <text class="hero-card__meta-value">{{ todayMinutes }}</text>
+              <text class="hero-card__meta-key">时长</text>
             </view>
+          </view>
+        </view>
+        <!-- 右侧：靶心进度环 -->
+        <view class="hero-card__right">
+          <view class="iris">
+            <!-- 进度弧 -->
+            <view class="iris__track"></view>
+            <!-- 同心靶环 -->
+            <view class="iris__ring iris__ring--outer"></view>
+            <view class="iris__ring iris__ring--mid"></view>
+            <view class="iris__ring iris__ring--inner"></view>
+            <!-- 十字准星 -->
+            <view class="iris__cross"></view>
+            <!-- 靶心圆点 -->
+            <view class="iris__dot"></view>
           </view>
         </view>
       </view>
@@ -324,7 +332,6 @@ export default {
   onReady() {
     setTimeout(() => {
       this.appeared = true;
-      this.drawProgress();
       // 入场动画完成后移除 transition，避免滚动时无意义的过渡计算
       setTimeout(() => {
         this.animDone = true;
@@ -347,9 +354,7 @@ export default {
       this.reminder = { ...getReminder() };
       this.settings = { ...getSettings() };
 
-      this.$nextTick(() => {
-        this.drawProgress();
-      });
+      this.$nextTick(() => { /* reserved for future use */ });
     },
 
     isCompleted(type) {
@@ -367,40 +372,6 @@ export default {
       return (
         this.weekData[index].count > 0 && this.weekData[index - 1].count > 0
       );
-    },
-
-    drawProgress() {
-      const ctx = uni.createCanvasContext("progressCanvas", this);
-      const size = 100;
-      const center = size / 2;
-      const radius = 40;
-      const lineWidth = 8;
-      const total = this.totalTypes;
-      const completed = this.todayCompleted;
-
-      // 背景环
-      ctx.setLineWidth(lineWidth);
-      ctx.setStrokeStyle(
-        this.isDark ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.3)",
-      );
-      ctx.setLineCap("round");
-      ctx.beginPath();
-      ctx.arc(center, center, radius, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // 进度环
-      if (completed > 0) {
-        const angle = (completed / total) * Math.PI * 2;
-        const startAngle = -Math.PI / 2;
-        ctx.setLineWidth(lineWidth);
-        ctx.setStrokeStyle("#FFFFFF");
-        ctx.setLineCap("round");
-        ctx.beginPath();
-        ctx.arc(center, center, radius, startAngle, startAngle + angle);
-        ctx.stroke();
-      }
-
-      ctx.draw();
     },
 
     startExercise(type) {
@@ -494,6 +465,7 @@ export default {
     font-size: $font-size-lg;
     font-weight: $font-weight-semibold;
     color: $text-primary;
+    text-align: center;
   }
 
   &__placeholder {
@@ -526,12 +498,22 @@ export default {
   z-index: 1;
 }
 
-/* ==================== 英雄卡片 ==================== */
+/* ==================== 虹膜卡片 ==================== */
+$iris-green: #0D9B6A;
+$iris-green-light: #34D399;
+$iris-green-dim: rgba(13, 155, 106, 0.08);
+$iris-teal: #0E8A7B;
+
 .hero-card {
+  --progress: 0;
   margin: $spacing-md $spacing-lg;
   border-radius: $radius-xl;
   position: relative;
   overflow: hidden;
+  background: $bg-card;
+  box-shadow: $shadow-md;
+  display: flex;
+  align-items: center;
   opacity: 0;
   transform: translateY(40rpx);
   transition: all 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -547,183 +529,265 @@ export default {
     transition: none;
   }
 
-  &__glow {
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(
-      circle at 30% 40%,
-      rgba(52, 211, 153, 0.3) 0%,
-      transparent 60%
-    );
-    animation: glowDrift 20s ease-in-out infinite alternate;
-    will-change: transform;
-  }
-
-  &__inner {
-    position: relative;
-    z-index: 1;
-    padding: $spacing-xl $spacing-lg;
-    background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%);
-    border-radius: $radius-xl;
+  // 左侧文字区
+  &__left {
+    flex: 1;
+    padding: $spacing-lg $spacing-sm $spacing-lg $spacing-lg;
     display: flex;
     flex-direction: column;
-    align-items: center;
-  }
-
-  &__label {
-    font-size: $font-size-sm;
-    color: rgba(255, 255, 255, 0.85);
-    margin-top: $spacing-sm;
-  }
-
-  &__tags {
-    display: flex;
-    align-items: center;
-    margin-top: $spacing-lg;
-    padding-top: $spacing-md;
-    border-top: 1rpx solid rgba(255, 255, 255, 0.2);
-    width: 100%;
     justify-content: center;
-  }
-}
-
-.page--dark .hero-card__inner {
-  background: linear-gradient(135deg, #065f46 0%, #0c4a6e 100%);
-}
-
-@keyframes glowDrift {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  100% {
-    transform: translate(10%, 5%) rotate(30deg);
-  }
-}
-
-/* 环形进度 */
-.progress-ring {
-  width: 200rpx;
-  height: 200rpx;
-  position: relative;
-
-  &__svg {
-    width: 100%;
-    height: 100%;
+    min-height: 260rpx;
   }
 
-  &__canvas {
-    width: 200rpx;
-    height: 200rpx;
-  }
-
-  &__center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+  &__number-row {
     display: flex;
     align-items: baseline;
   }
 
   &__num {
-    font-size: 72rpx;
-    font-weight: $font-weight-bold;
-    color: #ffffff;
+    font-family: 'youshe', $font-family-display;
+    font-size: 120rpx;
     line-height: 1;
+    color: $iris-green;
+    letter-spacing: -2rpx;
   }
 
-  &__sep {
-    font-size: $font-size-xl;
-    color: rgba(255, 255, 255, 0.5);
-    margin: 0 4rpx;
+  &__fraction {
+    display: flex;
+    align-items: baseline;
+    margin-left: 8rpx;
+    margin-bottom: 12rpx;
+  }
+
+  &__slash {
+    font-size: $font-size-lg;
+    color: $text-muted;
+    font-weight: $font-weight-normal;
   }
 
   &__total {
-    font-size: $font-size-xl;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: $font-size-2xl;
+    color: $text-secondary;
+    font-weight: $font-weight-semibold;
+    font-family: 'youshe', $font-family-display;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    color: $text-muted;
+    margin-top: 4rpx;
+    letter-spacing: 2rpx;
+  }
+
+  // 元数据行
+  &__meta {
+    display: flex;
+    align-items: center;
+    margin-top: $spacing-md;
+    padding-top: $spacing-sm;
+    border-top: 1rpx solid $border-color;
+  }
+
+  &__meta-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__meta-value {
+    font-size: $font-size-sm;
+    color: $text-primary;
+    font-weight: $font-weight-medium;
+    line-height: 1.3;
+  }
+
+  &__meta-key {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    margin-top: 2rpx;
+  }
+
+  &__meta-dot {
+    width: 6rpx;
+    height: 6rpx;
+    border-radius: 50%;
+    background: $iris-green;
+    opacity: 0.35;
+    margin: 0 $spacing-md;
+  }
+
+  // 右侧虹膜区
+  &__right {
+    width: 240rpx;
+    padding: $spacing-lg $spacing-lg $spacing-lg 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
-/* 标签 */
-.hero-tag {
-  display: flex;
-  align-items: center;
+// ---- 靶心准星 CSS 图形 ----
+.iris {
+  width: 180rpx;
+  height: 180rpx;
+  position: relative;
+  border-radius: 50%;
 
-  &__icon {
-    width: 28rpx;
-    height: 28rpx;
-    margin-right: 8rpx;
+  // 进度弧 —— conic-gradient 驱动
+  &__track {
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+      from -90deg,
+      $iris-green calc(var(--progress) * 360deg),
+      rgba(13, 155, 106, 0.1) calc(var(--progress) * 360deg)
+    );
+    transition: background 800ms cubic-bezier(0.4, 0, 0.2, 1);
 
-    &--cal {
-      border: 2rpx solid rgba(255, 255, 255, 0.9);
-      border-radius: 4rpx;
-      position: relative;
-      &::before {
-        content: "";
-        position: absolute;
-        top: -1rpx;
-        left: 4rpx;
-        right: 4rpx;
-        height: 6rpx;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 2rpx 2rpx 0 0;
-      }
-      &::after {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 8rpx;
-        height: 8rpx;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 2rpx;
-        transform: translate(-50%, 10%);
-      }
-    }
-
-    &--time {
-      border: 2rpx solid rgba(255, 255, 255, 0.9);
+    // 镂空中心，形成弧线
+    &::after {
+      content: '';
+      position: absolute;
+      top: 10rpx; right: 10rpx; bottom: 10rpx; left: 10rpx;
       border-radius: 50%;
-      position: relative;
-      &::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 2rpx;
-        height: 8rpx;
-        background: rgba(255, 255, 255, 0.9);
-        transform-origin: bottom center;
-        transform: translate(-50%, -100%) rotate(0deg);
-      }
-      &::after {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 2rpx;
-        height: 6rpx;
-        background: rgba(255, 255, 255, 0.9);
-        transform-origin: bottom center;
-        transform: translate(-50%, -100%) rotate(90deg);
-      }
+      background: $bg-card;
     }
   }
 
-  &__text {
-    font-size: $font-size-sm;
-    color: rgba(255, 255, 255, 0.9);
+  // 同心靶环
+  &__ring {
+    position: absolute;
+    border-radius: 50%;
+
+    &--outer {
+      top: 20rpx; right: 20rpx; bottom: 20rpx; left: 20rpx;
+      border: 2rpx solid rgba(13, 155, 106, 0.15);
+    }
+
+    &--mid {
+      top: 42rpx; right: 42rpx; bottom: 42rpx; left: 42rpx;
+      border: 2rpx solid rgba(13, 155, 106, 0.12);
+    }
+
+    &--inner {
+      top: 62rpx; right: 62rpx; bottom: 62rpx; left: 62rpx;
+      border: 2rpx solid rgba(13, 155, 106, 0.1);
+    }
   }
 
-  &__divider {
-    width: 1rpx;
-    height: 24rpx;
-    background: rgba(255, 255, 255, 0.3);
-    margin: 0 $spacing-lg;
+  // 十字准星
+  &__cross {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+
+    // 竖线
+    &::before {
+      content: '';
+      position: absolute;
+      left: -1rpx;
+      top: -56rpx;
+      width: 2rpx;
+      height: 112rpx;
+      background: linear-gradient(
+        to bottom,
+        rgba(13, 155, 106, 0.25) 0%,
+        rgba(13, 155, 106, 0.06) 40%,
+        transparent 45%,
+        transparent 55%,
+        rgba(13, 155, 106, 0.06) 60%,
+        rgba(13, 155, 106, 0.25) 100%
+      );
+    }
+
+    // 横线
+    &::after {
+      content: '';
+      position: absolute;
+      top: -1rpx;
+      left: -56rpx;
+      height: 2rpx;
+      width: 112rpx;
+      background: linear-gradient(
+        to right,
+        rgba(13, 155, 106, 0.25) 0%,
+        rgba(13, 155, 106, 0.06) 40%,
+        transparent 45%,
+        transparent 55%,
+        rgba(13, 155, 106, 0.06) 60%,
+        rgba(13, 155, 106, 0.25) 100%
+      );
+    }
   }
+
+  // 靶心圆点
+  &__dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12rpx;
+    height: 12rpx;
+    margin-top: -6rpx;
+    margin-left: -6rpx;
+    border-radius: 50%;
+    background: $iris-green;
+  }
+}
+
+// 深色模式
+.page--dark .hero-card {
+  background: $dark-bg-card;
+  box-shadow: $shadow-lg;
+}
+
+.page--dark .hero-card__num {
+  color: $iris-green-light;
+}
+
+.page--dark .hero-card__slash {
+  color: $dark-text-muted;
+}
+
+.page--dark .hero-card__total {
+  color: $dark-text-secondary;
+}
+
+.page--dark .hero-card__label {
+  color: $dark-text-muted;
+}
+
+.page--dark .hero-card__meta {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+.page--dark .hero-card__meta-value {
+  color: $dark-text-primary;
+}
+
+.page--dark .hero-card__meta-key {
+  color: $dark-text-muted;
+}
+
+.page--dark .iris__track::after {
+  background: $dark-bg-card;
+}
+
+.page--dark .iris__ring--outer {
+  border-color: rgba(52, 211, 153, 0.15);
+}
+
+.page--dark .iris__ring--mid {
+  border-color: rgba(52, 211, 153, 0.1);
+}
+
+.page--dark .iris__ring--inner {
+  border-color: rgba(52, 211, 153, 0.08);
+}
+
+.page--dark .iris__dot {
+  background: $iris-green-light;
 }
 
 /* ==================== 锻炼卡片网格 ==================== */
