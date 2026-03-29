@@ -280,3 +280,94 @@ export function vibrate(type = 'light') {
 	if (!state.settings.vibration) return
 	uni.vibrateShort({ type })
 }
+
+/**
+ * 语音播报（使用系统TTS）
+ */
+let ttsReady = false
+let ttsEngine = null
+let ttsInitializing = false
+
+function initTTS() {
+	if (ttsReady || ttsInitializing) return
+	ttsInitializing = true
+	// #ifdef APP-PLUS
+	try {
+		const TextToSpeech = plus.android.importClass('android.speech.tts.TextToSpeech')
+		const activity = plus.android.runtimeMainActivity()
+		const listener = plus.android.implements('android.speech.tts.TextToSpeech$OnInitListener', {
+			onInit(status) {
+				if (status === 0) {
+					const Locale = plus.android.importClass('java.util.Locale')
+					ttsEngine.setLanguage(Locale.CHINA)
+					ttsReady = true
+				}
+				ttsInitializing = false
+			}
+		})
+		ttsEngine = new TextToSpeech(activity, listener)
+	} catch (e) {
+		console.warn('TTS初始化失败:', e)
+		ttsInitializing = false
+	}
+	// #endif
+}
+
+export function speak(text) {
+	if (!state.settings.sound) return
+	if (!text) return
+
+	// #ifdef APP-PLUS
+	try {
+		if (!ttsEngine && !ttsInitializing) initTTS()
+		if (ttsReady && ttsEngine) {
+			// Android API 21+ 使用新版 speak 方法
+			const Build = plus.android.importClass('android.os.Build')
+			if (Build.VERSION.SDK_INT >= 21) {
+				ttsEngine.speak(text, 0, null, 'eye-exercise-' + Date.now())
+			} else {
+				const HashMap = plus.android.importClass('java.util.HashMap')
+				ttsEngine.speak(text, 0, new HashMap())
+			}
+		}
+	} catch (e) {
+		console.warn('语音播报失败:', e)
+	}
+	// #endif
+
+	// #ifdef H5
+	try {
+		if (window.speechSynthesis) {
+			speechSynthesis.cancel()
+			const utterance = new SpeechSynthesisUtterance(text)
+			utterance.lang = 'zh-CN'
+			utterance.rate = 1.1
+			speechSynthesis.speak(utterance)
+		}
+	} catch (e) {}
+	// #endif
+}
+
+/**
+ * 停止语音播报
+ */
+export function stopSpeak() {
+	// #ifdef APP-PLUS
+	try {
+		if (ttsEngine) ttsEngine.stop()
+	} catch (e) {}
+	// #endif
+	// #ifdef H5
+	try {
+		if (window.speechSynthesis) speechSynthesis.cancel()
+	} catch (e) {}
+	// #endif
+}
+
+/**
+ * 预初始化TTS（在进入锻炼页时调用，确保开始锻炼时已就绪）
+ */
+export function preInitTTS() {
+	if (!state.settings.sound) return
+	if (!ttsReady && !ttsInitializing) initTTS()
+}

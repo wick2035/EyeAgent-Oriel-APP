@@ -21,13 +21,9 @@
 						:style="{ transform: 'rotate(' + arrowAngle + 'deg)' }"
 						:key="'arrow-' + currentStep"
 					>
-						<!-- 箭杆 -->
 						<view class="big-arrow__shaft"></view>
-						<!-- 箭头 V 形 -->
-						<view class="big-arrow__head">
-							<view class="big-arrow__head-left"></view>
-							<view class="big-arrow__head-right"></view>
-						</view>
+						<view class="big-arrow__head-left"></view>
+						<view class="big-arrow__head-right"></view>
 					</view>
 				</view>
 
@@ -115,6 +111,12 @@
 					<text class="controls__step-text">{{ currentStep }}/{{ totalSteps }}</text>
 				</view>
 				<view class="controls__btns">
+					<view class="ctrl-btn" :class="{ 'ctrl-btn--off': !voiceEnabled }" @click="toggleVoice">
+						<image class="ctrl-svg" src="/static/tishiyin.svg" mode="aspectFit"></image>
+					</view>
+					<view class="ctrl-btn" :class="{ 'ctrl-btn--off': !vibrateEnabled }" @click="toggleVibrate">
+						<image class="ctrl-svg" src="/static/zhengdong.svg" mode="aspectFit"></image>
+					</view>
 					<view class="ctrl-btn" @click="togglePause">
 						<view v-if="paused" class="ctrl-icon ctrl-icon--play"></view>
 						<view v-else class="ctrl-icon ctrl-icon--pause"></view>
@@ -146,7 +148,7 @@
 
 <script>
 import { isDarkMode } from '@/store/theme.js'
-import { EXERCISE_TYPES, addRecord, vibrate } from '@/store/eyeExercise.js'
+import { EXERCISE_TYPES, addRecord, vibrate, speak, stopSpeak, preInitTTS } from '@/store/eyeExercise.js'
 
 export default {
 	data() {
@@ -159,6 +161,8 @@ export default {
 			readyVisible: false,
 			paused: false,
 			showExitModal: false,
+			voiceEnabled: true,
+			vibrateEnabled: true,
 
 			// 通用计时
 			remainSeconds: 0,
@@ -174,7 +178,7 @@ export default {
 			movementSegments: [],
 			currentSegIndex: 0,
 			segTimer: null,
-			arrowAngle: -90, // 初始朝上（CSS rotate -90deg = 朝上）
+			arrowAngle: 0, // 初始朝上（箭头默认形状朝上，0deg = 朝上）
 			movementLabel: '',
 			eyeRestMode: false,
 
@@ -207,6 +211,7 @@ export default {
 		this.totalSeconds = this.exerciseDuration
 		this.remainSeconds = this.exerciseDuration
 
+		preInitTTS()
 		this.initExercise()
 	},
 	onReady() {
@@ -221,14 +226,14 @@ export default {
 	methods: {
 		// ==================== 准备阶段 ====================
 		startReadyCountdown() {
-			vibrate('light')
+			this.doVibrate('light')
 			const interval = setInterval(() => {
 				this.readyCount--
 				if (this.readyCount > 0) {
-					vibrate('light')
+					this.doVibrate('light')
 				} else {
 					clearInterval(interval)
-					vibrate('medium')
+					this.doVibrate('medium')
 					this.phase = 'active'
 					this.startExercise()
 				}
@@ -257,25 +262,26 @@ export default {
 		initEyeMovement() {
 			// Eyeye风格：大箭头指示方向，每个方向保持3秒，穿插闭眼休息
 			// arrowAngle: CSS rotate角度，0=右, -90=上, 90=下, 180=左
+			// 角度：0=上, 180=下, -90=左, 90=右, -45=左上, 45=右上, -135=左下, 135=右下
 			this.movementSegments = [
-				{ angle: -90,  label: '向上看', duration: 3000, rest: false },
-				{ angle: 90,   label: '向下看', duration: 3000, rest: false },
-				{ angle: 180,  label: '向左看', duration: 3000, rest: false },
-				{ angle: 0,    label: '向右看', duration: 3000, rest: false },
+				{ angle: 0,    label: '向上看', duration: 3000, rest: false },
+				{ angle: 180,  label: '向下看', duration: 3000, rest: false },
+				{ angle: -90,  label: '向左看', duration: 3000, rest: false },
+				{ angle: 90,   label: '向右看', duration: 3000, rest: false },
 				{ angle: 0,    label: '紧闭双眼 5 秒钟', duration: 5000, rest: true },
 				{ angle: -45,  label: '左上方看', duration: 3000, rest: false },
 				{ angle: 135,  label: '右下方看', duration: 3000, rest: false },
 				{ angle: 45,   label: '右上方看', duration: 3000, rest: false },
 				{ angle: -135, label: '左下方看', duration: 3000, rest: false },
 				{ angle: 0,    label: '紧闭双眼 5 秒钟', duration: 5000, rest: true },
-				{ angle: -90,  label: '向上看', duration: 3000, rest: false },
-				{ angle: 0,    label: '向右看', duration: 3000, rest: false },
-				{ angle: 90,   label: '向下看', duration: 3000, rest: false },
-				{ angle: 180,  label: '向左看', duration: 3000, rest: false },
+				{ angle: 0,    label: '向上看', duration: 3000, rest: false },
+				{ angle: 90,   label: '向右看', duration: 3000, rest: false },
+				{ angle: 180,  label: '向下看', duration: 3000, rest: false },
+				{ angle: -90,  label: '向左看', duration: 3000, rest: false },
 				{ angle: 0,    label: '紧闭双眼 5 秒钟', duration: 5000, rest: true },
 				{ angle: -45,  label: '左上方看', duration: 3000, rest: false },
 				{ angle: 45,   label: '右上方看', duration: 3000, rest: false },
-				{ angle: 135,  label: '右下方看', duration: 3000, rest: false },  // 17 * 3s + 3 * 5s = 51 + 15 = 66 ≈ 60s（微调）
+				{ angle: 135,  label: '右下方看', duration: 3000, rest: false },
 			]
 			this.totalSteps = this.movementSegments.length
 		},
@@ -333,7 +339,13 @@ export default {
 			this.movementLabel = seg.label
 			this.eyeRestMode = seg.rest
 			this.arrowAngle = seg.angle
-			vibrate(seg.rest ? 'medium' : 'light')
+			if (seg.rest) {
+				this.doVibrate('light')
+				setTimeout(() => this.doVibrate('light'), 200)
+			} else {
+				this.doVibrate('light')
+			}
+			this.doSpeak(seg.label)
 
 			const waitAndNext = () => {
 				if (this.paused) {
@@ -385,7 +397,8 @@ export default {
 					this.runBlinkAnimation(step.duration)
 				}
 
-				vibrate('light')
+				this.doVibrate('light')
+				this.doSpeak(step.hint)
 				idx++
 				this.blinkTimer = setTimeout(next, step.duration)
 			}
@@ -399,7 +412,7 @@ export default {
 			const blink = () => {
 				if (i >= count) return
 				this.blinkState = i % 2 === 0 ? 'closed' : 'open'
-				vibrate('light')
+				this.doVibrate('light')
 				i++
 				setTimeout(blink, interval)
 			}
@@ -418,7 +431,8 @@ export default {
 			// 看近
 			this.focusFar = false
 			this.focusHint = '注视圆点'
-			vibrate('medium')
+			this.doVibrate('medium')
+			this.doSpeak('注视圆点')
 
 			this.focusTimer = setTimeout(() => {
 				if (this.paused) {
@@ -434,7 +448,8 @@ export default {
 			// 看远
 			this.focusFar = true
 			this.focusHint = '看向远处'
-			vibrate('medium')
+			this.doVibrate('medium')
+			this.doSpeak('看向远处')
 
 			this.focusTimer = setTimeout(() => {
 				if (this.paused) {
@@ -458,13 +473,14 @@ export default {
 
 		// ==================== 20-20-20 ====================
 		startTwentyRule() {
-			// 倒计时已由 startCountdown 处理
+			this.doSpeak('看向6米以外的物体')
 		},
 
 		// ==================== 完成 ====================
 		onComplete() {
 			this.clearAllTimers()
-			vibrate('heavy')
+			this.doVibrate('heavy')
+			this.doSpeak('锻炼完成')
 			addRecord(this.exerciseType, this.exerciseDuration)
 			this.phase = 'done'
 			setTimeout(() => {
@@ -473,6 +489,23 @@ export default {
 		},
 
 		// ==================== 控制 ====================
+		doVibrate(type) {
+			if (this.vibrateEnabled) vibrate(type)
+		},
+
+		doSpeak(text) {
+			if (this.voiceEnabled) speak(text)
+		},
+
+		toggleVoice() {
+			this.voiceEnabled = !this.voiceEnabled
+			if (!this.voiceEnabled) stopSpeak()
+		},
+
+		toggleVibrate() {
+			this.vibrateEnabled = !this.vibrateEnabled
+		},
+
 		togglePause() {
 			this.paused = !this.paused
 		},
@@ -484,6 +517,7 @@ export default {
 
 		exitTraining() {
 			this.clearAllTimers()
+			stopSpeak()
 			uni.navigateBack()
 		},
 
@@ -607,66 +641,58 @@ export default {
 	justify-content: center;
 }
 
+/* 大箭头 — 默认朝上，absolute定位 */
 .big-arrow {
-	width: 160px;
-	height: 160px;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: flex-start;
+	position: relative;
+	width: 120px;
+	height: 180px;
 	transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-	/* 默认朝右(0deg)，通过rotate控制方向 */
-	transform-origin: center center;
 
-	/* 箭杆 */
+	/* 箭杆：从底部延伸到V形交汇点 */
 	&__shaft {
-		width: 22px;
-		height: 80px;
-		background: linear-gradient(180deg, #6BB5D4 0%, #5BA8C9 100%);
-		border-radius: 11px;
-		margin-top: 4px;
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 24px;
+		height: 180px;
+		background: #10B981;
+		border-radius: 12px;
 	}
 
-	/* 箭头容器 */
-	&__head {
-		position: relative;
-		width: 90px;
-		height: 50px;
-		margin-top: -6px;
-	}
+	/* 不需要 &__head 容器，两个臂直接定位 */
 
-	/* 箭头左翼 */
+	/* V形左臂：向交点延长，形成平滑90度夹角 */
 	&__head-left {
 		position: absolute;
-		top: 0;
+		top: -12px;
 		left: 50%;
-		width: 22px;
-		height: 56px;
-		background: linear-gradient(180deg, #78C2DB 0%, #6BB5D4 100%);
-		border-radius: 11px;
-		transform-origin: top center;
-		transform: translateX(-100%) rotate(45deg);
+		width: 24px;
+		height: 73px;
+		background: #34D399;
+		border-radius: 12px;
+		transform-origin: 50% 12px;
+		transform: translateX(-50%) rotate(45deg);
 	}
 
-	/* 箭头右翼 */
+	/* V形右臂 */
 	&__head-right {
 		position: absolute;
-		top: 0;
-		right: 50%;
-		width: 22px;
-		height: 56px;
-		background: linear-gradient(180deg, #78C2DB 0%, #6BB5D4 100%);
-		border-radius: 11px;
-		transform-origin: top center;
-		transform: translateX(100%) rotate(-45deg);
+		top: -12px;
+		left: 50%;
+		width: 24px;
+		height: 73px;
+		background: #34D399;
+		border-radius: 12px;
+		transform-origin: 50% 12px;
+		transform: translateX(-50%) rotate(-45deg);
 	}
 }
 
-/* 深色模式箭头（Eyeye原色调，深色背景下更亮一点） */
 .training--dark .big-arrow {
-	&__shaft { background: linear-gradient(180deg, #7CC5DD 0%, #6BB5D4 100%); }
-	&__head-left { background: linear-gradient(180deg, #8ED0E4 0%, #7CC5DD 100%); }
-	&__head-right { background: linear-gradient(180deg, #8ED0E4 0%, #7CC5DD 100%); }
+	&__shaft { background: #34D399; }
+	&__head-left { background: #6EE7B7; }
+	&__head-right { background: #6EE7B7; }
 }
 
 /* 闭眼休息文字 */
@@ -679,7 +705,7 @@ export default {
 	&__text {
 		font-size: 52rpx;
 		font-weight: $font-weight-medium;
-		color: rgba(107, 181, 212, 0.7);
+		color: rgba(16, 185, 129, 0.7);
 		text-align: center;
 		line-height: 1.6;
 		letter-spacing: 6rpx;
@@ -687,7 +713,7 @@ export default {
 }
 
 .training--dark .eye-rest__text {
-	color: rgba(124, 197, 221, 0.6);
+	color: rgba(52, 211, 153, 0.6);
 }
 
 /* 底部提示文字 */
@@ -703,13 +729,13 @@ export default {
 
 	&__text {
 		font-size: $font-size-base;
-		color: rgba(107, 181, 212, 0.5);
+		color: rgba(16, 185, 129, 0.5);
 		text-align: center;
 	}
 }
 
 .training--dark .arrow-hint__text {
-	color: rgba(124, 197, 221, 0.4);
+	color: rgba(52, 211, 153, 0.4);
 }
 
 /* ==================== 眨眼练习 ==================== */
@@ -731,7 +757,7 @@ export default {
 	&__outer {
 		width: 100%;
 		height: 100%;
-		border: 4rpx solid #1E3A5F;
+		border: 4rpx solid #6BB5D4;
 		border-radius: 70% 70% 70% 70% / 100% 100% 100% 100%;
 		display: flex;
 		align-items: center;
@@ -744,7 +770,7 @@ export default {
 		width: 80rpx;
 		height: 80rpx;
 		border-radius: 50%;
-		background: radial-gradient(circle, #1E3A5F 30%, #2D5A87 60%, #4A90D9 100%);
+		background: radial-gradient(circle, #3A6E85 30%, #5BA8C9 60%, #6BB5D4 100%);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -820,10 +846,10 @@ export default {
 
 .blink-hint {
 	font-size: $font-size-xl;
-	color: $text-secondary;
+	color: rgba(107, 181, 212, 0.7);
 	animation: hintFade 0.5s ease;
 }
-.training--dark .blink-hint { color: $dark-text-secondary; }
+.training--dark .blink-hint { color: rgba(124, 197, 221, 0.6); }
 
 @keyframes hintFade {
 	0% { opacity: 0; transform: translateY(10rpx); }
@@ -880,11 +906,11 @@ export default {
 	position: absolute;
 	bottom: 280rpx;
 	font-size: $font-size-xl;
-	color: $text-secondary;
+	color: rgba(107, 181, 212, 0.7);
 	z-index: 3;
 	animation: hintFade 0.5s ease;
 }
-.training--dark .focus-hint { color: $dark-text-secondary; }
+.training--dark .focus-hint { color: rgba(124, 197, 221, 0.6); }
 
 /* ==================== 20-20-20 ==================== */
 .twenty-area {
@@ -899,11 +925,11 @@ export default {
 .twenty-title {
 	font-size: $font-size-2xl;
 	font-weight: $font-weight-semibold;
-	color: $text-primary;
+	color: rgba(107, 181, 212, 0.8);
 	margin-bottom: $spacing-xl;
 	letter-spacing: 4rpx;
 }
-.training--dark .twenty-title { color: $dark-text-primary; }
+.training--dark .twenty-title { color: rgba(124, 197, 221, 0.7); }
 
 .twenty-ring {
 	width: 300rpx;
@@ -956,16 +982,16 @@ export default {
 
 .twenty-desc {
 	font-size: $font-size-base;
-	color: $text-secondary;
+	color: rgba(107, 181, 212, 0.6);
 	margin-bottom: $spacing-xs;
 }
 .twenty-subdesc {
 	font-size: $font-size-sm;
-	color: $text-muted;
+	color: rgba(107, 181, 212, 0.4);
 }
 .training--dark {
-	.twenty-desc { color: $dark-text-secondary; }
-	.twenty-subdesc { color: $dark-text-muted; }
+	.twenty-desc { color: rgba(124, 197, 221, 0.5); }
+	.twenty-subdesc { color: rgba(124, 197, 221, 0.35); }
 }
 
 /* ==================== 完成庆祝 ==================== */
@@ -1007,7 +1033,7 @@ export default {
 .done-text {
 	font-size: $font-size-xl;
 	font-weight: $font-weight-semibold;
-	color: $text-primary;
+	color: rgba(107, 181, 212, 0.9);
 	margin-top: $spacing-xl;
 	opacity: 0;
 	transform: translateY(20rpx);
@@ -1053,7 +1079,7 @@ export default {
 }
 
 .training--dark {
-	.done-text { color: $dark-text-primary; }
+	.done-text { color: rgba(124, 197, 221, 0.85); }
 	.done-stats__item { background: rgba(16, 185, 129, 0.12); color: #34D399; }
 }
 
@@ -1109,11 +1135,11 @@ export default {
 .controls__time {
 	font-size: $font-size-xl;
 	font-weight: $font-weight-medium;
-	color: $text-muted;
+	color: rgba(107, 181, 212, 0.4);
 	font-variant-numeric: tabular-nums;
 	min-width: 120rpx;
 }
-.training--dark .controls__time { color: $dark-text-muted; }
+.training--dark .controls__time { color: rgba(124, 197, 221, 0.35); }
 
 .controls__step {
 	flex: 1;
@@ -1121,10 +1147,10 @@ export default {
 
 	&-text {
 		font-size: $font-size-sm;
-		color: $text-muted;
+		color: rgba(107, 181, 212, 0.35);
 	}
 }
-.training--dark .controls__step-text { color: $dark-text-muted; }
+.training--dark .controls__step-text { color: rgba(124, 197, 221, 0.3); }
 
 .controls__btns {
 	display: flex;
@@ -1153,8 +1179,8 @@ export default {
 	&--pause {
 		width: 16rpx;
 		height: 20rpx;
-		border-left: 4rpx solid $text-muted;
-		border-right: 4rpx solid $text-muted;
+		border-left: 4rpx solid rgba(107, 181, 212, 0.5);
+		border-right: 4rpx solid rgba(107, 181, 212, 0.5);
 	}
 
 	&--play {
@@ -1182,7 +1208,7 @@ export default {
 	}
 }
 
-.training--dark .ctrl-icon--pause { border-color: $dark-text-muted; }
+.training--dark .ctrl-icon--pause { border-color: rgba(124, 197, 221, 0.4); }
 
 /* ==================== 退出弹窗 ==================== */
 .exit-modal {
@@ -1216,7 +1242,7 @@ export default {
 
 	&__desc {
 		font-size: $font-size-sm;
-		color: $text-muted;
+		color: $text-secondary;
 		display: block;
 		margin-bottom: $spacing-xl;
 	}

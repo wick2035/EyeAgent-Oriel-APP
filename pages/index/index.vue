@@ -512,8 +512,8 @@ export default {
     &--primary {
       background: linear-gradient(
         135deg,
-        rgba(30, 58, 95, 0.1) 0%,
-        rgba(45, 90, 135, 0.15) 100%
+        rgba(102, 126, 234, 0.1) 0%,
+        rgba(240, 147, 251, 0.1) 100%
       );
     }
     &--success {
@@ -555,9 +555,9 @@ export default {
   position: relative;
 
   &--consult {
-    // 调整为更深的蓝色，与背景协调
-    filter: invert(20%) sepia(50%) saturate(2000%) hue-rotate(200deg)
-      brightness(90%) contrast(95%);
+    // 调整为明亮的紫色，与紫粉渐变背景协调
+    filter: invert(45%) sepia(80%) saturate(1800%) hue-rotate(220deg)
+      brightness(115%) contrast(90%);
   }
 
   &--appointment {
@@ -719,8 +719,8 @@ export default {
     );
   }
   .service-icon--consult {
-    filter: invert(52%) sepia(94%) saturate(1095%) hue-rotate(176deg)
-      brightness(98%) contrast(92%);
+    filter: invert(50%) sepia(90%) saturate(1500%) hue-rotate(220deg)
+      brightness(120%) contrast(88%);
   }
 
   .news__title {

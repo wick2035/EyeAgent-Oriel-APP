@@ -20,7 +20,7 @@
 			</view>
 			<view class="user-card__actions">
 				<view class="user-card__action" @click="togglePatientSelector">
-					<view class="switch-patient-icon" :class="{ 'switch-patient-icon--active': showPatientSelector }"></view>
+					<image class="switch-patient-icon" :class="{ 'switch-patient-icon--active': showPatientSelector }" src="@/static/manypeople.svg" mode="aspectFit" />
 				</view>
 				<view class="user-card__action" @click="goToSettings">
 					<image class="settings-icon" src="@/static/setting.svg" mode="aspectFit" />
@@ -387,38 +387,14 @@ export default {
 
 .switch-patient-icon {
 	width: 40rpx;
-	height: 36rpx;
-	position: relative;
+	height: 40rpx;
+	opacity: 0.4;
+	transition: opacity 250ms ease;
 
-	// 前面的人头
-	&::before {
-		content: '';
-		position: absolute;
-		width: 14rpx;
-		height: 14rpx;
-		border: 3rpx solid $text-muted;
-		border-radius: 50%;
-		top: 2rpx;
-		left: 4rpx;
-		transition: border-color 250ms ease;
-	}
-
-	// 后面的人头
-	&::after {
-		content: '';
-		position: absolute;
-		width: 14rpx;
-		height: 14rpx;
-		border: 3rpx solid $text-muted;
-		border-radius: 50%;
-		top: 6rpx;
-		right: 4rpx;
-		transition: border-color 250ms ease;
-	}
-
-	&--active::before,
-	&--active::after {
-		border-color: $color-primary;
+	&--active {
+		opacity: 1;
+		// 将黑色 SVG 转为主题色 #1E3A5F
+		filter: invert(18%) sepia(30%) saturate(1200%) hue-rotate(182deg) brightness(90%) contrast(95%);
 	}
 }
 
@@ -768,13 +744,14 @@ export default {
 		background: $dark-bg-card;
 		&__name { color: $dark-text-primary; }
 	}
-	.switch-patient-icon::before,
-	.switch-patient-icon::after {
-		border-color: $dark-text-muted;
-	}
-	.switch-patient-icon--active::before,
-	.switch-patient-icon--active::after {
-		border-color: $dark-color-primary;
+	.switch-patient-icon {
+		// 深色模式下黑色 SVG 转浅色
+		filter: invert(70%) sepia(10%) saturate(200%) hue-rotate(180deg) brightness(90%);
+
+		&--active {
+			filter: invert(52%) sepia(94%) saturate(1095%) hue-rotate(176deg) brightness(98%) contrast(92%);
+			opacity: 1;
+		}
 	}
 
 	.settings-icon {
