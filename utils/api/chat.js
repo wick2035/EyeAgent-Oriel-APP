@@ -3,6 +3,8 @@
  * 对接AI问诊功能
  */
 import { post, get, getSessionId } from './request.js'
+import config from '../config.js'
+import { clearLoginState } from '@/store/user.js'
 
 /**
  * 发送消息 - 与Agent进行对话交互
@@ -163,11 +165,90 @@ export function refreshQuickPrompts() {
 	return Promise.resolve(shuffled.slice(0, 5))
 }
 
+/**
+ * 上传附件（图片/PDF）到 AI Agent
+ * @param {string} filePath - 本地文件临时路径
+ * @returns {Promise<Object>} AttachmentRef 对象，可直接放入 attachments 数组
+ */
+export function uploadAttachment(filePath) {
+	return new Promise((resolve, reject) => {
+		const token = uni.getStorageSync(config.storageKeys.token)
+		uni.uploadFile({
+			url: config.baseUrl + '/api/app/agent/upload',
+			filePath,
+			name: 'file',
+			header: { satoken: token || '' },
+			success: (res) => {
+				if (res.statusCode === 401) {
+					clearLoginState()
+					uni.showToast({ title: '登录已过期，请重新登录', icon: 'none' })
+					setTimeout(() => uni.reLaunch({ url: '/pages/login/login' }), 1500)
+					reject(new Error('未授权'))
+					return
+				}
+				try {
+					const result = JSON.parse(res.data)
+					if (result.code === 200 && result.data) {
+						resolve(result.data)
+					} else {
+						reject(new Error(result.msg || '上传失败'))
+					}
+				} catch (e) {
+					reject(new Error('解析响应失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error('网络连接失败'))
+			}
+		})
+	})
+}
+
+/**
+ * 语音识别（ASR）- 上传 WAV 音频并返回识别文字
+ * @param {string} filePath - WAV 音频文件临时路径
+ * @returns {Promise<string>} 识别出的文字
+ */
+export function asrTranscribe(filePath) {
+	return new Promise((resolve, reject) => {
+		const token = uni.getStorageSync(config.storageKeys.token)
+		uni.uploadFile({
+			url: config.baseUrl + '/api/app/agent/asr-transcribe',
+			files: [{ name: 'audio', uri: filePath, type: 'audio/wav' }],
+			header: { satoken: token || '' },
+			success: (res) => {
+				if (res.statusCode === 401) {
+					clearLoginState()
+					uni.showToast({ title: '登录已过期，请重新登录', icon: 'none' })
+					setTimeout(() => uni.reLaunch({ url: '/pages/login/login' }), 1500)
+					reject({ code: 'UNAUTHORIZED', msg: '未授权' })
+					return
+				}
+				try {
+					const result = JSON.parse(res.data)
+					if (result.code === 200 && result.data) {
+						resolve(result.data.text)
+					} else {
+						reject({ code: result.error_code || 'UNKNOWN', msg: result.msg || '识别失败' })
+					}
+				} catch (e) {
+					reject({ code: 'PARSE_ERROR', msg: '解析响应失败' })
+				}
+			},
+			fail: (err) => {
+				reject({ code: 'NETWORK_ERROR', msg: '网络连接失败' })
+			}
+		})
+	})
+}
+
 export default {
 	sendMessage,
 	getConversations,
 	pageConversations,
 	getMessages,
 	getQuickPrompts,
-	refreshQuickPrompts
+	refreshQuickPrompts,
+	uploadAttachment,
+	asrTranscribe
 }

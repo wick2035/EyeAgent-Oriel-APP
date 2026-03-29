@@ -20,6 +20,43 @@
 			</view>
 		</scroll-view>
 
+		<!-- ── 附件预览区 ──────────────────────────────── -->
+		<scroll-view
+			v-if="attachments && attachments.length"
+			class="attachment-preview"
+			scroll-x
+			:show-scrollbar="false"
+		>
+			<view class="attachment-preview__inner">
+				<view v-for="(att, i) in attachments" :key="i" class="attachment-item">
+					<!-- 图片缩略图 -->
+					<image
+						v-if="isImageAttachment(att)"
+						:src="att.localPath"
+						mode="aspectFill"
+						class="attachment-item__thumb"
+					/>
+					<!-- PDF 图标 -->
+					<view v-else class="attachment-item__pdf">
+						<text class="attachment-item__pdf-icon">PDF</text>
+						<text v-if="att.uploadData && att.uploadData.page_count" class="attachment-item__pdf-pages">{{ att.uploadData.page_count }}页</text>
+					</view>
+					<!-- 上传中遮罩 -->
+					<view v-if="att.uploading" class="attachment-item__loading">
+						<view class="attachment-item__spinner"></view>
+					</view>
+					<!-- 上传失败标记 -->
+					<view v-if="att.error" class="attachment-item__error">
+						<text class="attachment-item__error-icon">!</text>
+					</view>
+					<!-- 删除按钮 -->
+					<view class="attachment-item__remove" @click.stop="$emit('removeAttachment', i)">
+						<text class="attachment-item__remove-icon">&times;</text>
+					</view>
+				</view>
+			</view>
+		</scroll-view>
+
 		<view class="glow-border" :class="{ 'glow-border--recording': isVoiceMode && isRecording }">
 			<view
 				class="chat-input__wrapper"
@@ -174,6 +211,10 @@ export default {
 		showQuickActions: {
 			type: Boolean,
 			default: false
+		},
+		attachments: {
+			type: Array,
+			default: () => []
 		}
 	},
 	data() {
@@ -275,6 +316,11 @@ export default {
 		},
 		handleMediaAction(type) {
 			this.closeMediaPanel()
+			const remaining = 3 - (this.attachments ? this.attachments.length : 0)
+			if (remaining <= 0) {
+				uni.showToast({ title: '最多添加3个附件', icon: 'none' })
+				return
+			}
 			setTimeout(() => {
 				switch (type) {
 					case 'camera':
@@ -288,7 +334,7 @@ export default {
 						break
 					case 'album':
 						uni.chooseImage({
-							count: 9,
+							count: remaining,
 							sourceType: ['album'],
 							sizeType: ['compressed'],
 							success: (res) => {
@@ -297,16 +343,36 @@ export default {
 						})
 						break
 					case 'file':
+						// #ifdef APP-PLUS
 						uni.chooseFile({
 							count: 1,
 							type: 'all',
+							extension: ['.jpg', '.jpeg', '.png', '.webp', '.pdf'],
 							success: (res) => {
 								this.$emit('mediaSelect', { type, files: res.tempFilePaths })
 							}
 						})
+						// #endif
+						// #ifndef APP-PLUS
+						uni.chooseImage({
+							count: 1,
+							sourceType: ['album'],
+							success: (res) => {
+								this.$emit('mediaSelect', { type, files: res.tempFilePaths })
+							}
+						})
+						// #endif
 						break
 				}
 			}, 480)
+		},
+		isImageAttachment(att) {
+			if (att.uploadData && att.uploadData.file_type) {
+				return att.uploadData.file_type === 'image'
+			}
+			// 从本地路径推断
+			const ext = (att.localPath || '').split('.').pop().toLowerCase()
+			return ['jpg', 'jpeg', 'png', 'webp'].includes(ext)
 		},
 		clear() {
 			this.inputValue = ''
@@ -483,6 +549,129 @@ export default {
 	&:active { transform: scale(0.96); background: #F5F5F5; }
 	&__icon { font-size: 32rpx; margin-right: 8rpx; }
 	&__text { font-size: 26rpx; color: #1A1A1A; font-weight: 500; }
+}
+
+// ── 附件预览区 ──────────────────────────────────────────────────────
+
+.attachment-preview {
+	white-space: nowrap;
+	padding: 0 $spacing-lg;
+	margin-bottom: $spacing-sm;
+}
+
+.attachment-preview__inner {
+	display: inline-flex;
+	gap: $spacing-sm;
+	padding: $spacing-xs 0;
+}
+
+.attachment-item {
+	position: relative;
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: $radius-md;
+	overflow: hidden;
+	flex-shrink: 0;
+	background: #F2F4F7;
+
+	&__thumb {
+		width: 100%;
+		height: 100%;
+	}
+
+	&__pdf {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background: #FFF3F0;
+	}
+
+	&__pdf-icon {
+		font-size: 28rpx;
+		font-weight: 700;
+		color: #E74C3C;
+	}
+
+	&__pdf-pages {
+		font-size: 20rpx;
+		color: #999;
+		margin-top: 4rpx;
+	}
+
+	&__loading {
+		position: absolute;
+		top: 0; left: 0; right: 0; bottom: 0;
+		background: rgba(0, 0, 0, 0.4);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	&__spinner {
+		width: 36rpx;
+		height: 36rpx;
+		border: 4rpx solid rgba(255, 255, 255, 0.3);
+		border-top-color: #fff;
+		border-radius: 50%;
+		animation: att-spin 0.6s linear infinite;
+	}
+
+	&__error {
+		position: absolute;
+		top: 0; left: 0; right: 0; bottom: 0;
+		background: rgba(239, 68, 68, 0.3);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	&__error-icon {
+		width: 32rpx;
+		height: 32rpx;
+		line-height: 32rpx;
+		text-align: center;
+		background: #EF4444;
+		color: #fff;
+		border-radius: 50%;
+		font-size: 22rpx;
+		font-weight: 700;
+	}
+
+	&__remove {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 36rpx;
+		height: 36rpx;
+		background: rgba(0, 0, 0, 0.5);
+		border-radius: 0 0 0 $radius-sm;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	&__remove-icon {
+		color: #fff;
+		font-size: 26rpx;
+		line-height: 1;
+	}
+}
+
+@keyframes att-spin {
+	to { transform: rotate(360deg); }
+}
+
+// ── 深色模式附件预览 ──
+.chat-input--dark {
+	.attachment-item {
+		background: $dark-bg-elevated;
+	}
+	.attachment-item__pdf {
+		background: #2A1A18;
+	}
 }
 
 // ── 流光边框 ──────────────────────────────────────────────────────

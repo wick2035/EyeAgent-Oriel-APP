@@ -12,6 +12,26 @@
 		</view>
 
 		<view class="message__content">
+			<!-- 用户消息的附件展示 -->
+			<view v-if="type === 'user' && attachments && attachments.length" class="msg-attachments">
+				<view v-for="(att, i) in attachments" :key="i" class="msg-att-item">
+					<image
+						v-if="att.file_type === 'image' && att.base64"
+						:src="'data:' + (att.mime_type || 'image/jpeg') + ';base64,' + att.base64"
+						mode="aspectFill"
+						class="msg-att-thumb"
+						@click="previewAttachmentImage(att)"
+					/>
+					<view v-else-if="att.file_type === 'pdf'" class="msg-att-pdf">
+						<text class="msg-att-pdf__badge">PDF</text>
+						<view class="msg-att-pdf__info">
+							<text class="msg-att-pdf__name">{{ att.filename }}</text>
+							<text class="msg-att-pdf__pages">{{ att.page_count || '' }}页</text>
+						</view>
+					</view>
+				</view>
+			</view>
+
 			<view class="message__bubble">
 				<!-- 打字机效果（AI思考中） -->
 				<view v-if="loading && !streaming" class="typing-indicator">
@@ -111,6 +131,17 @@ export default {
 		uiPending: {
 			type: Boolean,
 			default: false
+		},
+		attachments: {
+			type: Array,
+			default: null
+		}
+	},
+	methods: {
+		previewAttachmentImage(att) {
+			if (att.file_type !== 'image' || !att.base64) return
+			const src = 'data:' + (att.mime_type || 'image/jpeg') + ';base64,' + att.base64
+			uni.previewImage({ urls: [src], current: src })
 		}
 	},
 	computed: {
@@ -616,6 +647,78 @@ export default {
 		:deep(.md-hr) {
 			border-top-color: rgba(255, 255, 255, 0.08);
 		}
+	}
+}
+
+// ── 用户消息附件展示 ──────────────────────────────────────────────
+
+.msg-attachments {
+	display: flex;
+	flex-wrap: wrap;
+	gap: $spacing-sm;
+	margin-bottom: $spacing-sm;
+}
+
+.msg-att-item {
+	border-radius: $radius-md;
+	overflow: hidden;
+}
+
+.msg-att-thumb {
+	width: 200rpx;
+	height: 200rpx;
+	border-radius: $radius-md;
+}
+
+.msg-att-pdf {
+	display: flex;
+	align-items: center;
+	gap: $spacing-sm;
+	padding: $spacing-sm $spacing-md;
+	background: rgba(231, 76, 60, 0.08);
+	border-radius: $radius-md;
+	border: 2rpx solid rgba(231, 76, 60, 0.2);
+
+	&__badge {
+		font-size: 22rpx;
+		font-weight: 700;
+		color: #fff;
+		background: #E74C3C;
+		padding: 4rpx 12rpx;
+		border-radius: $radius-sm;
+	}
+
+	&__info {
+		display: flex;
+		flex-direction: column;
+	}
+
+	&__name {
+		font-size: 24rpx;
+		color: $text-primary;
+		max-width: 200rpx;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	&__pages {
+		font-size: 20rpx;
+		color: $text-secondary;
+	}
+}
+
+// 深色模式附件
+.message--dark {
+	.msg-att-pdf {
+		background: rgba(231, 76, 60, 0.12);
+		border-color: rgba(231, 76, 60, 0.25);
+	}
+	.msg-att-pdf__name {
+		color: $dark-text-primary;
+	}
+	.msg-att-pdf__pages {
+		color: $dark-text-secondary;
 	}
 }
 </style>

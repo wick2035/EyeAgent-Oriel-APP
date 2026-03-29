@@ -90,6 +90,7 @@
             :statusText="msg.statusText"
             :uiElements="msg.uiElements"
             :uiPending="msg.uiPending"
+            :attachments="msg.attachments"
             @optionClick="handleOptionClick"
             @productAction="handleProductAction"
           />
@@ -107,17 +108,29 @@
       style="position:absolute;width:0;height:0;overflow:hidden"
     />
 
+    <!-- 录音渲染层（Web Audio API 采集 PCM） -->
+    <view
+      :prop="recorderParams"
+      :change:prop="recorder.onRecorderParamsChange"
+      style="position:absolute;width:0;height:0;overflow:hidden"
+    />
+
     <!-- 底部输入框 -->
     <ChatInput
       ref="chatInput"
-      :disabled="isSending"
+      :disabled="isSending || hasUploadingAttachments"
       :isSending="isSending"
       :quickActions="quickActions"
       :showQuickActions="!hasMessages"
+      :attachments="pendingAttachments"
       @send="handleSend"
       @stop="handleStop"
       @quickAction="handleQuickAction"
       @mediaSelect="handleMediaSelect"
+      @removeAttachment="handleRemoveAttachment"
+      @recordStart="handleRecordStart"
+      @recordStop="handleRecordStop"
+      @recordCancel="handleRecordCancel"
     />
 
     <!-- 底部导航 -->
@@ -152,6 +165,7 @@ import {
   getQuickPrompts,
   refreshQuickPrompts,
   getMessages,
+  uploadAttachment,
 } from "@/utils/api/chat.js";
 
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
@@ -184,6 +198,12 @@ export default {
         { icon: "🍎", text: "健康建议", type: "health" },
       ],
       prompts: [],
+      // 附件相关
+      pendingAttachments: [], // { localPath, uploadData, uploading, error }
+      maxAttachments: 3,
+      // 语音录制相关（renderjs Web Audio API）
+      recorderParams: null,
+      recordStartTime: 0,
       // 打字效果
       fullTitle: "我是小Eye, 您的AI眼健康助手~",
       displayTitle: "",
@@ -197,6 +217,9 @@ export default {
     },
     hasMessages() {
       return this.messages.length > 0;
+    },
+    hasUploadingAttachments() {
+      return this.pendingAttachments.some(a => a.uploading);
     },
   },
   onLoad(options) {
@@ -271,6 +294,7 @@ export default {
       this.conversationId = null;
       this.sessionId = null;
       this.isSending = false;
+      this.pendingAttachments = [];
       this.scrollTop = 0;
     },
 
@@ -345,17 +369,34 @@ export default {
 
     handleSend(message) {
       if (!message || this.isSending) return;
+      if (this.hasUploadingAttachments) {
+        uni.showToast({ title: '附件上传中，请稍候', icon: 'none' })
+        return
+      }
 
       const now = new Date();
       const createTime = this.formatDateTime(now);
 
-      // 添加用户消息
+      // 收集已上传成功的附件
+      const validAttachments = this.pendingAttachments
+        .filter(a => a.uploadData && !a.error)
+        .map(a => a.uploadData)
+      const localPaths = this.pendingAttachments
+        .filter(a => a.uploadData && !a.error)
+        .map(a => a.localPath)
+
+      // 添加用户消息（含附件引用供气泡展示）
       this.messages.push({
         type: "user",
         content: message,
         time: this.formatTime(now),
         createTime: createTime,
+        attachments: validAttachments.length > 0 ? validAttachments : null,
+        attachmentLocalPaths: localPaths.length > 0 ? localPaths : null,
       });
+
+      // 清空待发附件
+      this.pendingAttachments = []
 
       this.$nextTick(() => {
         this.scrollToBottom();
@@ -378,6 +419,14 @@ export default {
 
       // 通过 sseParams 触发 renderjs 发起 SSE 请求
       const token = uni.getStorageSync(config.storageKeys.token);
+      const sseBody = {
+        message,
+        conversationId: this.conversationId || null,
+        sessionId: this.sessionId || null
+      }
+      if (validAttachments.length > 0) {
+        sseBody.attachments = validAttachments
+      }
       this.sseParams = {
         action: 'start',
         url: config.baseUrl + '/api/app/extra/ai-chat-query',
@@ -386,20 +435,79 @@ export default {
           'Accept': 'text/event-stream',
           'satoken': token || ''
         },
-        body: {
-          message,
-          conversationId: this.conversationId || null,
-          sessionId: this.sessionId || null
-        },
+        body: sseBody,
         _ts: Date.now()
       };
     },
 
-    handleMediaSelect({ type, files }) {
-      const typeNames = { camera: '拍照图片', album: '相册图片', file: '文件' }
-      const name = typeNames[type] || '附件'
-      // 占位实现：发送描述消息；后续对接上传接口后替换为真实 URL
-      this.handleSend(`[已发送${name}，请帮我分析]`)
+    async handleMediaSelect({ type, files }) {
+      for (const filePath of files) {
+        if (this.pendingAttachments.length >= this.maxAttachments) {
+          uni.showToast({ title: `最多添加${this.maxAttachments}个附件`, icon: 'none' })
+          break
+        }
+        const idx = this.pendingAttachments.length
+        this.pendingAttachments.push({ localPath: filePath, uploadData: null, uploading: true, error: false })
+        try {
+          const uploadData = await uploadAttachment(filePath)
+          // 使用 $set 整体替换确保 Vue 2 响应式更新
+          this.$set(this.pendingAttachments, idx, {
+            localPath: filePath, uploadData, uploading: false, error: false
+          })
+        } catch (e) {
+          this.$set(this.pendingAttachments, idx, {
+            localPath: filePath, uploadData: null, uploading: false, error: true
+          })
+          uni.showToast({ title: e.message || '附件上传失败', icon: 'none' })
+        }
+      }
+    },
+
+    handleRemoveAttachment(index) {
+      this.pendingAttachments.splice(index, 1)
+    },
+
+    // ===== 语音录制 & ASR（renderjs Web Audio API）=====
+
+    handleRecordStart() {
+      this.recordStartTime = Date.now()
+      const token = uni.getStorageSync(config.storageKeys.token)
+      this.recorderParams = {
+        action: 'start',
+        url: config.baseUrl + '/api/app/agent/asr-transcribe',
+        headers: { satoken: token || '' },
+        _ts: Date.now()
+      }
+    },
+
+    handleRecordStop() {
+      const duration = Date.now() - this.recordStartTime
+      if (duration < 500) {
+        this.recorderParams = { action: 'cancel', _ts: Date.now() }
+        uni.showToast({ title: '录音太短，请长按说话', icon: 'none' })
+        return
+      }
+      this.recorderParams = { action: 'stop', _ts: Date.now() }
+      uni.showLoading({ title: '识别中...' })
+    },
+
+    handleRecordCancel() {
+      this.recorderParams = { action: 'cancel', _ts: Date.now() }
+    },
+
+    // renderjs 回调
+    onASRResult(text) {
+      uni.hideLoading()
+      if (text && text.trim()) {
+        this.handleSend(text.trim())
+      } else {
+        uni.showToast({ title: '未识别到语音，请重试', icon: 'none' })
+      }
+    },
+
+    onASRError(msg) {
+      uni.hideLoading()
+      uni.showToast({ title: msg || '识别失败', icon: 'none' })
     },
 
     handleStop() {
@@ -962,6 +1070,163 @@ export default {
         this.$ownerInstance.callMethod('onSSEError', e.message || '网络连接失败')
       } finally {
         abortController = null
+      }
+    }
+  }
+}
+</script>
+
+<script module="recorder" lang="renderjs">
+let mediaStream = null
+let audioContext = null
+let processor = null
+let pcmChunks = []
+let recordingConfig = null
+
+function writeString(view, offset, str) {
+  for (let i = 0; i < str.length; i++) {
+    view.setUint8(offset + i, str.charCodeAt(i))
+  }
+}
+
+function buildWAV(samples, sampleRate) {
+  const numSamples = samples.length
+  const buffer = new ArrayBuffer(44 + numSamples * 2)
+  const view = new DataView(buffer)
+  const pcm = new Int16Array(buffer, 44)
+
+  for (let i = 0; i < numSamples; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]))
+    pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
+  }
+
+  writeString(view, 0, 'RIFF')
+  view.setUint32(4, 36 + numSamples * 2, true)
+  writeString(view, 8, 'WAVE')
+  writeString(view, 12, 'fmt ')
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, 1, true)
+  view.setUint32(24, sampleRate, true)
+  view.setUint32(28, sampleRate * 2, true)
+  view.setUint16(32, 2, true)
+  view.setUint16(34, 16, true)
+  writeString(view, 36, 'data')
+  view.setUint32(40, numSamples * 2, true)
+
+  return new Blob([buffer], { type: 'audio/wav' })
+}
+
+function downsample(buffer, fromRate, toRate) {
+  if (fromRate === toRate) return buffer
+  const ratio = fromRate / toRate
+  const newLength = Math.round(buffer.length / ratio)
+  const result = new Float32Array(newLength)
+  for (let i = 0; i < newLength; i++) {
+    const idx = Math.round(i * ratio)
+    result[i] = buffer[Math.min(idx, buffer.length - 1)]
+  }
+  return result
+}
+
+export default {
+  mounted() {
+    // 预请求麦克风权限，避免录音时弹权限对话框打断触摸事件
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => stream.getTracks().forEach(t => t.stop()))
+        .catch(() => {})
+    }
+  },
+  methods: {
+    onRecorderParamsChange(newVal) {
+      if (!newVal) return
+      if (newVal.action === 'start') this.startRecording(newVal)
+      else if (newVal.action === 'stop') this.stopRecording(false)
+      else if (newVal.action === 'cancel') this.stopRecording(true)
+    },
+
+    async startRecording(params) {
+      recordingConfig = params
+      pcmChunks = []
+
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+        })
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 })
+        const source = audioContext.createMediaStreamSource(mediaStream)
+        processor = audioContext.createScriptProcessor(4096, 1, 1)
+
+        processor.onaudioprocess = (e) => {
+          const data = e.inputBuffer.getChannelData(0)
+          pcmChunks.push(new Float32Array(data))
+        }
+
+        source.connect(processor)
+        processor.connect(audioContext.destination)
+        console.log('[Recorder] 开始录音, 采样率:', audioContext.sampleRate)
+      } catch (err) {
+        console.error('[Recorder] getUserMedia 失败:', err)
+        this.$ownerInstance.callMethod('onASRError', '无法访问麦克风')
+      }
+    },
+
+    async stopRecording(cancelled) {
+      // 停止采集
+      if (processor) { processor.disconnect(); processor = null }
+      if (audioContext) { audioContext.close(); audioContext = null }
+      if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null }
+
+      if (cancelled || pcmChunks.length === 0) {
+        pcmChunks = []
+        return
+      }
+
+      try {
+        // 合并所有 PCM 帧
+        let totalLen = 0
+        for (const c of pcmChunks) totalLen += c.length
+        const merged = new Float32Array(totalLen)
+        let offset = 0
+        for (const c of pcmChunks) { merged.set(c, offset); offset += c.length }
+        pcmChunks = []
+
+        // 降采样到 16kHz（如果 AudioContext 实际采样率不同）
+        const actualRate = 16000 // audioContext 已关闭，但我们指定了 16000
+        const pcm16k = downsample(merged, actualRate, 16000)
+
+        console.log('[Recorder] PCM 样本数:', pcm16k.length, '时长:', (pcm16k.length / 16000).toFixed(1) + 's')
+
+        // 构造 WAV
+        const wavBlob = buildWAV(pcm16k, 16000)
+        console.log('[Recorder] WAV Blob 大小:', wavBlob.size)
+
+        // 直接上传 ASR
+        const formData = new FormData()
+        formData.append('audio', wavBlob, 'recording.wav')
+
+        const res = await fetch(recordingConfig.url, {
+          method: 'POST',
+          headers: recordingConfig.headers,
+          body: formData
+        })
+
+        if (res.status === 401) {
+          this.$ownerInstance.callMethod('onASRError', '登录已过期')
+          return
+        }
+
+        const json = await res.json()
+        if (json.code === 200 && json.data && json.data.text) {
+          this.$ownerInstance.callMethod('onASRResult', json.data.text)
+        } else {
+          this.$ownerInstance.callMethod('onASRError', json.msg || '识别失败')
+        }
+      } catch (err) {
+        console.error('[Recorder] 处理失败:', err)
+        this.$ownerInstance.callMethod('onASRError', err.message || '语音处理失败')
       }
     }
   }
