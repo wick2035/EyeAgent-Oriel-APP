@@ -30,6 +30,16 @@ export function getMedicationState() {
 }
 
 /**
+ * 清空用药数据（就诊人切换时调用）
+ */
+export function clearMedicationState() {
+	medicationState.reminders = []
+	medicationState.todayStats = { total: 0, completed: 0, nextReminder: null }
+	medicationState.initialized = false
+	medicationState.editingReminder = null
+}
+
+/**
  * 获取今日完成率
  */
 export function getCompletionRate() {

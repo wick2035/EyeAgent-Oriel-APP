@@ -3,7 +3,7 @@
     <!-- 标题栏 -->
     <view class="eye-health__header">
       <view class="eye-health__title-wrap">
-        <text class="eye-health__title">眼部健康</text>
+        <text class="eye-health__title">眼部健康{{ patientSuffix }}</text>
         <text v-if="ageGroupLabel" class="eye-health__badge">{{
           ageGroupLabel
         }}</text>
@@ -36,6 +36,7 @@ import { getUserInfo, updateUserInfo } from "@/store/user.js";
 import { getPatientInfo } from "@/utils/api/patient.js";
 import { getHealthDataByGroup } from "@/store/eyeHealth.js";
 import { calculateAge, getAgeGroup, getAgeGroupLabel } from "@/utils/age.js";
+import { getCurrentPatient, isCurrentSelf } from "@/store/family.js";
 
 export default {
   name: "EyeHealthSection",
@@ -64,6 +65,11 @@ export default {
     ageGroupLabel() {
       return getAgeGroupLabel(this.ageGroup);
     },
+    patientSuffix() {
+      if (isCurrentSelf()) return '';
+      const patient = getCurrentPatient();
+      return patient ? ' -- ' + patient.name : '';
+    },
   },
   watch: {
     ageGroup: {
@@ -72,6 +78,12 @@ export default {
       },
       immediate: true,
     },
+  },
+  mounted() {
+    uni.$on('patient-switched', this.onPatientSwitched);
+  },
+  beforeDestroy() {
+    uni.$off('patient-switched', this.onPatientSwitched);
   },
   async created() {
     if (!this.userBirthday) {
@@ -86,6 +98,9 @@ export default {
   methods: {
     loadHealthData(group) {
       this.healthData = getHealthDataByGroup(group);
+    },
+    onPatientSwitched() {
+      this.loadHealthData(this.ageGroup);
     },
     goToDetail() {
       uni.navigateTo({

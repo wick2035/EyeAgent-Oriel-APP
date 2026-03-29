@@ -18,9 +18,19 @@
 					<text class="user-card__badge-text">普通会员</text>
 				</view>
 			</view>
-			<view class="user-card__action" @click="goToSettings">
-				<image class="settings-icon" src="@/static/setting.svg" mode="aspectFit" />
+			<view class="user-card__actions">
+				<view class="user-card__action" @click="togglePatientSelector">
+					<view class="switch-patient-icon" :class="{ 'switch-patient-icon--active': showPatientSelector }"></view>
+				</view>
+				<view class="user-card__action" @click="goToSettings">
+					<image class="settings-icon" src="@/static/setting.svg" mode="aspectFit" />
+				</view>
 			</view>
+		</view>
+
+		<!-- 就诊人选择栏（默认折叠） -->
+		<view class="patient-selector-wrap" :class="{ 'patient-selector-wrap--open': showPatientSelector }">
+			<PatientSelector v-if="selectorLoaded" />
 		</view>
 
 		<!-- 健康档案入口 -->
@@ -29,8 +39,8 @@
 				<image class="health-icon-img" src="@/static/Heath-file.svg" mode="aspectFit" />
 			</view>
 			<view class="health-entry__content">
-				<text class="health-entry__title">我的健康档案</text>
-				<text class="health-entry__desc">记录您的健康数据，AI更懂您</text>
+				<text class="health-entry__title">{{ healthRecordTitle }}</text>
+				<text class="health-entry__desc">记录健康数据，AI更懂{{ isCurrentSelf ? '您' : currentPatientName }}</text>
 			</view>
 			<view class="health-entry__arrow"></view>
 		</view>
@@ -50,6 +60,7 @@
 						<image v-else-if="item.icon === 'medicine'" class="menu-icon menu-icon--medicine" src="@/static/medicine.svg" mode="aspectFit" />
 						<image v-else-if="item.icon === 'telemedicine'" class="menu-icon menu-icon--telemedicine" src="@/static/cloud.svg" mode="aspectFit" />
 						<view v-else-if="item.icon === 'surgery'" class="menu-icon menu-icon--surgery"></view>
+						<view v-else-if="item.icon === 'eye-exercise'" class="menu-icon menu-icon--eye-exercise"></view>
 						<view v-else class="menu-icon" :class="[`menu-icon--${item.icon}`]"></view>
 					</view>
 					<text class="menu-item__text">{{ item.title }}</text>
@@ -98,8 +109,10 @@
 
 <script>
 import TabBar from '@/components/TabBar.vue'
+import PatientSelector from '@/components/PatientSelector.vue'
 import { isDarkMode, setTheme, THEME_LIGHT, THEME_DARK } from '@/store/theme.js'
 import { getUserInfo, isLoggedIn } from '@/store/user.js'
+import { getCurrentPatient, isCurrentSelf as checkIsCurrentSelf } from '@/store/family.js'
 import { getCurrentVersion } from '@/utils/version.js'
 
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
@@ -108,17 +121,21 @@ export default {
 	components: {
 		TopNotificationBar,
 		TabBar,
+		PatientSelector,
 	},
 	data() {
 		return {
 			statusBarHeight: 44,
 			appVersion: '1.0.0',
+			showPatientSelector: false,
+			selectorLoaded: false,
 			serviceMenus: [
 				{ title: '我的订单', icon: 'orders', bgColor: 'rgba(249, 115, 22, 0.1)' },
 				{ title: '就诊记录', icon: 'record', bgColor: 'rgba(30, 58, 95, 0.1)' },
 				{ title: '云上医院', icon: 'telemedicine', bgColor: 'rgba(14, 165, 233, 0.1)' },
 				{ title: '用药提醒', icon: 'medicine', bgColor: 'rgba(16, 185, 129, 0.1)' },
-				{ title: '手术进度', icon: 'surgery', bgColor: 'rgba(255, 107, 91, 0.1)' }
+				{ title: '手术进度', icon: 'surgery', bgColor: 'rgba(255, 107, 91, 0.1)' },
+				{ title: '护眼锻炼', icon: 'eye-exercise', bgColor: 'rgba(16, 185, 129, 0.1)' }
 			],
 			settingMenus: [
 				{ title: '深色模式', icon: 'theme', bgColor: 'rgba(102, 126, 234, 0.1)', type: 'switch' },
@@ -140,6 +157,17 @@ export default {
 		avatarText() {
 			const name = this.userInfo.name || '用'
 			return name.charAt(0).toUpperCase()
+		},
+		currentPatientName() {
+			const patient = getCurrentPatient()
+			return patient ? patient.name : ''
+		},
+		isCurrentSelf() {
+			return checkIsCurrentSelf()
+		},
+		healthRecordTitle() {
+			if (this.isCurrentSelf) return '我的健康档案'
+			return this.currentPatientName + '的健康档案'
 		}
 	},
 	onLoad() {
@@ -155,6 +183,12 @@ export default {
 		getStatusBarHeight() {
 			const sysInfo = uni.getSystemInfoSync()
 			this.statusBarHeight = sysInfo.statusBarHeight || 44
+		},
+		togglePatientSelector() {
+			this.showPatientSelector = !this.showPatientSelector
+			if (this.showPatientSelector && !this.selectorLoaded) {
+				this.selectorLoaded = true
+			}
 		},
 		goToSettings() {
 			uni.navigateTo({
@@ -197,6 +231,14 @@ export default {
 			if (item.icon === 'surgery') {
 				uni.navigateTo({
 					url: '/pages/surgery/surgery-progress'
+				})
+				return
+			}
+
+			// 护眼锻炼跳转
+			if (item.icon === 'eye-exercise') {
+				uni.navigateTo({
+					url: '/pages/eye-exercise/index'
 				})
 				return
 			}
@@ -328,12 +370,69 @@ export default {
 		color: $color-warning;
 	}
 
+	&__actions {
+		display: flex;
+		align-items: center;
+		gap: 4rpx;
+	}
+
 	&__action {
 		width: 72rpx;
 		height: 72rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+}
+
+.switch-patient-icon {
+	width: 40rpx;
+	height: 36rpx;
+	position: relative;
+
+	// 前面的人头
+	&::before {
+		content: '';
+		position: absolute;
+		width: 14rpx;
+		height: 14rpx;
+		border: 3rpx solid $text-muted;
+		border-radius: 50%;
+		top: 2rpx;
+		left: 4rpx;
+		transition: border-color 250ms ease;
+	}
+
+	// 后面的人头
+	&::after {
+		content: '';
+		position: absolute;
+		width: 14rpx;
+		height: 14rpx;
+		border: 3rpx solid $text-muted;
+		border-radius: 50%;
+		top: 6rpx;
+		right: 4rpx;
+		transition: border-color 250ms ease;
+	}
+
+	&--active::before,
+	&--active::after {
+		border-color: $color-primary;
+	}
+}
+
+.patient-selector-wrap {
+	position: relative;
+	z-index: 1;
+	max-height: 0;
+	opacity: 0;
+	overflow: hidden;
+	transition: max-height 300ms ease, opacity 250ms ease;
+
+	&--open {
+		max-height: 360rpx;
+		opacity: 1;
 	}
 }
 
@@ -609,6 +708,42 @@ export default {
 			border-radius: 50%;
 		}
 	}
+
+	&--eye-exercise {
+		// 眼睛外轮廓
+		width: 36rpx;
+		height: 20rpx;
+		border: 3rpx solid #10B981;
+		border-radius: 70% 70% 70% 70% / 100% 100% 100% 100%;
+		position: relative;
+
+		// 瞳孔
+		&::before {
+			content: '';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 10rpx;
+			height: 10rpx;
+			background: #10B981;
+			border-radius: 50%;
+		}
+
+		// 运动弧线
+		&::after {
+			content: '';
+			position: absolute;
+			top: -8rpx;
+			right: -10rpx;
+			width: 24rpx;
+			height: 24rpx;
+			border: 2rpx solid transparent;
+			border-top-color: #10B981;
+			border-radius: 50%;
+			transform: rotate(30deg);
+		}
+	}
 }
 
 .version {
@@ -633,6 +768,15 @@ export default {
 		background: $dark-bg-card;
 		&__name { color: $dark-text-primary; }
 	}
+	.switch-patient-icon::before,
+	.switch-patient-icon::after {
+		border-color: $dark-text-muted;
+	}
+	.switch-patient-icon--active::before,
+	.switch-patient-icon--active::after {
+		border-color: $dark-color-primary;
+	}
+
 	.settings-icon {
 		// 深色模式下将黑色SVG转为浅色
 		filter: invert(70%) sepia(10%) saturate(200%) hue-rotate(180deg) brightness(90%);
@@ -655,6 +799,17 @@ export default {
 		border-color: #FF8A7A;
 		&::before {
 			background: #FF8A7A;
+		}
+	}
+
+	// 护眼锻炼图标深色模式适配
+	.menu-icon--eye-exercise {
+		border-color: #34D399;
+		&::before {
+			background: #34D399;
+		}
+		&::after {
+			border-top-color: #34D399;
 		}
 	}
 

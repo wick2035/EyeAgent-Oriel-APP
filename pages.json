@@ -269,6 +269,34 @@
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "眼部健康详情"
 			}
+		},
+		{
+			"path": "pages/family/family-manage",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "就诊人管理"
+			}
+		},
+		{
+			"path": "pages/family/family-add",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "添加就诊人"
+			}
+		},
+		{
+			"path": "pages/eye-exercise/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "护眼锻炼"
+			}
+		},
+		{
+			"path": "pages/eye-exercise/training",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "开始锻炼"
+			}
 		}
 	],
 	"globalStyle": {

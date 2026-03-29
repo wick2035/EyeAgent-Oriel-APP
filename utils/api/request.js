@@ -3,6 +3,7 @@
  */
 import config from '../config.js'
 import { clearLoginState } from '@/store/user.js'
+import { getCurrentPatientId } from '@/store/family.js'
 
 // 生成唯一会话ID
 export function generateSessionId() {
@@ -48,6 +49,12 @@ export function request(options) {
 		// 添加认证头 (Sa-Token)
 		if (token) {
 			header['satoken'] = token
+		}
+
+		// 注入当前就诊人 ID
+		const patientId = getCurrentPatientId()
+		if (patientId) {
+			header['X-Patient-Id'] = patientId
 		}
 
 		// 发起请求

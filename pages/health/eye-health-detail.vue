@@ -7,7 +7,7 @@
 				<view class="back-icon"></view>
 			</view>
 			<view class="navbar__title-wrap">
-				<text class="navbar__title">眼部健康详情</text>
+				<text class="navbar__title">眼部健康详情{{ patientSuffix }}</text>
 				<text v-if="ageGroupLabel" class="navbar__badge">{{ ageGroupLabel }}</text>
 			</view>
 			<view class="navbar__right"></view>
@@ -160,6 +160,7 @@
 import { getSankeyDataByGroup, getHealthDataByGroup } from '@/store/eyeHealth.js'
 import { getAgeGroupLabel } from '@/utils/age.js'
 import EyeHealthCard from '@/components/eye-health/EyeHealthCard.vue'
+import { getCurrentPatient, isCurrentSelf } from '@/store/family.js'
 
 // Layout constants (rpx)
 const ROW_HEIGHT_RPX  = 104
@@ -199,7 +200,12 @@ export default {
 
 	computed: {
 		ageGroupLabel() { return getAgeGroupLabel(this.ageGroup) },
-		scrollTop() { return `calc(${this.statusBarHeight}px + 88rpx)` }
+		scrollTop() { return `calc(${this.statusBarHeight}px + 88rpx)` },
+		patientSuffix() {
+			if (isCurrentSelf()) return ''
+			const patient = getCurrentPatient()
+			return patient ? ' -- ' + patient.name : ''
+		}
 	},
 
 	onLoad(options) {

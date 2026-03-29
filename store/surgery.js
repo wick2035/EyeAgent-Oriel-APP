@@ -77,6 +77,15 @@ export function getSurgeryState() {
 }
 
 /**
+ * 清空手术数据（就诊人切换时调用）
+ */
+export function clearSurgeryState() {
+	surgeryState.surgeries = []
+	surgeryState.currentSurgery = null
+	surgeryState.initialized = false
+}
+
+/**
  * 获取手术列表（调用真实 API）
  */
 export async function fetchSurgeryList() {

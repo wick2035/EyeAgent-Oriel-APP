@@ -7,7 +7,7 @@
 				<view class="navbar__back" @click="goBack">
 					<view class="back-icon"></view>
 				</view>
-				<text class="navbar__title">手术进度</text>
+				<text class="navbar__title">手术进度{{ patientSuffix }}</text>
 				<view class="navbar__placeholder"></view>
 			</view>
 		</view>
@@ -107,6 +107,7 @@ import {
 	getNextEvent,
 	STATUS_COLORS
 } from '@/store/surgery.js'
+import { getCurrentPatient, isCurrentSelf } from '@/store/family.js'
 
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
@@ -135,11 +136,22 @@ export default {
 		},
 		groupedSurgeries() {
 			return getGroupedSurgeries()
+		},
+		patientSuffix() {
+			if (isCurrentSelf()) return ''
+			const patient = getCurrentPatient()
+			return patient ? ' -- ' + patient.name : ''
 		}
 	},
 	onLoad() {
 		this.getStatusBarHeight()
 		this.loadData()
+	},
+	onShow() {
+		// 每次进入页面重新加载（就诊人可能已切换）
+		if (this.initialized) {
+			this.loadData()
+		}
 	},
 	methods: {
 		getStatusBarHeight() {

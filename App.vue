@@ -1,6 +1,7 @@
 <script>
 import { initTheme } from "@/store/theme.js";
 import { initUserState, isLoggedIn, clearLoginState } from "@/store/user.js";
+import { initFamily } from "@/store/family.js";
 import {
   connect as connectWebSocket,
   disconnect as disconnectWebSocket,
@@ -25,6 +26,11 @@ export default {
 
     // 初始化聊天 WebSocket 事件处理器
     initChatWebSocket();
+
+    // 初始化家庭成员（就诊人）
+    if (isLoggedIn()) {
+      initFamily();
+    }
 
     // 检查登录状态
     if (isLoggedIn()) {
