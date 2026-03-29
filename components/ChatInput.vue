@@ -184,6 +184,7 @@
 
 <script>
 import { isDarkMode, themeState } from '@/store/theme.js'
+import { requestMicrophonePermission } from '@/utils/permission.js'
 
 export default {
 	name: 'ChatInput',
@@ -272,8 +273,12 @@ export default {
 		handleQuickAction(action) {
 			this.$emit('quickAction', action)
 		},
-		toggleVoiceMode() {
+		async toggleVoiceMode() {
 			if (this.isRecording) return
+			if (!this.isVoiceMode) {
+				const granted = await requestMicrophonePermission()
+				if (!granted) return
+			}
 			this.isVoiceMode = !this.isVoiceMode
 		},
 		startRecording() {
