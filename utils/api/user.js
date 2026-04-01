@@ -225,7 +225,7 @@ export async function checkTokenValid() {
 	}
 
 	try {
-		await get('/api/auth/check')
+		await get('/api/auth/check', {}, { skipAuth401: true })
 		return true
 	} catch (error) {
 		if (error.code === 401) {

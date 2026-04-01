@@ -47,7 +47,9 @@
           >
             <image
               v-if="service.icon === 'consult'"
-              class="service-icon service-icon--consult"
+              class="service-icon"
+              :class="{ 'service-icon--consult': !isIOS }"
+              :style="consultIconStyle"
               src="@/static/chat-online.svg"
               mode="aspectFit"
             />
@@ -114,6 +116,9 @@
       </view>
     </view>
 
+    <!-- 网上商城 -->
+    <StoreSection />
+
     <!-- 底部占位（为TabBar留出空间） -->
     <view class="tabbar-placeholder"></view>
 
@@ -131,6 +136,7 @@
 <script>
 import TabBar from "@/components/TabBar.vue";
 import EyeHealthSection from "@/components/eye-health/EyeHealthSection.vue";
+import StoreSection from "@/components/store/StoreSection.vue";
 import UpdateDialog from "@/components/UpdateDialog.vue";
 import { isDarkMode } from "@/store/theme.js";
 import { getUnreadCount } from "@/store/notification.js";
@@ -144,12 +150,14 @@ export default {
 		TopNotificationBar,
     TabBar,
     EyeHealthSection,
+    StoreSection,
     UpdateDialog,
   },
   data() {
     return {
       statusBarHeight: 44,
       topBarHeight: 0,
+      isIOS: false,
       services: [
         {
           name: "AI问诊",
@@ -186,6 +194,15 @@ export default {
     unreadCount() {
       return getUnreadCount();
     },
+    consultIconStyle() {
+      if (!this.isIOS) return {};
+      // iOS WebKit对hue-rotate+saturate渲染偏亮，降低saturate和brightness补偿
+      return {
+        filter: this.isDark
+          ? 'invert(45%) sepia(80%) saturate(1100%) hue-rotate(220deg) brightness(110%) contrast(90%)'
+          : 'invert(40%) sepia(70%) saturate(1200%) hue-rotate(220deg) brightness(105%) contrast(92%)'
+      };
+    },
     greeting() {
       const hour = new Date().getHours();
       if (hour < 6) return "夜深了";
@@ -219,6 +236,7 @@ export default {
     getStatusBarHeight() {
       const sysInfo = uni.getSystemInfoSync();
       this.statusBarHeight = sysInfo.statusBarHeight || 44;
+      this.isIOS = sysInfo.platform === 'ios';
     },
     measureTopBar() {
       const query = uni.createSelectorQuery().in(this);

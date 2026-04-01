@@ -70,14 +70,27 @@ export default {
   },
   onShow: function () {
     console.log("App Show");
-    // App恢复前台时，检查登录状态并重连WebSocket
     if (isLoggedIn()) {
-      // 延迟连接，确保组件已挂载
-      setTimeout(() => {
+      // 从后台恢复时重新验证 token，防止 token 过期后仍显示主页
+      checkTokenValid().then((isValid) => {
+        if (isValid) {
+          connectWebSocket();
+          fetchUnreadNotifications();
+        } else {
+          // token 已过期，立即跳转登录页
+          clearLoginState();
+          uni.reLaunch({ url: '/pages/login/login' });
+          uni.showToast({
+            title: '登录已过期，请重新登录',
+            icon: 'none',
+            duration: 1500
+          });
+        }
+      }).catch(() => {
+        // 网络异常时仍然连接，让后续请求各自处理
         connectWebSocket();
-        // 刷新未读通知
         fetchUnreadNotifications();
-      }, 500);
+      });
     }
   },
   onHide: function () {

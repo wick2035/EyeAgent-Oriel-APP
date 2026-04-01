@@ -5,6 +5,9 @@ import config from '../config.js'
 import { clearLoginState } from '@/store/user.js'
 import { getCurrentPatientId } from '@/store/family.js'
 
+// 401 跳转防抖标记，防止多个请求同时 401 时重复跳转
+let isRedirectingTo401 = false
+
 // 生成唯一会话ID
 export function generateSessionId() {
 	return 'sess-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9)
@@ -73,25 +76,31 @@ export function request(options) {
 				}
 				// 未授权
 				else if (statusCode === 401) {
+					// 调用方可通过 skipAuth401 跳过全局 401 处理（如 checkTokenValid 自行处理）
+					if (options.skipAuth401) {
+						reject({ code: 401, message: '未授权' })
+						return
+					}
+
 					console.log('检测到401未授权，清除登录状态')
-					
-					// 清除所有登录状态（包括token、用户信息、WebSocket连接等）
 					clearLoginState()
-					
-					// Toast提示
-					uni.showToast({
-						title: '登录已过期，请重新登录',
-						icon: 'none',
-						duration: 1500
-					})
-					
-					// 延迟跳转到登录页（避免突兀）
-					setTimeout(() => {
+
+					// 防抖：多个请求同时 401 时只跳转一次
+					if (!isRedirectingTo401) {
+						isRedirectingTo401 = true
 						uni.reLaunch({
-							url: '/pages/login/login'
+							url: '/pages/login/login',
+							complete: () => {
+								isRedirectingTo401 = false
+								uni.showToast({
+									title: '登录已过期，请重新登录',
+									icon: 'none',
+									duration: 1500
+								})
+							}
 						})
-					}, 1500)
-					
+					}
+
 					reject({ code: 401, message: '未授权' })
 				}
 				// 其他错误

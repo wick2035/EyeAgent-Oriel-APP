@@ -224,6 +224,28 @@
 			}
 		},
 		{
+			"path": "pages/orders/order-detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "订单详情"
+			}
+		},
+		{
+			"path": "pages/store/drug-list",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "网上商城",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/store/drug-detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "药品详情"
+			}
+		},
+		{
 			"path": "pages/surgery/surgery-progress",
 			"style": {
 				"navigationStyle": "custom",

@@ -287,25 +287,43 @@ export function vibrate(type = 'light') {
 let ttsReady = false
 let ttsEngine = null
 let ttsInitializing = false
+let iosSynthesizer = null
+
+let _platform = null
+function getPlatform() {
+	if (!_platform) {
+		// #ifdef APP-PLUS
+		_platform = uni.getSystemInfoSync().platform
+		// #endif
+	}
+	return _platform
+}
 
 function initTTS() {
 	if (ttsReady || ttsInitializing) return
 	ttsInitializing = true
 	// #ifdef APP-PLUS
 	try {
-		const TextToSpeech = plus.android.importClass('android.speech.tts.TextToSpeech')
-		const activity = plus.android.runtimeMainActivity()
-		const listener = plus.android.implements('android.speech.tts.TextToSpeech$OnInitListener', {
-			onInit(status) {
-				if (status === 0) {
-					const Locale = plus.android.importClass('java.util.Locale')
-					ttsEngine.setLanguage(Locale.CHINA)
-					ttsReady = true
+		if (getPlatform() === 'ios') {
+			const AVSpeechSynthesizer = plus.ios.importClass('AVSpeechSynthesizer')
+			iosSynthesizer = new AVSpeechSynthesizer()
+			ttsReady = true
+			ttsInitializing = false
+		} else {
+			const TextToSpeech = plus.android.importClass('android.speech.tts.TextToSpeech')
+			const activity = plus.android.runtimeMainActivity()
+			const listener = plus.android.implements('android.speech.tts.TextToSpeech$OnInitListener', {
+				onInit(status) {
+					if (status === 0) {
+						const Locale = plus.android.importClass('java.util.Locale')
+						ttsEngine.setLanguage(Locale.CHINA)
+						ttsReady = true
+					}
+					ttsInitializing = false
 				}
-				ttsInitializing = false
-			}
-		})
-		ttsEngine = new TextToSpeech(activity, listener)
+			})
+			ttsEngine = new TextToSpeech(activity, listener)
+		}
 	} catch (e) {
 		console.warn('TTS初始化失败:', e)
 		ttsInitializing = false
@@ -319,15 +337,27 @@ export function speak(text) {
 
 	// #ifdef APP-PLUS
 	try {
-		if (!ttsEngine && !ttsInitializing) initTTS()
-		if (ttsReady && ttsEngine) {
-			// Android API 21+ 使用新版 speak 方法
-			const Build = plus.android.importClass('android.os.Build')
-			if (Build.VERSION.SDK_INT >= 21) {
-				ttsEngine.speak(text, 0, null, 'eye-exercise-' + Date.now())
-			} else {
-				const HashMap = plus.android.importClass('java.util.HashMap')
-				ttsEngine.speak(text, 0, new HashMap())
+		if (!ttsReady && !ttsInitializing) initTTS()
+		if (getPlatform() === 'ios') {
+			if (ttsReady && iosSynthesizer) {
+				iosSynthesizer.stopSpeakingAtBoundary(0)
+				const AVSpeechUtterance = plus.ios.importClass('AVSpeechUtterance')
+				const AVSpeechSynthesisVoice = plus.ios.importClass('AVSpeechSynthesisVoice')
+				const utterance = AVSpeechUtterance.speechUtteranceWithString(text)
+				utterance.setVoice(AVSpeechSynthesisVoice.voiceWithLanguage('zh-CN'))
+				utterance.setRate(0.5)
+				utterance.setVolume(1.0)
+				iosSynthesizer.speakUtterance(utterance)
+			}
+		} else {
+			if (ttsReady && ttsEngine) {
+				const Build = plus.android.importClass('android.os.Build')
+				if (Build.VERSION.SDK_INT >= 21) {
+					ttsEngine.speak(text, 0, null, 'eye-exercise-' + Date.now())
+				} else {
+					const HashMap = plus.android.importClass('java.util.HashMap')
+					ttsEngine.speak(text, 0, new HashMap())
+				}
 			}
 		}
 	} catch (e) {
@@ -354,7 +384,11 @@ export function speak(text) {
 export function stopSpeak() {
 	// #ifdef APP-PLUS
 	try {
-		if (ttsEngine) ttsEngine.stop()
+		if (getPlatform() === 'ios') {
+			if (iosSynthesizer) iosSynthesizer.stopSpeakingAtBoundary(0)
+		} else {
+			if (ttsEngine) ttsEngine.stop()
+		}
 	} catch (e) {}
 	// #endif
 	// #ifdef H5

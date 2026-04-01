@@ -27,12 +27,16 @@
 						v-for="(tab, index) in tabs"
 						:key="index"
 						class="tabs__item"
-						:class="{ 'tabs__item--active': currentTab === index }"
+						:class="{
+							'tabs__item--active': currentTab === index,
+							'tabs__item--disabled': tab.disabled
+						}"
 						@click="switchTab(index)"
 					>
 						<text>{{ tab.label }}</text>
+						<text v-if="tab.disabled" class="tabs__coming-soon">即将上线</text>
 						<!-- 数量角标：非激活且 count > 0 时显示 -->
-						<view v-if="tab.count > 0 && currentTab !== index" class="tabs__badge">
+						<view v-if="!tab.disabled && tab.count > 0 && currentTab !== index" class="tabs__badge">
 							<text class="tabs__badge-text">{{ tab.count > 9 ? '9+' : tab.count }}</text>
 						</view>
 						<view v-if="currentTab === index" class="tabs__indicator"></view>
@@ -66,7 +70,7 @@
 				<!-- 订单卡片列表 -->
 				<view
 					v-for="(order, index) in currentList"
-					:key="order.order_id"
+					:key="order.id"
 					class="order-card-wrap"
 					:style="{ animationDelay: Math.min(index * 50, 200) + 'ms' }"
 				>
@@ -74,59 +78,38 @@
 						class="order-card"
 						@click="handleDetail(order)"
 					>
-						<!-- 卡片头部：订单号 + 时间 + 状态 -->
+						<!-- 卡片头部：订单号 + 状态 -->
 						<view class="order-card__header">
 							<view class="order-card__header-left">
 								<image class="shop-icon" src="/static/shopbag.svg" mode="aspectFit"></image>
-								<text class="order-card__no">{{ order.order_no }}</text>
+								<text class="order-card__no">{{ order.orderNo }}</text>
 							</view>
-							<view class="order-card__status" :class="'order-card__status--' + order.status">
-								<text>{{ getStatusText(order.status) }}</text>
+							<view class="order-card__status" :class="'order-card__status--' + order.orderStatus.toLowerCase()">
+								<text>{{ getStatusText(order.orderStatus) }}</text>
 							</view>
 						</view>
 
-						<!-- 商品列表（最多展示2件） -->
-						<view class="order-card__items">
-							<view
-								v-for="(item, idx) in order.items.slice(0, 2)"
-								:key="item.product_id + '_' + idx"
-								class="order-item"
-							>
-								<!-- 商品信息 -->
-								<view class="order-item__info">
-									<view class="order-item__name-row">
-										<text class="order-item__name">{{ item.name }}</text>
-										<view v-if="item.is_prescription" class="rx-badge rx-badge--xs">Rx</view>
-									</view>
-									<text class="order-item__spec">{{ item.spec }}</text>
-								</view>
-								<!-- 数量 + 单价 -->
-								<view class="order-item__price-wrap">
-									<text class="order-item__qty">×{{ item.quantity }}</text>
-									<text class="order-item__price">¥{{ formatPrice(item.price) }}</text>
-								</view>
-							</view>
-
-							<!-- 超出2件时显示提示 -->
-							<view v-if="order.items.length > 2" class="order-items-more">
-								<text>等{{ order.items.length }}件商品 →</text>
-							</view>
+						<!-- 商品摘要 -->
+						<view class="order-card__summary">
+							<text class="order-card__drug-name">{{ order.firstDrugName }}</text>
+							<text v-if="order.itemCount > 1" class="order-card__item-count">等{{ order.itemCount }}件商品</text>
+							<text v-else class="order-card__item-count">共1件商品</text>
 						</view>
 
 						<!-- 合计行 -->
 						<view class="order-card__total">
-							<text class="order-card__total-count">共{{ getTotalQty(order) }}件</text>
+							<text class="order-card__total-count">共{{ order.itemCount || 0 }}件</text>
 							<view class="order-card__total-right">
 								<text class="order-card__total-label">合计：</text>
 								<text class="order-card__total-symbol">¥</text>
-								<text class="order-card__total-amount">{{ formatPrice(order.total_amount) }}</text>
+								<text class="order-card__total-amount">{{ formatPrice(order.totalAmount) }}</text>
 							</view>
 						</view>
 
 						<!-- 操作按钮区 -->
 						<view class="order-card__actions">
-							<!-- 待付款 -->
-							<template v-if="order.status === 'pending_pay'">
+							<!-- 待支付 -->
+							<template v-if="order.orderStatus === 'PENDING_PAYMENT'">
 								<view class="action-btn action-btn--ghost" @click.stop="handleCancel(order)">
 									取消订单
 								</view>
@@ -135,8 +118,18 @@
 								</view>
 							</template>
 
+							<!-- 已支付（待自取） -->
+							<template v-else-if="order.orderStatus === 'PAID'">
+								<view class="action-btn action-btn--ghost" @click.stop="handleDetail(order)">
+									查看详情
+								</view>
+								<view class="action-btn action-btn--primary" @click.stop="handleConfirmReceive(order)">
+									确认收货
+								</view>
+							</template>
+
 							<!-- 已完成 -->
-							<template v-else-if="order.status === 'completed'">
+							<template v-else-if="order.orderStatus === 'COMPLETED'">
 								<view class="action-btn action-btn--ghost" @click.stop="handleDetail(order)">
 									查看详情
 								</view>
@@ -145,10 +138,10 @@
 								</view>
 							</template>
 
-							<!-- 退款中 / 已退款 -->
-							<template v-else-if="order.status === 'refunding' || order.status === 'refunded'">
-								<view class="action-btn action-btn--ghost" @click.stop="handleRefundProgress(order)">
-									{{ order.status === 'refunding' ? '查看退款进度' : '退款详情' }}
+							<!-- 已取消 / 已过期 -->
+							<template v-else-if="order.orderStatus === 'CANCELLED' || order.orderStatus === 'EXPIRED'">
+								<view class="action-btn action-btn--ghost" @click.stop="handleDetail(order)">
+									查看详情
 								</view>
 							</template>
 						</view>
@@ -338,7 +331,8 @@ import {
 	selectAll,
 	clearCart
 } from '@/store/cart.js'
-import { getOrderList, cancelOrder } from '@/utils/api/order.js'
+import { getOrderList, getOrderDetail, cancelOrder, payOrder, createOrderFromCart, confirmReceive } from '@/utils/api/order.js'
+import { addCartItem } from '@/utils/api/cart.js'
 
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
 
@@ -351,13 +345,15 @@ export default {
 			windowHeight: 0,
 			currentTab: 0,
 			tabs: [
-				{ label: '全部',      key: 'all',        count: 0, emptyText: '订单记录' },
-				{ label: '待付款',    key: 'pending_pay', count: 0, emptyText: '待付款订单' },
-				{ label: '已完成',    key: 'completed',  count: 0, emptyText: '已完成订单' },
-				{ label: '退款/售后', key: 'refund',     count: 0, emptyText: '退款记录' }
+				{ label: '全部',      key: 'all',             count: 0, emptyText: '订单记录',     disabled: false },
+				{ label: '待支付',    key: 'pending_payment',  count: 0, emptyText: '待支付订单',   disabled: false },
+				{ label: '待自取',    key: 'paid',             count: 0, emptyText: '待自取订单',   disabled: false },
+				{ label: '已完成',    key: 'completed',        count: 0, emptyText: '已完成订单',   disabled: false },
+				{ label: '已取消',    key: 'cancelled',        count: 0, emptyText: '已取消订单',   disabled: false },
+				{ label: '退款/售后', key: 'refund',           count: 0, emptyText: '退款记录',     disabled: true  }
 			],
 			// 各 Tab 的订单缓存
-			orderLists: { all: [], pending_pay: [], completed: [], refund: [] },
+			orderLists: { all: [], pending_payment: [], paid: [], completed: [], cancelled: [], refund: [] },
 			loading: false,
 			noMore: false,
 			page: 1,
@@ -399,7 +395,7 @@ export default {
 
 	onLoad() {
 		this.getStatusBarHeight()
-		initCart()
+		initCart()  // 异步加载购物车（不阻塞）
 		this.loadData(true)
 	},
 
@@ -441,10 +437,33 @@ export default {
 			this.loading = true
 			try {
 				const key = this.tabs[this.currentTab].key
-				const status = key === 'all' ? '' : key
+				if (key === 'refund') return  // 置灰Tab不加载
+
+				// 映射 Tab key 到 API status
+				const statusMap = {
+					all: '',
+					pending_payment: 'PENDING_PAYMENT',
+					paid: 'PAID',
+					completed: 'COMPLETED',
+					cancelled: 'CANCELLED'
+				}
+				const status = statusMap[key] || ''
 				const res = await getOrderList(status, this.page, this.pageSize)
 				if (res.code === 200) {
-					const list = res.data.list || []
+					let list = Array.isArray(res.data) ? res.data : []
+
+					// 已取消Tab同时包含已过期订单
+					if (key === 'cancelled' && this.page === 1) {
+						try {
+							const res2 = await getOrderList('EXPIRED', 1, this.pageSize)
+							if (res2.code === 200 && Array.isArray(res2.data)) {
+								list = list.concat(res2.data)
+							}
+						} catch (e) {
+							// 忽略过期订单加载失败
+						}
+					}
+
 					if (reset) {
 						this.orderLists[key] = list
 					} else {
@@ -452,10 +471,6 @@ export default {
 					}
 					this.noMore = list.length < this.pageSize
 					this.page++
-					// 更新角标数
-					const counts = res.data.counts || {}
-					this.tabs[1].count = counts.pending_pay || 0
-					this.tabs[3].count = counts.refund || 0
 				}
 			} catch (e) {
 				console.error('[orders] 加载失败:', e)
@@ -465,6 +480,7 @@ export default {
 		},
 
 		switchTab(index) {
+			if (this.tabs[index].disabled) return  // 置灰Tab不可点击
 			if (this.currentTab === index) return
 			this.currentTab = index
 			const key = this.tabs[index].key
@@ -479,30 +495,38 @@ export default {
 
 		getStatusText(status) {
 			const map = {
-				pending_pay: '待付款',
-				completed: '已完成',
-				refunding: '退款中',
-				refunded: '已退款',
-				cancelled: '已取消'
+				PENDING_PAYMENT: '待支付',
+				PAID: '待自取',
+				COMPLETED: '已完成',
+				CANCELLED: '已取消',
+				EXPIRED: '已过期'
 			}
 			return map[status] || status
 		},
 
-		getTotalQty(order) {
-			return order.items.reduce((sum, i) => sum + i.quantity, 0)
-		},
-
-		formatPrice(fen) {
-			if (typeof fen !== 'number') return '0.00'
-			return (fen / 100).toFixed(2)
+		formatPrice(amount) {
+			if (typeof amount !== 'number') return '0.00'
+			return amount.toFixed(2)
 		},
 
 		// ============================================================
 		// 订单操作
 		// ============================================================
-		handlePay(order) {
-			uni.showToast({ title: '跳转支付页（待接入）', icon: 'none' })
-			// uni.navigateTo({ url: `/pages/orders/pay?orderId=${order.order_id}` })
+		async handlePay(order) {
+			uni.showLoading({ title: '支付中...' })
+			try {
+				const res = await payOrder(order.id)
+				uni.hideLoading()
+				if (res.code === 200) {
+					uni.showToast({ title: '支付成功', icon: 'success' })
+					this.loadData(true)
+				} else {
+					uni.showToast({ title: res.msg || '支付失败', icon: 'none' })
+				}
+			} catch (e) {
+				uni.hideLoading()
+				uni.showToast({ title: '支付失败', icon: 'none' })
+			}
 		},
 
 		handleCancel(order) {
@@ -513,7 +537,7 @@ export default {
 				confirmColor: '#EF4444',
 				success: async ({ confirm }) => {
 					if (!confirm) return
-					const res = await cancelOrder(order.order_id)
+					const res = await cancelOrder(order.id)
 					if (res.code === 200) {
 						uni.showToast({ title: '订单已取消', icon: 'success' })
 						this.loadData(true)
@@ -524,31 +548,47 @@ export default {
 			})
 		},
 
-		handleRebuy(order) {
-			order.items.forEach(item => {
-				addItem({
-					product_id: item.product_id,
-					name: item.name,
-					spec: item.spec,
-					price: item.price,
-					stock: 99,
-					image_url: item.image_url,
-					is_prescription: item.is_prescription || false
-				})
+		handleConfirmReceive(order) {
+			uni.showModal({
+				title: '确认收货',
+				content: '确认已取到商品吗？',
+				success: async ({ confirm }) => {
+					if (!confirm) return
+					const res = await confirmReceive(order.id)
+					if (res.code === 200) {
+						uni.showToast({ title: '已确认收货', icon: 'success' })
+						this.loadData(true)
+					} else {
+						uni.showToast({ title: res.msg || '操作失败', icon: 'none' })
+					}
+				}
 			})
-			uni.showToast({ title: '已加入购物车', icon: 'success' })
-			setTimeout(() => this.openCart(), 600)
+		},
+
+		async handleRebuy(order) {
+			uni.showLoading({ title: '加入购物车中...' })
+			try {
+				const detailRes = await getOrderDetail(order.id)
+				if (detailRes.code === 200 && detailRes.data && detailRes.data.items) {
+					for (const item of detailRes.data.items) {
+						await addCartItem(item.drugId, item.quantity)
+					}
+					await initCart()
+					uni.hideLoading()
+					uni.showToast({ title: '已加入购物车', icon: 'success' })
+					setTimeout(() => this.openCart(), 600)
+				} else {
+					uni.hideLoading()
+					uni.showToast({ title: detailRes.msg || '获取订单详情失败', icon: 'none' })
+				}
+			} catch (e) {
+				uni.hideLoading()
+				uni.showToast({ title: '操作失败', icon: 'none' })
+			}
 		},
 
 		handleDetail(order) {
-			uni.showToast({ title: '订单详情（待接入）', icon: 'none' })
-			// uni.setStorageSync('tempOrderDetail', JSON.stringify(order))
-			// uni.navigateTo({ url: `/pages/orders/order-detail?id=${order.order_id}` })
-		},
-
-		handleRefundProgress(order) {
-			uni.showToast({ title: '退款进度（待接入）', icon: 'none' })
-			// uni.navigateTo({ url: `/pages/orders/refund-progress?id=${order.order_id}` })
+			uni.navigateTo({ url: '/pages/orders/order-detail?id=' + order.id })
 		},
 
 		goBack() {
@@ -574,20 +614,35 @@ export default {
 			}, 320)
 		},
 
-		handleCheckout() {
+		async handleCheckout() {
 			if (this.cartSelectedCount === 0) {
 				uni.showToast({ title: '请先选择商品', icon: 'none' })
 				return
 			}
-			this.closeCart()
-			uni.showToast({ title: '结算页（待接入）', icon: 'none' })
-			// uni.navigateTo({ url: '/pages/orders/checkout' })
+			uni.showLoading({ title: '正在下单...' })
+			try {
+				const cartItemIds = selectedItems.value.map(i => i.cart_item_id)
+				const res = await createOrderFromCart(cartItemIds)
+				if (res.code === 200) {
+					await initCart()
+					this.closeCart()
+					uni.hideLoading()
+					uni.showToast({ title: '下单成功', icon: 'success' })
+					this.loadData(true)
+				} else {
+					uni.hideLoading()
+					uni.showToast({ title: res.msg || '下单失败', icon: 'none' })
+				}
+			} catch (e) {
+				uni.hideLoading()
+				uni.showToast({ title: '下单失败', icon: 'none' })
+			}
 		},
 
 		goShop() {
 			this.closeCart()
 			setTimeout(() => {
-				uni.switchTab({ url: '/pages/index/index' })
+				uni.navigateTo({ url: '/pages/store/drug-list' })
 			}, 320)
 		},
 
@@ -781,6 +836,19 @@ export default {
 		color: $color-primary;
 		font-weight: $font-weight-semibold;
 	}
+
+	&--disabled {
+		opacity: 0.4;
+		pointer-events: none;
+	}
+}
+
+.tabs__coming-soon {
+	display: block;
+	font-size: 16rpx;
+	color: $text-muted;
+	line-height: 1;
+	margin-top: 2rpx;
 }
 
 .tabs__indicator {
@@ -959,9 +1027,14 @@ export default {
 		padding: 6rpx 16rpx;
 		border-radius: $radius-full;
 
-		&--pending_pay {
+		&--pending_payment {
 			color: $color-primary;
 			background: rgba(30, 58, 95, 0.08);
+		}
+
+		&--paid {
+			color: $color-warning;
+			background: rgba(245, 158, 11, 0.08);
 		}
 
 		&--completed {
@@ -969,25 +1042,35 @@ export default {
 			background: rgba(16, 185, 129, 0.08);
 		}
 
-		&--refunding {
-			color: $color-warning;
-			background: rgba(245, 158, 11, 0.08);
-		}
-
-		&--refunded {
-			color: $text-muted;
-			background: rgba(154, 171, 191, 0.08);
-		}
-
-		&--cancelled {
+		&--cancelled, &--expired {
 			color: $text-muted;
 			background: rgba(154, 171, 191, 0.08);
 		}
 	}
 
-	// ---- 商品列表 ----
-	&__items {
+	// ---- 商品摘要 ----
+	&__summary {
+		display: flex;
+		align-items: center;
+		gap: $spacing-xs;
 		padding: $spacing-md $spacing-lg;
+	}
+
+	&__drug-name {
+		font-size: $font-size-base;
+		font-weight: $font-weight-medium;
+		color: $text-primary;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		flex: 1;
+		min-width: 0;
+	}
+
+	&__item-count {
+		font-size: $font-size-xs;
+		color: $text-muted;
+		flex-shrink: 0;
 	}
 
 	// ---- 合计行 ----
@@ -1135,7 +1218,7 @@ export default {
 .action-btn {
 	height: 56rpx;
 	padding: 0 $spacing-lg;
-	border-radius: $radius-full;
+	border-radius: $radius-md;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -1759,9 +1842,14 @@ export default {
 		}
 
 		&__status {
-			&--pending_pay {
+			&--pending_payment {
 				color: $dark-color-primary;
 				background: rgba(74, 144, 217, 0.12);
+			}
+
+			&--paid {
+				color: $color-warning;
+				background: rgba(245, 158, 11, 0.12);
 			}
 
 			&--completed {
@@ -1769,15 +1857,18 @@ export default {
 				background: rgba(16, 185, 129, 0.12);
 			}
 
-			&--refunding {
-				color: $color-warning;
-				background: rgba(245, 158, 11, 0.12);
-			}
-
-			&--refunded, &--cancelled {
+			&--cancelled, &--expired {
 				color: $dark-text-muted;
 				background: rgba(139, 148, 158, 0.12);
 			}
+		}
+
+		&__drug-name {
+			color: $dark-text-primary;
+		}
+
+		&__item-count {
+			color: $dark-text-muted;
 		}
 
 		&__total {
