@@ -22,9 +22,20 @@ export function uploadPublicKey(publicKey) {
  * 获取对方公钥
  * @param {string} userType - DOCTOR 或 PATIENT
  * @param {string} userId - 对方用户 ID
+ * @param {number} [keyVersion] - v1.2+：指定版本号可查 REVOKED 历史版本，用于解密历史消息
  */
-export function getPublicKey(userType, userId) {
-	return get(`${BASE}/keys/${userType}/${userId}`)
+export function getPublicKey(userType, userId, keyVersion) {
+	const query = keyVersion != null ? { keyVersion } : undefined
+	return get(`${BASE}/keys/${userType}/${userId}`, query)
+}
+
+/**
+ * 诊断当前用户的所有密钥版本（v1.2+）
+ * 启动时调用，用于对账本地 keyVersion 计数器
+ * @returns {Promise<{ data: { userType, userId, keys: Array<{keyVersion, status, createTime}> } }>}
+ */
+export function getKeyDiag() {
+	return get(`${BASE}/keys/self/diag`)
 }
 
 /**
@@ -82,7 +93,8 @@ export function closeSession(sessionId) {
 /**
  * 发送加密消息
  * @param {string} sessionId
- * @param {Object} data - { encryptedContent, iv, senderKeyVersion, messageType, fileUrl }
+ * @param {Object} data - { encryptedContent, iv, senderKeyVersion, receiverKeyVersion, messageType, fileUrl }
+ *   v1.2+：receiverKeyVersion 为必填，对应 ECDH 加密时使用的对方公钥版本号
  */
 export function sendEncryptedMessage(sessionId, data) {
 	return post(`${BASE}/sessions/${sessionId}/messages`, data)
@@ -187,6 +199,7 @@ export async function createOrGetSession(targetUserId, targetUserType) {
 export default {
 	uploadPublicKey,
 	getPublicKey,
+	getKeyDiag,
 	uploadKeyEscrow,
 	rotateKey,
 	createSession,

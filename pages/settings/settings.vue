@@ -150,7 +150,7 @@
               <text class="menu-item__text">隐私政策</text>
               <view class="menu-item__arrow"></view>
             </view>
-            <view class="menu-item menu-item--no-border">
+            <view class="menu-item menu-item--no-border" @click="handleVersionTap">
               <view class="menu-item__icon menu-item__icon--version"></view>
               <text class="menu-item__text">版本号</text>
               <text class="menu-item__value">v{{ appVersion }}</text>
@@ -186,6 +186,15 @@
       cancelText="取消"
       @confirm="confirmLogout"
     />
+    <ConfirmDialog
+      ref="resetKeyDialog"
+      title="重置加密密钥"
+      content="将清除本机 E2EE 密钥并重新生成。适用于联调或密钥异常，确认继续？"
+      icon="warning"
+      confirmText="重置"
+      cancelText="取消"
+      @confirm="confirmResetKey"
+    />
     <TopNotificationBar />
   </view>
 </template>
@@ -196,6 +205,8 @@ import { isDarkMode, getBubbleTheme, setBubbleTheme } from "@/store/theme.js";
 import { logout } from "@/utils/api/user.js";
 import { setMuted, getMuted } from "@/utils/websocket.js";
 import { getCurrentVersion } from "@/utils/version.js";
+import { clearPrivateKey } from "@/utils/crypto/keyStorage.js";
+import { clearAllKeys, ensureE2EEReady } from "@/utils/crypto/e2eeCrypto.js";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 import TopNotificationBar from '@/components/TopNotificationBar.vue'
@@ -212,6 +223,8 @@ export default {
       notifyEnabled: true,
       cacheSize: "12.5 MB",
       appVersion: '',
+      versionTapCount: 0,
+      versionTapTimer: null,
     };
   },
   computed: {
@@ -369,6 +382,38 @@ export default {
       uni.reLaunch({
         url: "/pages/login/login",
       });
+    },
+
+    handleVersionTap() {
+      this.versionTapCount += 1;
+      if (this.versionTapTimer) {
+        clearTimeout(this.versionTapTimer);
+      }
+      if (this.versionTapCount >= 5) {
+        this.versionTapCount = 0;
+        this.versionTapTimer = null;
+        this.$refs.resetKeyDialog.show();
+        return;
+      }
+      this.versionTapTimer = setTimeout(() => {
+        this.versionTapCount = 0;
+        this.versionTapTimer = null;
+      }, 3000);
+    },
+
+    async confirmResetKey() {
+      uni.showLoading({ title: "重置中..." });
+      try {
+        clearPrivateKey();
+        clearAllKeys();
+        await ensureE2EEReady();
+        uni.hideLoading();
+        uni.showToast({ title: "加密密钥已重置", icon: "success" });
+      } catch (err) {
+        uni.hideLoading();
+        const msg = (err && err.message) || "重置失败，请稍后重试";
+        uni.showToast({ title: msg, icon: "none", duration: 2500 });
+      }
     },
   },
 };

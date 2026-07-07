@@ -22,6 +22,14 @@
 
 			<!-- 医生列表 -->
 			<view class="doctor-list">
+				<!-- 加载失败 -->
+				<view v-if="loadError && !loading" class="error-state">
+					<text class="error-state__text">加载失败，请检查网络</text>
+					<view class="error-state__retry" @click="loadDoctors">
+						<text class="error-state__retry-text">点击重试</text>
+					</view>
+				</view>
+
 				<view
 					v-for="(doctor, index) in doctors"
 					:key="doctor.id"
@@ -75,7 +83,7 @@
 						<view class="doctor-card__stat">
 							<image class="doctor-card__stat-icon doctor-card__stat-icon--exp" src="@/static/congyinianxian.svg" mode="aspectFit" />
 							<view class="doctor-card__stat-content">
-								<text class="doctor-card__stat-value">{{ doctor.experience }}年</text>
+								<text class="doctor-card__stat-value">{{ doctor.experience === '暂无' ? '暂无' : doctor.experience + '年' }}</text>
 								<text class="doctor-card__stat-label">从医年限</text>
 							</view>
 						</view>
@@ -108,11 +116,11 @@
 					</view>
 				</view>
 			<!-- 加载更多 -->
-				<view v-if="page < totalPages" class="load-more" @click="loadMore">
+				<view v-if="!loadError && page < totalPages" class="load-more" @click="loadMore">
 					<view v-if="loadingMore" class="load-more__spinner"></view>
 					<text v-else class="load-more__text">加载更多</text>
 				</view>
-				<view v-else-if="doctors.length > 0" class="load-more">
+				<view v-else-if="!loadError && doctors.length > 0" class="load-more">
 					<text class="load-more__text">已加载全部医生</text>
 				</view>
 			</view>
@@ -138,6 +146,7 @@ export default {
 			doctors: [],
 			animationReady: false,
 			loading: false,
+			loadError: false,
 			page: 1,
 			totalPages: 1,
 			loadingMore: false
@@ -166,6 +175,8 @@ export default {
 
 		async loadDoctors() {
 			this.loading = true
+			this.loadError = false
+			this.animationReady = false
 			try {
 				const res = await getE2EEDoctors(1, 10)
 				const pageData = res.data || {}
@@ -184,9 +195,9 @@ export default {
 				// 映射 API 字段到 UI 所需格式，缺少的字段用默认值兜底
 				this.doctors = this.mapDoctors(apiDoctors)
 			} catch (err) {
-				console.warn('获取E2EE医生列表失败，使用兜底数据:', err)
-				// API 失败时使用 mock 数据兜底
-				this.doctors = getMockDoctorConversations()
+				console.warn('获取E2EE医生列表失败:', err)
+				this.doctors = []
+				this.loadError = true
 			} finally {
 				this.loading = false
 				setTimeout(() => {
@@ -197,9 +208,20 @@ export default {
 
 		mapDoctors(apiDoctors) {
 			return apiDoctors.map(d => {
-				const defaultAvatar = d.gender === 'female'
+				const defaultAvatar = d.gender === 'FEMALE'
 					? '/static/temporary/women.jpg'
 					: '/static/temporary/male.jpg'
+
+				const ratingDisplay = (d.rating === null || d.rating === undefined)
+					? '暂无'
+					: Number(d.rating).toFixed(1)
+				const consultDisplay = (d.consultationCount === null || d.consultationCount === undefined)
+					? '暂无'
+					: d.consultationCount
+				const expDisplay = (d.yearsOfExperience === null || d.yearsOfExperience === undefined)
+					? '暂无'
+					: d.yearsOfExperience
+
 				return {
 					id: d.doctorId,
 					name: d.name || '医生',
@@ -207,12 +229,12 @@ export default {
 					department: d.departmentName || d.hospitalName || '',
 					hospitalName: d.hospitalName || '',
 					avatar: d.avatarUrl || defaultAvatar,
-					online: false,
-					rating: '-',
-					consultCount: '-',
-					experience: '-',
-					specialties: d.specialty ? d.specialty.split(/[、，,]/).map(s => s.trim()).filter(Boolean) : [],
-					introduction: d.consultationRoom ? `就诊室：${d.consultationRoom}` : '',
+					online: true,
+					rating: ratingDisplay,
+					consultCount: consultDisplay,
+					experience: expDisplay,
+					specialties: Array.isArray(d.specialtyTags) ? d.specialtyTags : [],
+					introduction: d.bio || '',
 					keyVersion: d.keyVersion
 				}
 			})
@@ -271,7 +293,9 @@ export default {
 
 				// 处理特定错误码
 				const code = err.code || (err.data && err.data.code)
-				if (code === 40401) {
+				if (code === 40904) {
+					uni.showToast({ title: '加密聊天未完全开启，请稍后重试', icon: 'none', duration: 2500 })
+				} else if (code === 40401) {
 					uni.showToast({ title: '医生尚未开启加密聊天', icon: 'none', duration: 2000 })
 				} else if (code === 40403) {
 					uni.showToast({ title: '医生不存在', icon: 'none', duration: 2000 })
@@ -640,6 +664,40 @@ export default {
 	}
 }
 
+// 加载失败
+.error-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 80rpx 0 40rpx;
+	gap: 24rpx;
+
+	&__text {
+		font-size: $font-size-base;
+		color: $text-secondary;
+	}
+
+	&__retry {
+		padding: 14rpx 48rpx;
+		background: rgba(51, 136, 255, 0.08);
+		border: 2rpx solid rgba(51, 136, 255, 0.3);
+		border-radius: $radius-lg;
+		transition: opacity 0.2s ease, transform 0.15s ease;
+
+		&:active {
+			opacity: 0.8;
+			transform: scale(0.97);
+		}
+	}
+
+	&__retry-text {
+		font-size: $font-size-sm;
+		font-weight: $font-weight-semibold;
+		color: $color-primary;
+	}
+}
+
 // 加载更多
 .load-more {
 	display: flex;
@@ -703,6 +761,21 @@ export default {
 
 		&__icon {
 			filter: invert(60%) sepia(60%) saturate(1200%) hue-rotate(200deg) brightness(110%) contrast(100%);
+		}
+	}
+
+	.error-state {
+		&__text {
+			color: $dark-text-secondary;
+		}
+
+		&__retry {
+			background: rgba(94, 170, 255, 0.1);
+			border-color: rgba(94, 170, 255, 0.25);
+		}
+
+		&__retry-text {
+			color: #5EAAFF;
 		}
 	}
 

@@ -7,22 +7,34 @@
 import './cryptoPolyfill.js'
 import EC from 'elliptic/lib/elliptic/ec'
 import forge from 'node-forge'
-import { savePrivateKey, loadPrivateKey, getKeyVersion, setKeyVersion, clearPrivateKey } from './keyStorage.js'
-import { uploadPublicKey, getPublicKey, rotateKey, uploadKeyEscrow } from '@/utils/api/e2eeChat.js'
+import {
+	savePrivateKeyForVersion,
+	loadPrivateKeyForVersion,
+	loadActivePrivateKey,
+	listLocalKeyVersions,
+	setKeyStatus,
+	setActiveKeyVersion,
+	getActiveKeyVersion,
+	migrateLegacyStorage,
+	clearAllLocalKeys
+} from './keyStorage.js'
+import { uploadPublicKey, getPublicKey, getKeyDiag, rotateKey, uploadKeyEscrow } from '@/utils/api/e2eeChat.js'
 import { getUserInfo } from '@/store/user.js'
 
 // P-256 曲线实例
 const ec = new EC('p256')
 
-// Session key 内存缓存: Map<sessionId, Uint8Array(32)>
+// Session key 内存缓存: Map<`${sessionId}:${receiverKeyVersion}:${senderKeyVersion}`, Uint8Array(32)>
 const sessionKeyCache = new Map()
 
-// 当前用户的私钥（内存中，Uint8Array）
-let currentPrivateKey = null
-// 当前用户的公钥 hex（内存中）
-let currentPublicKeyHex = null
+// 本地私钥内存缓存: Map<keyVersion, privateKeyHex>
+const privateKeyCache = new Map()
+// 当前 ACTIVE 版本号
+let activeKeyVersion = 0
 
-// 对方公钥缓存: Map<`${userType}:${userId}`, { publicKey, keyVersion }>
+// 对方公钥缓存:
+//   Map<`${userType}:${userId}`, { publicKey, keyVersion }>          当前 ACTIVE
+//   Map<`${userType}:${userId}:${keyVersion}`, { publicKey, keyVersion }> 指定历史版本
 const peerKeyCache = new Map()
 
 // ======================== SPKI 格式转换 ========================
@@ -246,155 +258,252 @@ export function decryptMessage(sessionKey, encryptedContentBase64, ivBase64) {
 
 // ======================== Session Key 管理 ========================
 
-/**
- * 获取或派生会话密钥（带缓存）
- * @param {string} sessionId - 会话ID
- * @param {string} peerUserType - 对方用户类型 DOCTOR/PATIENT
- * @param {string} peerUserId - 对方用户ID
- * @returns {Promise<Uint8Array>} 会话密钥
- */
-export async function getOrDeriveSessionKey(sessionId, peerUserType, peerUserId) {
-	// 检查缓存
-	if (sessionKeyCache.has(sessionId)) {
-		return sessionKeyCache.get(sessionId)
-	}
+export const KEY_UNAVAILABLE = 'KEY_UNAVAILABLE'
+export const PEER_KEY_UNAVAILABLE = 'PEER_KEY_UNAVAILABLE'
 
-	// 确保本地私钥已加载
-	if (!currentPrivateKey) {
-		throw new Error('私钥未加载，请先调用 ensureE2EEReady()')
-	}
-
-	// 获取对方公钥
-	const peerKeyData = await fetchPeerPublicKey(peerUserType, peerUserId)
-
-	// ECDH + HKDF 派生
-	const sessionKey = deriveSessionKey(currentPrivateKey, peerKeyData.publicKey, sessionId)
-
-	// 缓存
-	sessionKeyCache.set(sessionId, sessionKey)
-	return sessionKey
+function loadPrivateKeyVersion(keyVersion, userId) {
+	if (privateKeyCache.has(keyVersion)) return privateKeyCache.get(keyVersion)
+	const stored = loadPrivateKeyForVersion(keyVersion, userId)
+	if (!stored) return null
+	privateKeyCache.set(keyVersion, stored.privateKeyHex)
+	return stored.privateKeyHex
 }
 
 /**
- * 获取对方公钥（带缓存）
+ * 获取或派生会话密钥（按 (sessionId, receiverKeyVersion, senderKeyVersion) 缓存）
+ *
+ * @param {string} sessionId
+ * @param {string} peerUserType - DOCTOR 或 PATIENT
+ * @param {string} peerUserId
+ * @param {Object} [opts] - 解密历史消息时必传；发送新消息时不传（自动用 ACTIVE 版本）
+ * @param {number} [opts.receiverKeyVersion] - 对应加密用的己方私钥版本
+ * @param {number} [opts.senderKeyVersion]   - 对应加密用的对方公钥版本
+ * @returns {Promise<{ sessionKey: Uint8Array, senderKeyVersion: number, receiverKeyVersion: number }>}
  */
-async function fetchPeerPublicKey(userType, userId) {
-	const cacheKey = `${userType}:${userId}`
-	if (peerKeyCache.has(cacheKey)) {
-		return peerKeyCache.get(cacheKey)
+export async function getOrDeriveSessionKey(sessionId, peerUserType, peerUserId, opts) {
+	const userInfo = getUserInfo()
+	if (!userInfo || !userInfo.id) throw new Error('用户未登录')
+
+	// 解析目标版本
+	let receiverKeyVersion = opts && opts.receiverKeyVersion
+	let senderKeyVersion = opts && opts.senderKeyVersion
+
+	if (!receiverKeyVersion) {
+		if (!activeKeyVersion) throw new Error('私钥未加载，请先调用 ensureE2EEReady()')
+		receiverKeyVersion = activeKeyVersion
 	}
 
-	const res = await getPublicKey(userType, userId)
+	// 加载对应版本的己方私钥
+	const myPrivateKeyHex = loadPrivateKeyVersion(receiverKeyVersion, userInfo.id)
+	if (!myPrivateKeyHex) {
+		const err = new Error('本地缺少对应版本的私钥，无法解密')
+		err.code = KEY_UNAVAILABLE
+		err.receiverKeyVersion = receiverKeyVersion
+		throw err
+	}
+
+	// 拉取对方公钥
+	let peerKeyData
+	try {
+		peerKeyData = await fetchPeerPublicKey(peerUserType, peerUserId, senderKeyVersion)
+	} catch (e) {
+		const err = new Error('无法获取对方公钥')
+		err.code = PEER_KEY_UNAVAILABLE
+		err.cause = e
+		throw err
+	}
+	if (!senderKeyVersion) senderKeyVersion = peerKeyData.keyVersion
+
+	// 缓存 key（区分版本对）
+	const cacheKey = `${sessionId}:${receiverKeyVersion}:${senderKeyVersion}`
+	if (sessionKeyCache.has(cacheKey)) {
+		return {
+			sessionKey: sessionKeyCache.get(cacheKey),
+			senderKeyVersion,
+			receiverKeyVersion
+		}
+	}
+
+	const sessionKey = deriveSessionKey(myPrivateKeyHex, peerKeyData.publicKey, sessionId)
+	sessionKeyCache.set(cacheKey, sessionKey)
+	return { sessionKey, senderKeyVersion, receiverKeyVersion }
+}
+
+/**
+ * 发送新消息前的便捷封装 — 一次性拿到 sessionKey + 两端最新版本号
+ */
+export async function sendingKeyContext(sessionId, peerUserType, peerUserId) {
+	return getOrDeriveSessionKey(sessionId, peerUserType, peerUserId)
+}
+
+/**
+ * 获取对方公钥（带缓存；可指定历史版本）
+ */
+async function fetchPeerPublicKey(userType, userId, keyVersion) {
+	const cacheKey = keyVersion ? `${userType}:${userId}:${keyVersion}` : `${userType}:${userId}`
+	if (peerKeyCache.has(cacheKey)) return peerKeyCache.get(cacheKey)
+
+	const res = await getPublicKey(userType, userId, keyVersion)
+	if (!res || res.code !== 200 || !res.data) {
+		throw { code: (res && res.code) || -1, message: (res && res.msg) || '获取对方公钥失败' }
+	}
 	const keyData = {
 		publicKey: res.data.publicKey,
-		keyVersion: res.data.keyVersion
+		keyVersion: res.data.keyVersion,
+		status: res.data.status
 	}
 	peerKeyCache.set(cacheKey, keyData)
 	return keyData
 }
 
 /**
- * 使指定用户的 session key 缓存失效（密钥轮换时使用）
+ * 使指定用户的 session key / 公钥缓存失效（对方密钥轮换时使用）
  */
 export function invalidateSessionKey(userId) {
-	// 清除所有涉及该用户的 session key
-	for (const [sessionId] of sessionKeyCache) {
-		sessionKeyCache.delete(sessionId)
-	}
-	// 清除该用户的公钥缓存
+	for (const [key] of sessionKeyCache) sessionKeyCache.delete(key)
 	for (const [key] of peerKeyCache) {
-		if (key.includes(userId)) {
-			peerKeyCache.delete(key)
-		}
+		if (key.includes(userId)) peerKeyCache.delete(key)
 	}
 }
 
 /**
- * 清除所有缓存（登出时调用）
+ * 清除所有内存缓存（登出时调用；不清磁盘，磁盘用 clearAllLocalKeys）
  */
 export function clearAllKeys() {
 	sessionKeyCache.clear()
 	peerKeyCache.clear()
-	currentPrivateKey = null
-	currentPublicKeyHex = null
+	privateKeyCache.clear()
+	activeKeyVersion = 0
 }
 
 // ======================== E2EE 初始化 ========================
 
 /**
- * 确保 E2EE 就绪（密钥对已生成并上传）
+ * 启动时确保 E2EE 就绪（v1.2）：
+ *   1. 迁移旧存储
+ *   2. 用 /keys/self/diag 与服务端对账
+ *   3. 若本地无对应 ACTIVE 私钥 → 强制 rotate（旧版本保留为 REVOKED 供历史解密）
+ *   4. 同步服务端 REVOKED 状态到本地
+ *
  * @returns {Promise<{ keyVersion: number }>}
  */
 export async function ensureE2EEReady() {
 	const userInfo = getUserInfo()
-	if (!userInfo || !userInfo.id) {
-		throw new Error('用户未登录')
+	if (!userInfo || !userInfo.id) throw new Error('用户未登录')
+
+	migrateLegacyStorage(userInfo.id)
+
+	// 查询服务端状态
+	let diagRes
+	try {
+		diagRes = await getKeyDiag()
+	} catch (e) {
+		console.warn('E2EE: /keys/self/diag 请求失败:', e)
+		diagRes = null
 	}
 
-	// 尝试从本地加载私钥
-	if (!currentPrivateKey) {
-		const stored = loadPrivateKey(userInfo.id)
-		if (stored) {
-			currentPrivateKey = stored.privateKeyHex
-			currentPublicKeyHex = stored.publicKeyHex
-			const version = getKeyVersion()
-			return { keyVersion: version }
-		}
-	} else {
-		return { keyVersion: getKeyVersion() }
+	const serverKeys = (diagRes && diagRes.code === 200 && diagRes.data && diagRes.data.keys) || []
+	const serverActive = serverKeys.find(k => k.status === 'ACTIVE')
+
+	// 情况 A：服务端没有任何 ACTIVE（新用户 / 服务端数据清空）
+	if (!serverActive) {
+		return await bootstrapFreshKey(userInfo.id)
 	}
 
-	// 本地无私钥，需要生成新密钥对
-	console.log('E2EE: 生成新密钥对...')
+	// 情况 B：服务端有 ACTIVE → 检查本地是否持有该版本的私钥
+	const localEntry = loadPrivateKeyForVersion(serverActive.keyVersion, userInfo.id)
+	if (localEntry && localEntry.status !== 'REVOKED') {
+		privateKeyCache.set(serverActive.keyVersion, localEntry.privateKeyHex)
+		activeKeyVersion = serverActive.keyVersion
+		setActiveKeyVersion(serverActive.keyVersion)
+		syncRevokedStatusFromServer(serverKeys)
+		return { keyVersion: activeKeyVersion }
+	}
+
+	// 情况 C：服务端 ACTIVE 本地没有（首次升级 / 跨设备 / 私钥丢失）→ 强制 rotate
+	console.log('E2EE: 检测到本地无 ACTIVE 密钥，执行 rotate')
+	const result = await rotateAndPersist(userInfo.id)
+	syncRevokedStatusFromServer(serverKeys)
+	return result
+}
+
+/**
+ * 全新用户或服务端无 ACTIVE 时的首次上传流程
+ */
+async function bootstrapFreshKey(userId) {
 	const keyPair = generateKeyPair()
-
-	// 尝试上传公钥
 	const res = await uploadPublicKey(keyPair.publicKeyBase64)
 
-	// 后端以 HTTP 200 返回业务错误码（如 40902 已有公钥），request.js 不会 reject
+	// 40902：服务端声称已有公钥但 diag 没返 ACTIVE（极罕见的竞态）→ 走 rotate
 	if (res.code === 40902) {
-		console.log('E2EE: 服务端已有公钥，执行密钥轮换...')
-		const rotateRes = await rotateKey(keyPair.publicKeyBase64)
-		const version = (rotateRes.data && rotateRes.data.keyVersion) || 1
-
-		savePrivateKey(keyPair.privateKeyHex, keyPair.publicKeyHex, userInfo.id)
-		setKeyVersion(version)
-
-		currentPrivateKey = keyPair.privateKeyHex
-		currentPublicKeyHex = keyPair.publicKeyHex
-
-		return { keyVersion: version }
+		return await rotateAndPersist(userId, keyPair)
 	}
-
 	if (res.code !== 200 || !res.data) {
 		throw { code: res.code || -1, message: res.msg || '公钥上传失败' }
 	}
 
 	const version = res.data.keyVersion
+	savePrivateKeyForVersion(keyPair.privateKeyHex, keyPair.publicKeyHex, version, 'ACTIVE', userId)
+	setActiveKeyVersion(version)
+	privateKeyCache.set(version, keyPair.privateKeyHex)
+	activeKeyVersion = version
 
-	// 保存私钥到本地
-	savePrivateKey(keyPair.privateKeyHex, keyPair.publicKeyHex, userInfo.id)
-	setKeyVersion(version)
-
-	currentPrivateKey = keyPair.privateKeyHex
-	currentPublicKeyHex = keyPair.publicKeyHex
-
-	// 密钥托管（可选，静默失败）
-	try {
-		await performKeyEscrow(keyPair.privateKeyHex, version)
-	} catch (e) {
-		console.warn('E2EE: 密钥托管失败（非致命）:', e)
-	}
+	// 托管（非致命）
+	try { await performKeyEscrow(keyPair.privateKeyHex, version) }
+	catch (e) { console.warn('E2EE: 密钥托管失败（非致命）:', e) }
 
 	return { keyVersion: version }
 }
 
 /**
- * 密钥托管
+ * rotate：生成新密钥对 + POST /keys/rotate；旧本地版本统一标 REVOKED
+ */
+async function rotateAndPersist(userId, existingKeyPair) {
+	const keyPair = existingKeyPair || generateKeyPair()
+	const rotateRes = await rotateKey(keyPair.publicKeyBase64)
+	if (rotateRes.code !== 200 || !rotateRes.data) {
+		throw { code: rotateRes.code || -1, message: rotateRes.msg || '密钥轮换失败' }
+	}
+	const version = rotateRes.data.keyVersion
+
+	// 旧本地版本全部标记 REVOKED
+	const locals = listLocalKeyVersions()
+	for (const k of locals) {
+		if (k.keyVersion !== version && k.status !== 'REVOKED') {
+			setKeyStatus(k.keyVersion, 'REVOKED')
+		}
+	}
+
+	savePrivateKeyForVersion(keyPair.privateKeyHex, keyPair.publicKeyHex, version, 'ACTIVE', userId)
+	setActiveKeyVersion(version)
+	privateKeyCache.clear()
+	privateKeyCache.set(version, keyPair.privateKeyHex)
+	activeKeyVersion = version
+
+	try { await performKeyEscrow(keyPair.privateKeyHex, version) }
+	catch (e) { console.warn('E2EE: 密钥托管失败（非致命）:', e) }
+
+	return { keyVersion: version }
+}
+
+/**
+ * 把服务端 diag 中的 REVOKED 状态同步到本地元信息
+ */
+function syncRevokedStatusFromServer(serverKeys) {
+	const locals = listLocalKeyVersions()
+	const localMap = {}
+	locals.forEach(k => { localMap[k.keyVersion] = k.status })
+	serverKeys.forEach(sk => {
+		if (sk.status === 'REVOKED' && localMap[sk.keyVersion] === 'ACTIVE') {
+			setKeyStatus(sk.keyVersion, 'REVOKED')
+		}
+	})
+}
+
+/**
+ * 密钥托管（简化实现：用固定标识上传 base64 编码的私钥）
  */
 async function performKeyEscrow(privateKeyHex, keyVersion) {
-	// 简化实现：用固定托管方标识上传加密私钥
-	// 实际应用中应用托管方 RSA 公钥加密
 	const escrowData = {
 		encryptedPrivateKey: forge.util.encode64(privateKeyHex),
 		escrowPublicKeyId: 'hospital-escrow-key-001',
@@ -403,20 +512,17 @@ async function performKeyEscrow(privateKeyHex, keyVersion) {
 	await uploadKeyEscrow(escrowData)
 }
 
-/**
- * 获取当前公钥版本号
- */
 export function getCurrentKeyVersion() {
-	return getKeyVersion()
+	return activeKeyVersion || getActiveKeyVersion()
 }
 
 /**
- * 检查是否需要重新协商密钥（senderKeyVersion 不匹配时）
+ * 强制刷新某用户的对方公钥缓存（收到 40903 / decrypt 失败时）
  */
-export async function refreshPeerKey(userType, userId) {
-	const cacheKey = `${userType}:${userId}`
+export async function refreshPeerKey(userType, userId, keyVersion) {
+	const cacheKey = keyVersion ? `${userType}:${userId}:${keyVersion}` : `${userType}:${userId}`
 	peerKeyCache.delete(cacheKey)
-	return await fetchPeerPublicKey(userType, userId)
+	return await fetchPeerPublicKey(userType, userId, keyVersion)
 }
 
 export default {
@@ -425,9 +531,12 @@ export default {
 	encryptMessage,
 	decryptMessage,
 	getOrDeriveSessionKey,
+	sendingKeyContext,
 	invalidateSessionKey,
 	clearAllKeys,
 	ensureE2EEReady,
 	getCurrentKeyVersion,
-	refreshPeerKey
+	refreshPeerKey,
+	KEY_UNAVAILABLE,
+	PEER_KEY_UNAVAILABLE
 }

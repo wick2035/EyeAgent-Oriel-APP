@@ -2,8 +2,8 @@
     "name" : "EyeAgent",
     "appid" : "__UNI__02B5478",
     "description" : "",
-    "versionName" : "1.0.5",
-    "versionCode" : 106,
+    "versionName" : "1.1.0",
+    "versionCode" : 108,
     "transformPx" : false,
     /* 5+App特有相关 */
     "app-plus" : {

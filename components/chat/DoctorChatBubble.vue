@@ -19,10 +19,10 @@
 
 			<!-- 内容区 -->
 			<view class="bubble__content" :class="isSelf ? 'bubble__content--right' : 'bubble__content--left'">
-				<!-- 解密失败 -->
-				<view v-if="message.decryptFailed" class="bubble__body bubble__body--error" :class="isSelf ? 'bubble__body--right' : 'bubble__body--left'">
+				<!-- 解密失败（永久性：本地私钥丢失或对方历史公钥已无法查询） -->
+				<view v-if="message.decryptFailed" class="bubble__body bubble__body--locked">
 					<text class="bubble__lock">&#128274;</text>
-					<text class="bubble__error-text">消息无法解密</text>
+					<text class="bubble__locked-text">此消息已无法解密</text>
 				</view>
 
 				<!-- 文本消息 -->
@@ -210,12 +210,12 @@ export default {
 			box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
 		}
 
-		&--error {
+		&--locked {
 			display: flex;
 			align-items: center;
 			gap: 8rpx;
-			background: rgba(239, 68, 68, 0.08);
-			border: 2rpx solid rgba(239, 68, 68, 0.2);
+			background: rgba(107, 114, 128, 0.08);
+			border: 2rpx dashed rgba(107, 114, 128, 0.25);
 		}
 	}
 
@@ -237,14 +237,15 @@ export default {
 		border-radius: 12rpx;
 	}
 
-	// 错误
+	// 解密失败占位符（灰色）
 	&__lock {
 		font-size: 28rpx;
+		color: #6B7280;
 	}
 
-	&__error-text {
+	&__locked-text {
 		font-size: $font-size-sm;
-		color: #EF4444;
+		color: #6B7280;
 	}
 
 	// 发送状态
@@ -342,8 +343,9 @@ export default {
 		}
 	}
 
-	.bubble__error-text {
-		color: #F87171;
+	.bubble__locked-text,
+	.bubble__lock {
+		color: #9CA3AF;
 	}
 }
 </style>

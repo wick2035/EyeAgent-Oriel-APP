@@ -15,12 +15,16 @@ import {
 	encryptMessage,
 	decryptMessage,
 	getOrDeriveSessionKey,
+	sendingKeyContext,
 	getCurrentKeyVersion,
 	ensureE2EEReady,
 	clearAllKeys,
-	refreshPeerKey
+	invalidateSessionKey,
+	refreshPeerKey,
+	KEY_UNAVAILABLE,
+	PEER_KEY_UNAVAILABLE
 } from '@/utils/crypto/e2eeCrypto.js'
-import { clearPrivateKey } from '@/utils/crypto/keyStorage.js'
+import { clearAllLocalKeys } from '@/utils/crypto/keyStorage.js'
 import { getUserInfo } from '@/store/user.js'
 
 // ======================== 响应式状态 ========================
@@ -118,7 +122,10 @@ async function refreshSessionPreviews() {
 			let preview = '[加密消息]'
 			if (msg.encryptedContent && msg.iv) {
 				try {
-					const sessionKey = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId)
+					const opts = (msg.senderKeyVersion && msg.receiverKeyVersion)
+						? { senderKeyVersion: msg.senderKeyVersion, receiverKeyVersion: msg.receiverKeyVersion }
+						: undefined
+					const { sessionKey } = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId, opts)
 					const text = decryptMessage(sessionKey, msg.encryptedContent, msg.iv)
 					if (msg.messageType === 'IMAGE') {
 						preview = '[图片]'
@@ -270,6 +277,7 @@ async function decryptSingleMessage(sessionId, msg, peerUserType, peerUserId) {
 		encryptedContent: msg.encryptedContent,
 		iv: msg.iv,
 		senderKeyVersion: msg.senderKeyVersion,
+		receiverKeyVersion: msg.receiverKeyVersion,
 		fileUrl: msg.fileUrl,
 		readStatus: msg.readStatus,
 		createTime: msg.createTime,
@@ -278,28 +286,74 @@ async function decryptSingleMessage(sessionId, msg, peerUserType, peerUserId) {
 		status: 'sent'
 	}
 
-	try {
-		if (msg.encryptedContent && msg.iv) {
-			const sessionKey = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId)
-			result.decryptedContent = decryptMessage(sessionKey, msg.encryptedContent, msg.iv)
-		}
-	} catch (e) {
-		console.warn('消息解密失败:', msg.id, e.message)
-		result.decryptFailed = true
-		result.decryptedContent = null
+	if (!msg.encryptedContent || !msg.iv) return result
 
-		// 尝试刷新对方公钥后重试一次
+	const opts = (msg.senderKeyVersion && msg.receiverKeyVersion)
+		? { senderKeyVersion: msg.senderKeyVersion, receiverKeyVersion: msg.receiverKeyVersion }
+		: undefined
+
+	try {
+		const { sessionKey } = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId, opts)
+		result.decryptedContent = decryptMessage(sessionKey, msg.encryptedContent, msg.iv)
+		return result
+	} catch (e) {
+		// 永久性错误：本地私钥缺失 / 对方公钥不可得 / 后端 40401 → 不重试
+		if (e.code === KEY_UNAVAILABLE || e.code === PEER_KEY_UNAVAILABLE || e.code === 40401) {
+			console.warn('消息无法解密（密钥不可得）:', msg.id, e.code)
+			result.decryptFailed = true
+			return result
+		}
+		console.warn('消息解密失败，尝试刷新对方公钥重试:', msg.id, e.message)
 		try {
-			await refreshPeerKey(peerUserType, peerUserId)
-			const sessionKey = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId)
+			await refreshPeerKey(peerUserType, peerUserId, msg.senderKeyVersion)
+			const { sessionKey } = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId, opts)
 			result.decryptedContent = decryptMessage(sessionKey, msg.encryptedContent, msg.iv)
-			result.decryptFailed = false
+			return result
 		} catch (retryErr) {
-			// 二次尝试也失败，保持 decryptFailed
+			result.decryptFailed = true
+			return result
 		}
 	}
+}
 
-	return result
+/**
+ * 加密 + 发送，遇到 40903（密钥版本不一致）自动对账并重试一次
+ * @returns {{ encryptedContent, iv, res, senderKeyVersion, receiverKeyVersion }}
+ */
+async function encryptAndSendWithRetry(sessionId, peerUserType, peerUserId, plaintext, extra) {
+	const attempt = async () => {
+		const ctx = await sendingKeyContext(sessionId, peerUserType, peerUserId)
+		const { encryptedContent, iv } = encryptMessage(ctx.sessionKey, plaintext)
+		const res = await sendEncryptedMessage(sessionId, {
+			encryptedContent,
+			iv,
+			senderKeyVersion: ctx.senderKeyVersion,
+			receiverKeyVersion: ctx.receiverKeyVersion,
+			...extra
+		})
+		return { encryptedContent, iv, res, senderKeyVersion: ctx.senderKeyVersion, receiverKeyVersion: ctx.receiverKeyVersion }
+	}
+
+	const first = await attempt()
+	if (first.res && first.res.code === 40903) {
+		console.warn('E2EE: 40903 密钥版本不一致，对账后重试')
+		// 对账本地（落后则强制 rotate）
+		try { await ensureE2EEReady() } catch (e) { console.warn('ensureE2EEReady 失败:', e) }
+		// 强制刷新对方缓存
+		invalidateSessionKey(peerUserId)
+		const second = await attempt()
+		if (second.res && second.res.code === 40903) {
+			throw { code: 40903, message: '密钥版本不一致，请稍后重试' }
+		}
+		if (second.res && second.res.code !== 200) {
+			throw { code: second.res.code, message: second.res.msg || '发送失败' }
+		}
+		return second
+	}
+	if (first.res && first.res.code !== 200) {
+		throw { code: first.res.code, message: first.res.msg || '发送失败' }
+	}
+	return first
 }
 
 /**
@@ -338,6 +392,7 @@ export async function sendTextMessage(sessionId, plaintext) {
 		encryptedContent: null,
 		iv: null,
 		senderKeyVersion: getCurrentKeyVersion(),
+		receiverKeyVersion: null,
 		fileUrl: null,
 		readStatus: 0,
 		createTime: now,
@@ -352,20 +407,10 @@ export async function sendTextMessage(sessionId, plaintext) {
 	chatState.messages[sessionId].push(optimisticMsg)
 
 	try {
-		// 获取会话密钥
-		const sessionKey = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId)
-
-		// 加密
-		const { encryptedContent, iv } = encryptMessage(sessionKey, plaintext)
-
-		// 发送
-		const res = await sendEncryptedMessage(sessionId, {
-			encryptedContent,
-			iv,
-			senderKeyVersion: getCurrentKeyVersion(),
-			messageType: 'TEXT',
-			fileUrl: null
-		})
+		const { encryptedContent, iv, res, senderKeyVersion, receiverKeyVersion } =
+			await encryptAndSendWithRetry(sessionId, peerUserType, peerUserId, plaintext, {
+				messageType: 'TEXT', fileUrl: null
+			})
 
 		// 更新乐观消息
 		const msgIndex = chatState.messages[sessionId].findIndex(m => m.id === tempId)
@@ -374,6 +419,8 @@ export async function sendTextMessage(sessionId, plaintext) {
 			chatState.messages[sessionId][msgIndex].createTime = res.data.createdAt
 			chatState.messages[sessionId][msgIndex].encryptedContent = encryptedContent
 			chatState.messages[sessionId][msgIndex].iv = iv
+			chatState.messages[sessionId][msgIndex].senderKeyVersion = senderKeyVersion
+			chatState.messages[sessionId][msgIndex].receiverKeyVersion = receiverKeyVersion
 			chatState.messages[sessionId][msgIndex].status = 'sent'
 		}
 
@@ -434,6 +481,7 @@ export async function sendImageMessage(sessionId, filePath) {
 		encryptedContent: null,
 		iv: null,
 		senderKeyVersion: getCurrentKeyVersion(),
+		receiverKeyVersion: null,
 		fileUrl: filePath, // 临时用本地路径
 		readStatus: 0,
 		createTime: now,
@@ -449,26 +497,22 @@ export async function sendImageMessage(sessionId, filePath) {
 	try {
 		// 上传图片
 		const fileUrl = await uploadChatFile(filePath)
-
-		// 加密文件描述
-		const sessionKey = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId)
 		const fileName = filePath.split('/').pop() || 'image.jpg'
-		const { encryptedContent, iv } = encryptMessage(sessionKey, fileName)
 
-		// 发送
-		const res = await sendEncryptedMessage(sessionId, {
-			encryptedContent,
-			iv,
-			senderKeyVersion: getCurrentKeyVersion(),
-			messageType: 'IMAGE',
-			fileUrl
-		})
+		const { encryptedContent, iv, res, senderKeyVersion, receiverKeyVersion } =
+			await encryptAndSendWithRetry(sessionId, peerUserType, peerUserId, fileName, {
+				messageType: 'IMAGE', fileUrl
+			})
 
 		// 更新乐观消息
 		const msgIndex = chatState.messages[sessionId].findIndex(m => m.id === tempId)
 		if (msgIndex !== -1) {
 			chatState.messages[sessionId][msgIndex].id = res.data.messageId
 			chatState.messages[sessionId][msgIndex].createTime = res.data.createdAt
+			chatState.messages[sessionId][msgIndex].encryptedContent = encryptedContent
+			chatState.messages[sessionId][msgIndex].iv = iv
+			chatState.messages[sessionId][msgIndex].senderKeyVersion = senderKeyVersion
+			chatState.messages[sessionId][msgIndex].receiverKeyVersion = receiverKeyVersion
 			chatState.messages[sessionId][msgIndex].fileUrl = fileUrl
 			chatState.messages[sessionId][msgIndex].status = 'sent'
 		}
@@ -530,14 +574,21 @@ export async function addIncomingMessage(sessionId, wsMessage) {
 	let peerUserType = wsMessage.senderType
 	let peerUserId = wsMessage.senderId
 
-	// 解密消息
+	// 解密消息（按消息携带的版本号选择本地私钥 + 对方公钥）
 	let decryptedContent = null
 	let decryptFailed = false
+	const opts = (wsMessage.senderKeyVersion && wsMessage.receiverKeyVersion)
+		? { senderKeyVersion: wsMessage.senderKeyVersion, receiverKeyVersion: wsMessage.receiverKeyVersion }
+		: undefined
 	try {
-		const sessionKey = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId)
+		const { sessionKey } = await getOrDeriveSessionKey(sessionId, peerUserType, peerUserId, opts)
 		decryptedContent = decryptMessage(sessionKey, wsMessage.encryptedContent, wsMessage.iv)
 	} catch (e) {
-		console.warn('实时消息解密失败:', e.message)
+		if (e.code === KEY_UNAVAILABLE || e.code === PEER_KEY_UNAVAILABLE || e.code === 40401) {
+			console.warn('实时消息无法解密（密钥不可得）:', e.code)
+		} else {
+			console.warn('实时消息解密失败:', e.message)
+		}
 		decryptFailed = true
 	}
 
@@ -551,6 +602,7 @@ export async function addIncomingMessage(sessionId, wsMessage) {
 		encryptedContent: wsMessage.encryptedContent,
 		iv: wsMessage.iv,
 		senderKeyVersion: wsMessage.senderKeyVersion,
+		receiverKeyVersion: wsMessage.receiverKeyVersion,
 		fileUrl: wsMessage.fileUrl,
 		readStatus: 0,
 		createTime: wsMessage.createdAt,
@@ -730,7 +782,7 @@ export function clearChatState() {
 
 	// 清除加密密钥
 	clearAllKeys()
-	clearPrivateKey()
+	clearAllLocalKeys()
 }
 
 // 导出状态

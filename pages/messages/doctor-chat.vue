@@ -274,8 +274,19 @@ export default {
 				await sendTextMessage(this.sessionId, text)
 				this.$nextTick(() => this.scrollToBottom())
 			} catch (err) {
-				uni.showToast({ title: '发送失败', icon: 'none' })
+				uni.showToast({ title: this.sendErrorMessage(err), icon: 'none', duration: 2000 })
 			}
+		},
+
+		// 发送错误码 → 用户可读文案
+		sendErrorMessage(err) {
+			const code = err && (err.code || (err.data && err.data.code))
+			if (code === 40903) return '密钥版本已变化，请重试'
+			if (code === 40904) return '加密聊天未完全开启'
+			if (code === 40301) return '会话已关闭'
+			if (code === 40302) return '无权访问此会话'
+			if (code === 40402) return '会话不存在'
+			return (err && err.message) || '发送失败'
 		},
 
 		// 输入框失焦
@@ -297,7 +308,7 @@ export default {
 						await sendImageMessage(this.sessionId, filePath)
 						this.$nextTick(() => this.scrollToBottom())
 					} catch (err) {
-						uni.showToast({ title: '图片发送失败', icon: 'none' })
+						uni.showToast({ title: this.sendErrorMessage(err), icon: 'none', duration: 2000 })
 					}
 				}
 			})
@@ -336,7 +347,7 @@ export default {
 				await retryMessage(this.sessionId, messageId)
 				this.$nextTick(() => this.scrollToBottom())
 			} catch (err) {
-				uni.showToast({ title: '重试失败', icon: 'none' })
+				uni.showToast({ title: this.sendErrorMessage(err), icon: 'none', duration: 2000 })
 			}
 		},
 

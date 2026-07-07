@@ -1,6 +1,24 @@
 # App 端 E2EE 加密聊天 — 前端设计与 API 文档
 
-> 版本：v1.1 | 日期：2026-03-15 | 后端分支：chat-dev(branch-2)
+> 版本：v1.2 | 日期：2026-04-13 | 后端分支：feat/deploy-update
+
+## v1.2 变更摘要（重要）
+
+线上排查发现客户端本地 `keyVersion` 计数器长期与服务端脱钩，大量消息写入了服务端不存在的版本号（如 v17/v18），导致接收方永远无法解密。本次升级新增服务端强校验和协议字段：
+
+1. **消息体新增必填字段 `receiverKeyVersion`** — 接收方 ECDH 解密需要确定性匹配本地私钥版本
+2. **`sendMessage` 强校验** — `senderKeyVersion` 必须对应一条 ACTIVE 的发送者公钥记录，否则返回 `40903`
+3. **`createSession` 前置校验** — 双方都必须已上传 ACTIVE 公钥，否则返回 `40904`
+4. **`GET /keys/{userType}/{userId}` 支持 `?keyVersion=N`** — 可查 REVOKED 历史版本，用于解密历史消息
+5. **新增诊断接口 `GET /keys/self/diag`** — 返回当前用户服务端所有密钥版本快照，便于启动时对账本地计数器
+6. **`CHAT_MESSAGE` WebSocket payload 同步新增 `receiverKeyVersion` 字段**
+
+**客户端必须升级行为：**
+
+- 启动时调用 `GET /keys/self/diag`，若本地 `keyVersion` 与服务端最大 ACTIVE 版本不一致 → 强制重新生成密钥并 `POST /keys/rotate`
+- 私钥按 `keyVersion` 持久化，**轮换时绝不可删除旧私钥**（否则旧消息永远解不开）
+- 发送消息前必须获取对方当前 ACTIVE `keyVersion` 填入 `receiverKeyVersion`
+- 遇到 `40903` → 重新拉取双方最新 `keyVersion` 重试；遇到 `40904` → 提示"加密聊天未完全开启"
 
 ## 目录
 
@@ -70,7 +88,7 @@ const keyPair = await crypto.subtle.generateKey(
 );
 
 // 导出公钥为 Base64
-const publicKeyBuffer = await crypto.subtle.exportKey('spk', keyPair.publicKey);
+const publicKeyBuffer = await crypto.subtle.exportKey('spki', keyPair.publicKey);
 const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(publicKeyBuffer)));
 
 // 私钥存储到本地（IndexedDB / Android KeyStore）
@@ -287,7 +305,7 @@ POST /api/app/chat/keys/upload
 发起聊天前获取对方公钥，用于 ECDH 密钥协商。
 
 ```
-GET /api/app/chat/keys/{userType}/{userId}
+GET /api/app/chat/keys/{userType}/{userId}[?keyVersion=N]
 ```
 
 **路径参数：**
@@ -295,6 +313,11 @@ GET /api/app/chat/keys/{userType}/{userId}
 |------|------|------|
 | userType | string | `DOCTOR` 或 `PATIENT` |
 | userId | string | 对方用户 ID |
+
+**查询参数：**
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| keyVersion | integer | 否 | 不传返回当前 ACTIVE 版本；指定时可查 REVOKED 历史版本，用于解密历史消息 |
 
 **成功响应：**
 ```json
@@ -305,17 +328,22 @@ GET /api/app/chat/keys/{userType}/{userId}
     "userType": "DOCTOR",
     "userId": "d45a035d...",
     "publicKey": "MFkwEwYHKoZIzj0...",
-    "keyVersion": 1
+    "keyVersion": 1,
+    "status": "REVOKED"
   }
 }
 ```
 
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| status | string | `ACTIVE` 或 `REVOKED`。按 keyVersion 查历史版本时用于识别公钥是否仍生效；仅出现在 v1.2+ |
+
 **错误场景：**
 | code | msg |
 |------|-----|
-| 40401 | 用户 [DOCTOR:xxx] 尚未上传公钥 |
+| 40401 | 用户 [DOCTOR:xxx] 尚未上传公钥 / 指定版本不存在 |
 
-> **前端处理建议：** 收到 40401 时，提示"对方尚未开启加密聊天"，禁用发送按钮。
+> **前端处理建议：** 收到 40401 时，若是查询当前版本则提示"对方尚未开启加密聊天"并禁用发送按钮；若是按历史版本查则提示"此消息已无法解密"。
 
 ---
 
@@ -355,6 +383,33 @@ POST /api/app/chat/keys/escrow
 | code | msg |
 |------|-----|
 | 40401 | 用户 [PATIENT:xxx] 尚未上传公钥（密钥版本不存在） |
+
+---
+
+### 5.3.1 诊断当前用户的所有密钥版本（v1.2+）
+
+客户端启动时用于对账本地 keyVersion 计数器；本地最大 ACTIVE 版本与服务端不一致时必须重新 `rotate`。
+
+```
+GET /api/app/chat/keys/self/diag
+```
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "msg": "查询成功",
+  "data": {
+    "userType": "DOCTOR",
+    "userId": "d45a035d...",
+    "keys": [
+      {"keyVersion": 1, "status": "REVOKED", "createTime": "2026-04-13T00:08:30"},
+      {"keyVersion": 2, "status": "REVOKED", "createTime": "2026-04-13T00:09:25"},
+      {"keyVersion": 3, "status": "ACTIVE",  "createTime": "2026-04-13T10:03:08"}
+    ]
+  }
+}
+```
 
 ---
 
@@ -439,6 +494,7 @@ POST /api/app/chat/sessions
 | 40001 | 不允许相同用户类型之间创建会话 |
 | 40403 | 目标用户不存在 |
 | 40901 | 会话已存在 |
+| 40904 | 双方必须先上传公钥才能创建会话（当前用户或对方尚未调用过 `/keys/upload`） |
 
 > **说明：** 如果之前关闭的会话再次创建，系统会自动重新激活原有会话（不会新建）。
 
@@ -526,6 +582,7 @@ POST /api/app/chat/sessions/{sessionId}/messages
   "encryptedContent": "SGVsbG8gRG9jdG9yIQ==",
   "iv": "dGVzdGl2MTIz",
   "senderKeyVersion": 2,
+  "receiverKeyVersion": 3,
   "messageType": "TEXT",
   "fileUrl": null
 }
@@ -535,7 +592,8 @@ POST /api/app/chat/sessions/{sessionId}/messages
 |------|------|------|------|
 | encryptedContent | string | 是 | AES-256-GCM 加密后的内容（Base64），含 AuthTag |
 | iv | string | 是 | 12 字节随机初始化向量（Base64） |
-| senderKeyVersion | integer | 是 | 发送方当前使用的公钥版本 |
+| senderKeyVersion | integer | 是 | 发送方当前使用的公钥版本；必须为一条服务端 ACTIVE 记录 |
+| receiverKeyVersion | integer | 是 | ECDH 加密时使用的**对方公钥版本**；必须为对方服务端已存在的记录（ACTIVE 或 REVOKED） |
 | messageType | string | 否 | `TEXT`(默认) / `IMAGE` / `FILE` |
 | fileUrl | string | 否 | 图片/文件的 MinIO URL（通过上传接口获取） |
 
@@ -554,10 +612,11 @@ POST /api/app/chat/sessions/{sessionId}/messages
 **错误场景：**
 | code | msg |
 |------|-----|
-| 400 | 参数校验失败（encryptedContent/iv 为空等） |
+| 400 | 参数校验失败（encryptedContent/iv/receiverKeyVersion 为空等） |
 | 40301 | 会话已关闭 |
 | 40302 | 无权访问此会话 |
 | 40402 | 会话不存在 |
+| 40903 | 密钥版本与服务端不一致（senderKeyVersion 非 ACTIVE，或 receiverKeyVersion 不存在）。客户端需调用 `GET /keys/self/diag` 和 `GET /keys/{peer}` 重新同步版本 |
 
 > **副作用：** 服务端通过 WebSocket 将密文推送给接收方（详见 9.2）。
 
@@ -741,6 +800,7 @@ ws://{host}:{port}/ws/app/notify
   "encryptedContent": "d3NfdGVzdF9tc2c=",
   "iv": "d3NfaXY=",
   "senderKeyVersion": 2,
+  "receiverKeyVersion": 3,
   "fileUrl": null,
   "createdAt": "2026-03-15T10:20:35"
 }
@@ -948,11 +1008,13 @@ AES-256-GCM 解密
 | 40001 | 不允许相同用户类型创建会话 | 检查 targetUserType |
 | 40301 | 会话已关闭 | 提示会话已结束，禁用输入 |
 | 40302 | 无权访问此会话 | 不应出现，检查 sessionId |
-| 40401 | 用户尚未上传公钥 | 提示"对方尚未开启加密聊天" |
+| 40401 | 用户尚未上传公钥 / 指定版本不存在 | 提示"对方尚未开启加密聊天"或"历史消息无法解密" |
 | 40402 | 会话不存在 | 检查 sessionId |
 | 40403 | 目标用户不存在 | 检查 targetUserId |
 | 40901 | 会话已存在 | 直接跳转到已有会话 |
 | 40902 | 已存在有效公钥 | 使用轮换接口 |
+| 40903 | 密钥版本与服务端不一致 | 调用 `/keys/self/diag` 对账本地 keyVersion，或重新 `rotate` |
+| 40904 | 双方必须先上传公钥才能创建会话 | 提示"加密聊天未完全开启"，若本方未上传先调用 `/keys/upload` |
 
 ---
 
