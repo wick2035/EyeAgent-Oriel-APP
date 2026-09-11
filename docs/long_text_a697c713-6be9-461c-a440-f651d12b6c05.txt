@@ -191,7 +191,7 @@ E2EE 医生列表 API（前端对接文档）
           "name": "张明华",              
           "title": "主任医师",                            
           "avatarUrl":      
-  "http://1.117.233.43:19000/avatar/doctor/abc.jpg",      
+  "http://127.0.0.1:19000/avatar/doctor/abc.jpg",
           "gender": "MALE",                             
           "specialty": "眼底疾病",             
           "hospitalName": "EA 中国视光中心",            
@@ -211,7 +211,7 @@ E2EE 医生列表 API（前端对接文档）
           "name": "李婉清",                               
           "title": "副主任医师",                        
           "avatarUrl":                                    
-  "http://1.117.233.43:19000/avatar/doctor/xyz.jpg",      
+  "http://127.0.0.1:19000/avatar/doctor/xyz.jpg",
           "gender": "FEMALE",                  
           "specialty": "干眼症",                          
           "hospitalName": "EA 中国视光中心",            
@@ -297,4 +297,4 @@ E2EE 医生列表 API（前端对接文档）
   - 本接口随 PR feat/deploy-update 上线
   - 变更负责人：后端 chengyiyang                          
   - 任何字段语义疑问或返回异常请附带请求 URL + 完整 JSON  
-  响应反馈 
+  响应反馈

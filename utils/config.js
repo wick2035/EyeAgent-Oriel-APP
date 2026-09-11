@@ -5,10 +5,10 @@
 // API基础地址 - 根据环境切换
 const ENV = {
 	development: {
-		baseUrl: 'http://1.117.233.43:8081'
+		baseUrl: 'http://127.0.0.1:8081'
 	},
 	production: {
-		baseUrl: 'http://1.117.233.43:8081'
+		baseUrl: 'http://127.0.0.1:8081'
 	}
 }
 
