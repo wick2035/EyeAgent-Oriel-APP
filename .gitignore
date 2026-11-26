@@ -1,0 +1,24 @@
+# Local dependencies and IDE settings
+/node_modules/
+/.idea/
+/.vite/
+.env
+.env.*
+!.env.example
+
+# HBuilderX build output and signing material; retain app icon resources
+/unpackage/*
+!/unpackage/res/
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.mobileprovision
+*.pem
+*.key
+
+# Assets removed pending provenance review
+/static/youshe.TTF
+/static/temporary/male.jpg
+/static/temporary/women.jpg
+/static/temporary/eye-hospital,WMU-zhejiang-eye-hospital.svg

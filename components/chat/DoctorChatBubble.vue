@@ -9,12 +9,12 @@
 		<view class="bubble" :class="[isSelf ? 'bubble--right' : 'bubble--left', isDark ? 'bubble--dark' : '']">
 			<!-- 对方头像（左侧） -->
 			<view v-if="!isSelf" class="bubble__avatar">
-				<image :src="avatar || '/static/temporary/male.jpg'" class="bubble__avatar-img" mode="aspectFill" />
+				<image :src="avatar || '/static/avatar-default.svg'" class="bubble__avatar-img" mode="aspectFill" />
 			</view>
 
 			<!-- 己方头像（row-reverse 下排在 DOM 前 → 视觉最右） -->
 			<view v-if="isSelf" class="bubble__avatar">
-				<image :src="selfAvatar || '/static/temporary/male.jpg'" class="bubble__avatar-img" mode="aspectFill" />
+				<image :src="selfAvatar || '/static/avatar-default.svg'" class="bubble__avatar-img" mode="aspectFill" />
 			</view>
 
 			<!-- 内容区 -->

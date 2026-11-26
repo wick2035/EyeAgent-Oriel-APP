@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-App 端模拟器 — 模拟患者(10000000000)的真实 E2EE 聊天客户端
+App 端模拟器 — 模拟患者(<EYEAGENT_PHONE>)的真实 E2EE 聊天客户端
 
 功能：
 1. 生成真实 ECDH P-256 密钥对，上传公钥到服务端
@@ -30,8 +30,10 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 BASE = "http://localhost:8081"
 APP_WS = "ws://localhost:8081/ws/app/notify"
-PHONE = ""
-PASSWORD = ""
+PHONE = os.environ.get("EYEAGENT_PHONE", "")
+PASSWORD = os.environ.get("EYEAGENT_PASSWORD", "")
+if not PHONE or not PASSWORD:
+    raise SystemExit("Set EYEAGENT_PHONE and EYEAGENT_PASSWORD before running this simulator.")
 
 # 全局状态
 private_key = None

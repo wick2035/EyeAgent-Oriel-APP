@@ -1,4 +1,4 @@
-# EyeAgent
+# EyeAgent Oriel
 
 **A uni-app client for eye health**, with interfaces and integrations for AI consultations, appointments, health records, and patient services.
 
@@ -44,7 +44,7 @@ npm ci
 ```
 
 1. Import the project root from a local directory in HBuilderX.
-2. Set the `development` and `production` `baseUrl` values in `utils/config.js` to your backend. Both currently point to an existing remote HTTP service; do not assume it is available or send personal or medical data to an untrusted service.
+2. Set the `development` and `production` `baseUrl` values in `utils/config.js` to your backend. Both default to a local example address; configure an accessible backend before use.
 3. Use HBuilderX's Run menu to launch in a browser or on a connected device/emulator. When a physical device connects to a backend on your computer, use an address reachable from that device rather than the device's own `localhost`.
 4. Sign in or register using the backend. `MOCK_MODE` in `utils/api/user.js` defaults to `false`; it can be enabled for local testing, but mock login does not replace backend functionality.
 
@@ -73,7 +73,7 @@ See [`docs/`](docs/) for API material, including [AI streaming](docs/AI流式对
 ├── main.js          Vue initialization
 ├── pages.json       Page, navigation, and tab bar configuration
 ├── manifest.json    Platform capabilities and distribution configuration
-└── unpackage/       HBuilderX build output and resources
+└── unpackage/res/   App icon assets (other build output is not tracked)
 ```
 
 ## Troubleshooting
@@ -89,4 +89,4 @@ Please use [Issues](https://github.com/wick2035/eyeagent-app/issues) for bugs an
 
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE). Third-party dependencies, modules, and assets may have their own licenses; review them separately before use or redistribution.
+This project is licensed under the [Apache License 2.0](LICENSE). Third-party dependencies, modules, and assets may have their own licenses. See [third-party notices and provenance](THIRD_PARTY_NOTICES.md) for items that still require permission or verification before redistribution.

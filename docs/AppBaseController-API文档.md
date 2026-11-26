@@ -95,7 +95,7 @@
 
 ```json
 {
-  "phone": "13800138000",
+  "phone": "10000000000",
   "password": "password123"
 }
 ```
@@ -115,7 +115,7 @@
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "patientId": "123456",
     "patientName": "张三",
-    "phone": "13800138000"
+    "phone": "10000000000"
   }
 }
 ```
@@ -183,7 +183,7 @@
     "patientName": "张三",
     "gender": "male",
     "age": 35,
-    "phone": "13800138000",
+    "phone": "10000000000",
     "idNumber": "110101199001011234",
     "address": "北京市朝阳区某某街道",
     "height": 175.5,
@@ -194,9 +194,9 @@
     "nation": "汉族",
     "workUnit": "某某科技公司",
     "dateOfBirth": "1990-01-01T00:00:00",
-    "email": "zhangsan@example.com",
+    "email": "user@example.com",
     "emergencyContact": "李四",
-    "emergencyContactPhone": "13900139000",
+    "emergencyContactPhone": "10000000000",
     "insuranceStatus": "正常",
     "insuranceCardNumber": "1234567890",
     "createTime": "2020-01-01T00:00:00",
@@ -228,7 +228,7 @@
   "patientName": "张三",
   "gender": "male",
   "age": 36,
-  "phone": "13800138000",
+  "phone": "10000000000",
   "idNumber": "110101199001011234",
   "address": "北京市朝阳区新地址",
   "height": 176.0,
@@ -239,9 +239,9 @@
   "nation": "汉族",
   "workUnit": "新公司",
   "dateOfBirth": "1990-01-01T00:00:00",
-  "email": "newemail@example.com",
+  "email": "user@example.com",
   "emergencyContact": "王五",
-  "emergencyContactPhone": "13900139001",
+  "emergencyContactPhone": "10000000000",
   "insuranceStatus": "正常",
   "insuranceCardNumber": "9876543210"
 }
@@ -280,7 +280,7 @@
     "patientName": "张三",
     "gender": "male",
     "age": 36,
-    "phone": "13800138000",
+    "phone": "10000000000",
     "idNumber": "110101199001011234",
     "address": "北京市朝阳区新地址",
     "height": 176.0,
@@ -291,9 +291,9 @@
     "nation": "汉族",
     "workUnit": "新公司",
     "dateOfBirth": "1990-01-01T00:00:00",
-    "email": "newemail@example.com",
+    "email": "user@example.com",
     "emergencyContact": "王五",
-    "emergencyContactPhone": "13900139001",
+    "emergencyContactPhone": "10000000000",
     "insuranceStatus": "正常",
     "insuranceCardNumber": "9876543210",
     "createTime": "2020-01-01T00:00:00",
@@ -1286,7 +1286,7 @@ data 是 `PatientReserveResponse` 数组,每个对象包含16个字段:
       "title": "主任医师",
       "gender": "male",
       "age": 45,
-      "phoneNumber": "13800138001",
+      "phoneNumber": "10000000000",
       "specialty": "白内障、青光眼",
       "avatarUrl": "https://example.com/avatar/doctor123.jpg",
       "consultationRoom": "门诊楼3楼301室",
@@ -1300,7 +1300,7 @@ data 是 `PatientReserveResponse` 数组,每个对象包含16个字段:
       "title": "副主任医师",
       "gender": "female",
       "age": 38,
-      "phoneNumber": "13800138002",
+      "phoneNumber": "10000000000",
       "specialty": "视网膜疾病",
       "avatarUrl": "https://example.com/avatar/doctor456.jpg",
       "consultationRoom": "门诊楼3楼302室",
@@ -1737,7 +1737,7 @@ data 是 `PatientReserveResponse` 数组,每个对象包含16个字段:
 curl -X POST http://localhost:8081/api/app/base/login \
   -H "Content-Type: application/json" \
   -d '{
-    "phone": "13800138000",
+    "phone": "10000000000",
     "password": "password123"
   }'
 ```

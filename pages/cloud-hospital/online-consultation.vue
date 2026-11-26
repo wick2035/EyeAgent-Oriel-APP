@@ -41,7 +41,7 @@
 					<view class="doctor-card__top">
 						<view class="doctor-card__avatar">
 							<image
-								:src="doctor.avatar || '/static/temporary/male.jpg'"
+								:src="doctor.avatar || '/static/avatar-default.svg'"
 								class="doctor-card__avatar-img"
 								mode="aspectFill"
 							/>
@@ -209,8 +209,8 @@ export default {
 		mapDoctors(apiDoctors) {
 			return apiDoctors.map(d => {
 				const defaultAvatar = d.gender === 'FEMALE'
-					? '/static/temporary/women.jpg'
-					: '/static/temporary/male.jpg'
+					? '/static/avatar-default.svg'
+					: '/static/avatar-default.svg'
 
 				const ratingDisplay = (d.rating === null || d.rating === undefined)
 					? '暂无'

@@ -545,7 +545,7 @@ $iris-teal: #0E8A7B;
   }
 
   &__num {
-    font-family: 'youshe', $font-family-display;
+    font-family: $font-family-display;
     font-size: 120rpx;
     line-height: 1;
     color: $iris-green;
@@ -569,7 +569,7 @@ $iris-teal: #0E8A7B;
     font-size: $font-size-2xl;
     color: $text-secondary;
     font-weight: $font-weight-semibold;
-    font-family: 'youshe', $font-family-display;
+    font-family: $font-family-display;
   }
 
   &__label {

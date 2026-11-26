@@ -204,7 +204,7 @@
 			<view v-if="cancelTarget" class="cancel-sheet__doctor">
 				<image
 					class="cancel-sheet__avatar"
-					:src="cancelTarget.doctorAvatar || '/static/temporary/male.jpg'"
+					:src="cancelTarget.doctorAvatar || '/static/avatar-default.svg'"
 					mode="aspectFill"
 				/>
 				<view>

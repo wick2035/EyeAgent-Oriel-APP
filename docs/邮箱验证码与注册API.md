@@ -72,7 +72,7 @@
 
 ```json
 {
-  "email": "zhangsan@example.com"
+  "email": "user@example.com"
 }
 ```
 
@@ -132,10 +132,10 @@
   "patientName": "张三",
   "gender": "male",
   "age": 35,
-  "phone": "13800138000",
+  "phone": "10000000000",
   "idNumber": "110101199001011234",
   "password": "yourPassword123",
-  "email": "zhangsan@example.com",
+  "email": "user@example.com",
   "emailCode": "586923",
   "address": "北京市朝阳区某某街道",
   "height": 175.5,
@@ -147,7 +147,7 @@
   "workUnit": "某某科技公司",
   "dateOfBirth": "1990-01-01T00:00:00",
   "emergencyContact": "李四",
-  "emergencyContactPhone": "13900139000",
+  "emergencyContactPhone": "10000000000",
   "insuranceStatus": "正常",
   "insuranceCardNumber": "1234567890"
 }
@@ -194,7 +194,7 @@
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "patientId": "1893456789012345678",
     "patientName": "张三",
-    "phone": "13800138000"
+    "phone": "10000000000"
   }
 }
 ```
@@ -241,7 +241,7 @@
 ```json
 {
   "code": 500,
-  "msg": "手机号 '13800138000' 已被注册",
+  "msg": "手机号 '10000000000' 已被注册",
   "data": null
 }
 ```
@@ -259,7 +259,7 @@
 ```json
 {
   "code": 500,
-  "msg": "邮箱 'zhangsan@example.com' 已被注册",
+  "msg": "邮箱 'user@example.com' 已被注册",
   "data": null
 }
 ```
@@ -288,9 +288,9 @@
 
 | Key 模式 | 示例 | 值 | TTL | 用途 |
 |----------|------|----|-----|------|
-| `email:verify:code:{email}` | `email:verify:code:test@example.com` | `586923` | 300s | 验证码存储 |
-| `email:verify:rate:{email}` | `email:verify:rate:test@example.com` | `1` | 60s | 发送频率限制 |
-| `email:verify:attempt:{email}` | `email:verify:attempt:test@example.com` | `3` | 86400s | 错误尝试计数 |
+| `email:verify:code:{email}` | `email:verify:code:user@example.com` | `586923` | 300s | 验证码存储 |
+| `email:verify:rate:{email}` | `email:verify:rate:user@example.com` | `1` | 60s | 发送频率限制 |
+| `email:verify:attempt:{email}` | `email:verify:attempt:user@example.com` | `3` | 86400s | 错误尝试计数 |
 
 ---
 

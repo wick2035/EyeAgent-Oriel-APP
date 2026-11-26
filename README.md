@@ -1,4 +1,4 @@
-# EyeAgent
+# EyeAgent Oriel
 
 **面向眼健康场景的 uni-app 客户端**，提供 AI 问诊、预约就诊、健康档案与患者服务等界面和对接能力。
 
@@ -44,7 +44,7 @@ npm ci
 ```
 
 1. 用 HBuilderX 的「文件 → 导入 → 从本地目录导入」打开项目根目录。
-2. 修改 `utils/config.js` 中 `development` 和 `production` 的 `baseUrl`，指向自己的后端。当前两者都配置了项目已有的远程 HTTP 地址；不要假设该服务可用，也不要向不受信任的服务发送个人或医疗数据。
+2. 修改 `utils/config.js` 中 `development` 和 `production` 的 `baseUrl`，指向自己的后端。两者默认使用本地示例地址，运行前请配置可访问的后端。
 3. 在 HBuilderX 中选择「运行」，运行到浏览器或连接的手机/模拟器。真机访问本机后端时，请使用设备可访问的地址，而不是设备自身的 `localhost`。
 4. 使用后端提供的账号登录或注册。`utils/api/user.js` 的 `MOCK_MODE` 默认为 `false`；本地测试可自行启用，但模拟登录不能替代后端功能。
 
@@ -73,7 +73,7 @@ npm ci
 ├── main.js          Vue 应用初始化
 ├── pages.json       页面、导航与 tabBar 配置
 ├── manifest.json    平台能力和发行配置
-└── unpackage/       HBuilderX 构建及资源输出
+└── unpackage/res/   应用图标资源（其他构建输出不纳入版本控制）
 ```
 
 ## 常见问题
@@ -89,4 +89,4 @@ npm ci
 
 ## 许可证
 
-本项目采用 [Apache License 2.0](LICENSE)。第三方依赖、模块及素材可能适用各自的许可证；使用和再分发前请分别核查。
+本项目采用 [Apache License 2.0](LICENSE)。第三方依赖、模块及素材可能适用各自的许可证；使用和再分发前请查阅 [第三方许可及素材核查说明](THIRD_PARTY_NOTICES.md)，其中列出了尚待确认授权的资源。

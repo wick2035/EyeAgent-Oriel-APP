@@ -25,7 +25,7 @@
         <view class="doctor-info__main">
           <view class="doctor-info__avatar">
             <image
-              :src="doctor?.avatar || '/static/temporary/male.jpg'"
+              :src="doctor?.avatar || '/static/avatar-default.svg'"
               class="doctor-info__avatar-img"
               mode="aspectFill"
             />

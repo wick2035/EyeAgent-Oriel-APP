@@ -191,7 +191,7 @@ E2EE 医生列表 API（前端对接文档）
           "name": "张明华",              
           "title": "主任医师",                            
           "avatarUrl":      
-  "http://127.0.0.1:19000/avatar/doctor/abc.jpg",
+  "http://example.com/avatar/doctor/abc.jpg",
           "gender": "MALE",                             
           "specialty": "眼底疾病",             
           "hospitalName": "EA 中国视光中心",            
@@ -211,7 +211,7 @@ E2EE 医生列表 API（前端对接文档）
           "name": "李婉清",                               
           "title": "副主任医师",                        
           "avatarUrl":                                    
-  "http://127.0.0.1:19000/avatar/doctor/xyz.jpg",
+  "http://example.com/avatar/doctor/xyz.jpg",
           "gender": "FEMALE",                  
           "specialty": "干眼症",                          
           "hospitalName": "EA 中国视光中心",            

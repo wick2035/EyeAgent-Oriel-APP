@@ -63,7 +63,7 @@
           <!-- 头像区 -->
           <view class="doctor-card__avatar">
             <image
-              :src="doctor.avatar || '/static/temporary/male.jpg'"
+              :src="doctor.avatar || '/static/avatar-default.svg'"
               class="doctor-card__avatar-img"
               mode="aspectFill"
             />

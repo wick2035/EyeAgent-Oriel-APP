@@ -88,7 +88,7 @@
 						<!-- 医生头像 -->
 						<view class="conversation-row__doctor-avatar">
 							<image
-								:src="doctor.avatar || '/static/temporary/women.jpg'"
+								:src="doctor.avatar || '/static/avatar-default.svg'"
 								class="conversation-row__doctor-avatar-img"
 								mode="aspectFill"
 							/>
